@@ -3932,7 +3932,7 @@ async function sendMainMenu(ctx) {
   // Latency (dummy, bisa diubah sesuai kebutuhan)
   const latency = (Math.random() * 0.1 + 0.01).toFixed(2);
 
-  const messageText = `
+  const messageText = `<blockquote expandable>
 <b> BOT VPN ${NAMA_STORE}</b>
 <code>━━━━━━━━━━━━━━━━━━━━━━</code>
 
@@ -3966,7 +3966,7 @@ async function sendMainMenu(ctx) {
 ┃  Edited by    : <b>RetriVPN</b>
 <code>━━━━━━━━━━━━━━━━━━━━━━</code>
 <i>Pilih menu di bawah untuk mulai </i>
-`;
+</blockquote>`;
 
   // Buat keyboard dasar untuk semua user
   let keyboard = [
@@ -7678,14 +7678,14 @@ bot.action('menu_topup', async (ctx) => {
   keyboard.push([{ text: ' Menu Utama', callback_data: 'send_main_menu' }]);
 
   const msgText =
-    ' <b>TOP UP SALDO</b>\n' +
+    '<blockquote> TOP UP SALDO\n' +
     '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
     '┃  Saldo VPN          : <code>Rp ' + Number(saldoVpn || 0).toLocaleString('id-ID') + '</code>\n' +
     '┃  Saldo Tembak Kuota : <code>Rp ' + Number(saldoAkrab || 0).toLocaleString('id-ID') + '</code>\n' +
     '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
     '<i>VPN: Akun VPN + Suntik Followers</i>\n' +
     '<i>Tembak Kuota: PPOB + Akrab & Circle</i>\n\n' +
-    'Pilih jenis saldo yang ingin di-top up:';
+    'Pilih jenis saldo yang ingin di-top up:</blockquote>';
 
   await ctx.editMessageText(msgText, { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } })
     .catch(async () => { await ctx.reply(msgText, { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } }); });
@@ -10995,12 +10995,12 @@ bot.action('menu_ppob', async (ctx) => {
   const saldoAkrab = await dbH.getSaldoAkrab(db, userId).catch(() => 0);
 
   await ctx.editMessageText(
-    ' <b>PPOB</b> — Bayar Tagihan & Produk Digital\n' +
+    '<blockquote> PPOB — Bayar Tagihan & Produk Digital\n' +
     '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
     '┃  Saldo Tembak Kuota : <code>Rp ' + Number(saldoAkrab || 0).toLocaleString('id-ID') + '</code>\n' +
     '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
     '<i>Saldo ini juga dipakai untuk Akrab & Circle.</i>\n\n' +
-    'Pilih menu:',
+    'Pilih menu:</blockquote>',
     {
       parse_mode: 'HTML',
       reply_markup: {
@@ -11028,11 +11028,11 @@ bot.action('cek_saldo_akrab', async (ctx) => {
   const userId = ctx.from.id;
   const saldo = await dbH.getSaldoAkrab(db, userId).catch(() => 0);
   await ctx.editMessageText(
-    ' <b>SALDO TEMBAK KUOTA</b>\n' +
+    '<blockquote> SALDO TEMBAK KUOTA\n' +
     '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
     '┃ Nominal : <code>Rp ' + Number(saldo || 0).toLocaleString('id-ID') + '</code>\n' +
     '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
-    '<i>Dipakai untuk PPOB + Akrab & Circle.</i>',
+    '<i>Dipakai untuk PPOB + Akrab & Circle.</i></blockquote>',
     {
       parse_mode: 'HTML',
       reply_markup: {
@@ -11299,11 +11299,11 @@ bot.action('menu_suntik', async (ctx) => {
   keyboard.push([{ text: ' Menu Utama', callback_data: 'send_main_menu' }]);
 
   await ctx.editMessageText(
-    ' <b>SUNTIK FOLLOWERS</b>\n' +
+    '<blockquote> SUNTIK FOLLOWERS\n' +
     '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
     '┃  Saldo VPN : <code>Rp ' + Number(saldo || 0).toLocaleString('id-ID') + '</code>\n' +
     '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
-    '<i>Saldo VPN dipakai untuk layanan SMM.</i>',
+    '<i>Saldo VPN dipakai untuk layanan SMM.</i></blockquote>',
     { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } }
   );
 });
@@ -11313,11 +11313,11 @@ bot.action('smm_cek_saldo', async (ctx) => {
   const userId = ctx.from.id;
   const saldo = await dbH.getSaldo(db, userId).catch(() => 0);
   await ctx.editMessageText(
-    ' <b>SALDO VPN</b>\n' +
+    '<blockquote> SALDO VPN\n' +
     '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
     '┃ Nominal : <code>Rp ' + Number(saldo || 0).toLocaleString('id-ID') + '</code>\n' +
     '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
-    '<i>Dipakai untuk Akun VPN + Suntik Followers.</i>',
+    '<i>Dipakai untuk Akun VPN + Suntik Followers.</i></blockquote>',
     {
       parse_mode: 'HTML',
       reply_markup: {
@@ -11658,12 +11658,12 @@ bot.action('menu_vpn', async (ctx) => {
   keyboard.push([{ text: ' Menu Utama', callback_data: 'send_main_menu' }]);
 
   const msgText =
-    ' <b>AKUN VPN</b>\n' +
+    '<blockquote> AKUN VPN\n' +
     '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
     '┃  Saldo VPN : <code>Rp ' + Number(saldo || 0).toLocaleString('id-ID') + '</code>\n' +
     '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
     '<i>Saldo ini dipakai untuk Akun VPN + Suntik Followers.</i>\n\n' +
-    'Pilih layanan:';
+    'Pilih layanan:</blockquote>';
 
   await ctx.editMessageText(msgText, { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } })
     .catch(async () => { await ctx.reply(msgText, { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } }); });
@@ -11701,7 +11701,7 @@ bot.action('menu_akrab', async (ctx) => {
   keyboard.push([{ text: ' Menu Utama', callback_data: 'send_main_menu' }]);
 
   await ctx.editMessageText(
-    ' <b>AKRAB & CIRCLE</b>\n' +
+    '<blockquote> AKRAB & CIRCLE\n' +
     '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
     '┃  Saldo Tembak Kuota : <code>Rp ' + Number(saldoAkrab || 0).toLocaleString('id-ID') + '</code>\n' +
     '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
@@ -11710,7 +11710,7 @@ bot.action('menu_akrab', async (ctx) => {
       ? '\n\n<b>Admin:</b>\n' +
         '┃ Reseller ID : <code>' + (KHFY_RESELLER_ID || '-') + '</code>\n' +
         '┃ Portal      : ' + (KHFY_PORTAL || '-')
-      : ''),
+      : '') + '</blockquote>',
     { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } }
   );
 });
