@@ -77,6 +77,22 @@ sysctl -w net.ipv6.conf.all.disable_ipv6=1 && sysctl -w net.ipv6.conf.default.di
 
 ---
 
+## Update
+
+Tarik versi terbaru tanpa menghapus `.vars.json` dan database (otomatis di-backup ke `/tmp`):
+
+```bash
+curl -L -k -sS https://raw.githubusercontent.com/sahal-max/bot/main/update -o update && bash update && rm -f update
+```
+
+Script update akan:
+- Backup `.vars.json`, `*.db`, dan file config JSON ke `/tmp`
+- Menarik kode terbaru dari GitHub
+- Mengembalikan konfigurasi & database
+- Memperbarui dependency lalu restart bot via PM2
+
+---
+
 ## Stack Teknologi
 
 | Layer | Teknologi |
