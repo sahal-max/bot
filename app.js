@@ -3963,7 +3963,7 @@ async function sendMainMenu(ctx) {
 <code>──────────────────────</code>
 ┃ 👥 Total Users : <b>${jumlahPengguna}</b>
 ┃ ⏱️ Latency     : <b>${latency} ms</b>
-┃ 👨‍💻 Edited by    : <b>1FORCR</b>
+┃ 👨‍💻 Edited by    : <b>RetriVPN</b>
 <code>━━━━━━━━━━━━━━━━━━━━━━</code>
 <i>Pilih menu di bawah untuk mulai 👇</i>
 `;
