@@ -3989,14 +3989,8 @@ async function sendMainMenu(ctx) {
     ],
   ];
 
-  // Tombol top up (di-append agar struktur menu tetap konsisten)
-  if (loadTopupAutoSetting()) {
-    keyboard.push([{ text: '💰 TopUp Saldo VPN Otomatis', callback_data: 'topup_saldo' }]);
-  }
-  if (loadTopupManualSetting()) {
-    keyboard.push([{ text: '💰 TopUp Saldo VPN Manual via (QRIS)', callback_data: 'topup_manual' }]);
-  }
-  keyboard.push([{ text: '💳 TopUp Saldo Tembak Kuota', callback_data: 'topup_akrab' }]);
+  // Satu tombol Top Up yang membuka submenu (VPN + Tembak Kuota)
+  keyboard.push([{ text: '💳 Top Up Saldo', callback_data: 'menu_topup' }]);
 
   if (loadScNexusMenuSetting()) {
     keyboard.push([
@@ -7661,6 +7655,38 @@ bot.on('document', async (ctx) => {
     logger.error('Gagal restore database:', err.message);
     return ctx.reply('Gagal restore database. Pastikan file backup valid.');
   }
+});
+
+// ── Submenu Top Up (gabungan: VPN + Tembak Kuota) ──────────────────────────
+bot.action('menu_topup', async (ctx) => {
+  await ctx.answerCbQuery().catch(() => {});
+  const userId = ctx.from.id;
+  const saldoVpn = await dbH.getSaldo(db, userId).catch(() => 0);
+  const saldoAkrab = await dbH.getSaldoAkrab(db, userId).catch(() => 0);
+
+  const keyboard = [];
+
+  // Top Up VPN (otomatis / manual sesuai setting)
+  if (loadTopupAutoSetting()) {
+    keyboard.push([{ text: '💰 Top Up Saldo VPN (Otomatis)', callback_data: 'topup_saldo' }]);
+  }
+  if (loadTopupManualSetting()) {
+    keyboard.push([{ text: '💰 Top Up Saldo VPN (Manual QRIS)', callback_data: 'topup_manual' }]);
+  }
+  // Top Up Tembak Kuota (wallet Akrab)
+  keyboard.push([{ text: '💳 Top Up Saldo Tembak Kuota', callback_data: 'topup_akrab' }]);
+  keyboard.push([{ text: '🏠 Menu Utama', callback_data: 'send_main_menu' }]);
+
+  const msgText =
+    '💳 <b>Top Up Saldo</b>\n\n' +
+    '💰 <b>Saldo VPN</b>          : <code>Rp ' + Number(saldoVpn || 0).toLocaleString('id-ID') + '</code>\n' +
+    '   ↳ untuk Akun VPN + Suntik Followers\n\n' +
+    '💳 <b>Saldo Tembak Kuota</b> : <code>Rp ' + Number(saldoAkrab || 0).toLocaleString('id-ID') + '</code>\n' +
+    '   ↳ untuk PPOB + Akrab & Circle\n\n' +
+    'Pilih jenis saldo yang ingin di-top up:';
+
+  await ctx.editMessageText(msgText, { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } })
+    .catch(async () => { await ctx.reply(msgText, { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } }); });
 });
 
 // ✅ BUAT INI SATU SAJA (tempat yang sama dengan action lainnya)
@@ -12021,56 +12047,44 @@ bot.action('akrab_markup_delete', async (ctx) => {
   });
 });
 
-// ── TOP UP SALDO AKRAB ───────────────────────────────────
+// ── TOP UP SALDO TEMBAK KUOTA (via QRIS, wallet gabungan PPOB + Akrab) ──────
 bot.action('topup_akrab', async (ctx) => {
   const userId = ctx.from.id;
   await ctx.answerCbQuery();
-  const token = await dbH.getHidepulsaToken(db, userId);
-  const now = Date.now();
-  if (token && token.access_token && token.expires_at > now) {
-    userState[ctx.chat.id] = { step: 'topup_akrab_amount' };
-    await ctx.editMessageText(
-      '💳 <b>Top Up Saldo Akrab</b>\n\nMasukkan jumlah top up (contoh: 50000):',
-      {
-        parse_mode: 'HTML',
-        reply_markup: { inline_keyboard: [[{ text: '❌ Batal', callback_data: 'menu_ppob' }]] }
-      }
-    );
-    return;
+
+  if (!loadTopupAutoSetting()) {
+    return ctx.editMessageText(
+      '⚠️ Top up otomatis sedang nonaktif. Silakan hubungi admin.',
+      { reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'menu_akrab' }]] } }
+    ).catch(() => {});
   }
-  try {
-    try {
-      await axios.post(`${HIDEPULSA_BASE_URL}/auth/register`, {
-        telegram_user_id: userId.toString(),
-        name: ctx.from.first_name || 'User'
-      });
-    } catch (regErr) {
-      logger.warn('HidePulsa register: ' + (regErr && regErr.message ? regErr.message : regErr));
+
+  if (!global.depositState) global.depositState = {};
+  const minTopupForMode = getMinTopupByGatewayMode(PAYMENT_GATEWAY_MODE);
+  global.depositState[userId] = {
+    action: 'request_amount',
+    amount: '',
+    topupPurpose: 'regular',
+    walletType: 'akrab',
+    minAmount: minTopupForMode
+  };
+
+  await ctx.editMessageText(
+    '💳 <b>Top Up Saldo Tembak Kuota</b>\n\n' +
+    'Saldo ini dipakai untuk: PPOB + Akrab & Circle.\n\n' +
+    `Masukkan jumlah top up (minimal Rp ${minTopupForMode.toLocaleString('id-ID')}):`,
+    {
+      parse_mode: 'HTML',
+      reply_markup: { inline_keyboard: keyboard_nomor() }
     }
-    await axios.post(`${HIDEPULSA_BASE_URL}/auth/telegram/request-otp`, {
-      telegram_user_id: userId.toString()
-    });
-    userState[ctx.chat.id] = { step: 'topup_otp_akrab' };
-    await ctx.editMessageText(
-      '📱 <b>Verifikasi HidePulsa</b>\n\n' +
-      'OTP telah dikirim ke Telegram kamu via <b>@apphidepulsa_bot</b>\n\n' +
-      '⚠️ Pastikan kamu sudah /start @apphidepulsa_bot terlebih dahulu\n\n' +
-      'Kirim kode OTP 6 digit:',
-      {
-        parse_mode: 'HTML',
-        reply_markup: { inline_keyboard: [[{ text: '❌ Batal', callback_data: 'menu_ppob' }]] }
-      }
+  ).catch(async () => {
+    await ctx.reply(
+      '💳 <b>Top Up Saldo Tembak Kuota</b>\n\n' +
+      'Saldo ini dipakai untuk: PPOB + Akrab & Circle.\n\n' +
+      `Masukkan jumlah top up (minimal Rp ${minTopupForMode.toLocaleString('id-ID')}):`,
+      { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard_nomor() } }
     );
-  } catch (err) {
-    logger.error('Request OTP HidePulsa gagal: ' + (err && err.message ? err.message : err));
-    await ctx.editMessageText(
-      '❌ Gagal mengirim OTP. Pastikan kamu sudah /start @apphidepulsa_bot\n\nCoba lagi nanti.',
-      {
-        parse_mode: 'HTML',
-        reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'menu_ppob' }]] }
-      }
-    );
-  }
+  });
 });
 
 bot.on('text', async (ctx) => {
@@ -17084,6 +17098,7 @@ db.all('SELECT * FROM pending_deposits WHERE status = "pending"', [], (err, rows
       adminFee: Number(row.admin_fee || 0),
       gatewayProvider: provider,
       providerTxId: row.provider_tx_id || '',
+      walletType: row.wallet_type || 'vpn',
       orderKuotaCheckActive: false,
       orderKuotaLastCheckAt: 0,
       orderKuotaCheckUntil: 0,
@@ -17225,6 +17240,7 @@ async function processDeposit(ctx, amount, options = {}) {
   const amountNum = Number(amount);
   const minAmount = Number(options?.minAmount) > 0 ? Number(options.minAmount) : 2000;
   const topupPurpose = String(options?.topupPurpose || 'regular');
+  const walletType = String(options?.walletType || 'vpn');
 
   if (amountNum < minAmount) {
     await ctx.editMessageText(
@@ -17329,6 +17345,7 @@ ${gatewayProvider === 'orderkuota' ? 'ℹ️ Saldo masuk setelah tombol ditekan 
       qrMessageId: qrMessage.message_id,
       gatewayProvider,
       providerTxId,
+      walletType,
       orderKuotaCheckActive: false,
       orderKuotaLastCheckAt: 0,
       orderKuotaCheckUntil: 0,
@@ -17355,7 +17372,7 @@ ${gatewayProvider === 'orderkuota' ? 'ℹ️ Saldo masuk setelah tombol ditekan 
     adminFee,
     topupPurpose,
     qrExpiresAt,
-    'vpn'
+    walletType
   ],
   (err) => { 
     if (err) logger.error('❌ Save error:', err.message);
@@ -17789,8 +17806,11 @@ async function processSuccessfulPayment(deposit, uniqueCode) {
   try {
     const bonusConfig = loadTopupBonusSetting();
     const amountBase = deposit.originalAmount;
+    const walletType = String(deposit.walletType || 'vpn');
+    const isAkrabWallet = walletType === 'akrab';
     let bonusPercent = 0;
-    if (bonusConfig.enabled) {
+    // Bonus hanya berlaku untuk wallet VPN (sesuai PRD)
+    if (bonusConfig.enabled && !isAkrabWallet) {
       if (amountBase >= 10000 && amountBase <= 49000) {
         bonusPercent = bonusConfig.range_10_40;
       } else if (amountBase >= 50000 && amountBase <= 79000) {
@@ -17802,8 +17822,12 @@ async function processSuccessfulPayment(deposit, uniqueCode) {
     const bonusAmount = Math.floor((amountBase * bonusPercent) / 100);
     const totalCredit = amountBase + bonusAmount;
 
+    // Kolom saldo tujuan sesuai wallet: VPN = saldo, Tembak Kuota = saldo_akrab
+    const saldoColumn = isAkrabWallet ? 'saldo_akrab' : 'saldo';
+    const walletLabel = isAkrabWallet ? 'Saldo Tembak Kuota' : 'Saldo VPN';
+
     // 1. UPDATE SALDO USER (HANYA NOMINAL ASLI + BONUS)
-    db.run('UPDATE users SET saldo = saldo + ? WHERE user_id = ?',
+    db.run(`UPDATE users SET ${saldoColumn} = ${saldoColumn} + ? WHERE user_id = ?`,
       [totalCredit, deposit.userId],
       async (err) => {
         if (err) {
@@ -17811,7 +17835,7 @@ async function processSuccessfulPayment(deposit, uniqueCode) {
           return;
         }
         
-        logger.info(`✅ Saldo updated: +${totalCredit} for user ${deposit.userId} (bonus ${bonusAmount})`);
+        logger.info(`✅ ${walletLabel} updated: +${totalCredit} for user ${deposit.userId} (bonus ${bonusAmount})`);
         
         // 2. SIMPAN TRANSAKSI
         db.run(
@@ -17841,11 +17865,12 @@ async function processSuccessfulPayment(deposit, uniqueCode) {
         db.run('DELETE FROM pending_deposits WHERE unique_code = ?', [uniqueCode]);
         
         // 4. AMBIL SALDO TERBARU
-        db.get('SELECT saldo FROM users WHERE user_id = ?', [deposit.userId], async (err, row) => {
+        db.get(`SELECT ${saldoColumn} AS saldo FROM users WHERE user_id = ?`, [deposit.userId], async (err, row) => {
           const currentBalance = row ? row.saldo : totalCredit;
           const resellerTerms = loadResellerTerms();
           const joinMinTopup = Math.max(0, Number(resellerTerms.join_topup_min) || 0);
           const eligibleForReseller =
+            !isAkrabWallet &&
             String(deposit.topupPurpose || '') === 'reseller_join' &&
             Number(deposit.originalAmount || 0) >= joinMinTopup;
           const alreadyReseller = await isUserReseller(deposit.userId).catch(() => false);
@@ -17861,7 +17886,7 @@ async function processSuccessfulPayment(deposit, uniqueCode) {
               `💰 Top-up: Rp ${deposit.originalAmount.toLocaleString('id-ID')}\n` +
               (bonusAmount > 0 ? `🎁 Bonus: Rp ${bonusAmount.toLocaleString('id-ID')}\n` : '') +
               `💵 Total bayar: Rp ${deposit.amount.toLocaleString('id-ID')}\n` +
-              `🏦 Saldo sekarang: Rp ${currentBalance.toLocaleString('id-ID')}\n\n` +
+              `🏦 ${walletLabel} sekarang: Rp ${currentBalance.toLocaleString('id-ID')}\n\n` +
               (eligibleForReseller
                 ? '✅ Status reseller: aktif\n\n'
                 : '') +
