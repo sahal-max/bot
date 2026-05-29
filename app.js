@@ -3975,25 +3975,11 @@ async function sendMainMenu(ctx) {
   // Buat keyboard dasar untuk semua user
   let keyboard = [
     [
-      { text: '➕ Buat Akun', callback_data: 'service_create' },
-      { text: '⌛ Trial Akun', callback_data: 'service_trial' }
-    ],
-    [
-      { text: '🗑️ Hapus Akun Saya', callback_data: 'delete_my_account_intro' },
-      { text: '📂 Lihat Akun Saya', callback_data: 'view_accounts' }
+      { text: '🔑 Akun VPN', callback_data: 'menu_vpn' }
     ],
     [
       { text: '🧰 Tools', callback_data: 'menu_tools' },
       { text: '📞 Hubungi Admin', callback_data: 'hubungi_admin' }
-    ],
-    [
-      { text: '📥 DOWNLOAD CONFIG', callback_data: 'download_config_menu' }
-    ],
-    [
-      { text: '🔍 Cek Masa Aktif Akun Saya', callback_data: 'check_expiry_account' }
-    ],
-    [
-     // { text: '📘 Tutorial Penggunaan Bot', callback_data: 'tutorial_bot' }
     ],
     [
       { text: '📱 PPOB', callback_data: 'menu_ppob' },
@@ -4007,63 +3993,27 @@ async function sendMainMenu(ctx) {
     ],
   ];
 
+  // Tombol top up (di-append agar struktur menu tetap konsisten)
   if (loadTopupAutoSetting()) {
-    const topupIndex = keyboard.findIndex(row =>
-      row.some(btn => btn.callback_data === 'topup_saldo')
-    );
-    const autoRow = [{ text: '💰 TopUp Saldo VPN Otomatis', callback_data: 'topup_saldo' }];
-    if (topupIndex === -1) {
-      keyboard.splice(4, 0, autoRow);
-    }
+    keyboard.push([{ text: '💰 TopUp Saldo VPN Otomatis', callback_data: 'topup_saldo' }]);
   }
-
   if (loadTopupManualSetting()) {
-    const topupIndex = keyboard.findIndex(row =>
-      row.some(btn => btn.callback_data === 'topup_saldo')
-    );
-    const manualRow = [{ text: '💰 TopUp Saldo VPN Manual via (QRIS)', callback_data: 'topup_manual' }];
-    if (topupIndex === -1) {
-      keyboard.push(manualRow);
-    } else {
-      keyboard.splice(topupIndex + 1, 0, manualRow);
-    }
+    keyboard.push([{ text: '💰 TopUp Saldo VPN Manual via (QRIS)', callback_data: 'topup_manual' }]);
   }
-
-  // Tombol Top Up Saldo Tembak Kuota (wallet Akrab) — untuk PPOB + Akrab & Circle
-  {
-    const tembakIndex = keyboard.findIndex(row =>
-      row.some(btn => btn.callback_data === 'topup_akrab')
-    );
-    if (tembakIndex === -1) {
-      const refIndex = keyboard.findIndex(row =>
-        row.some(btn => btn.callback_data === 'topup_manual' || btn.callback_data === 'topup_saldo')
-      );
-      const tembakRow = [{ text: '💳 TopUp Saldo Tembak Kuota', callback_data: 'topup_akrab' }];
-      if (refIndex === -1) {
-        keyboard.push(tembakRow);
-      } else {
-        keyboard.splice(refIndex + 1, 0, tembakRow);
-      }
-    }
-  }
+  keyboard.push([{ text: '💳 TopUp Saldo Tembak Kuota', callback_data: 'topup_akrab' }]);
 
   if (loadScNexusMenuSetting()) {
-    keyboard.splice(4, 0, [
+    keyboard.push([
       { text: '🛰️ SC 1FORCR NEXUS', url: 'https://t.me/sc1forcrnexusbot' }
     ]);
   }
-  // Jika user adalah reseller, tambahkan tombol khusus
+
+  // Jika user adalah reseller, tambahkan tombol khusus di bawah Akun VPN
   if (isReseller) {
-    // Letakkan menu reseller tepat di bawah baris Tools + Hubungi Admin
-    keyboard.splice(3, 0, [
-      { text: '🔐 Buka Kunci Akun', callback_data: 'service_unlock' },
-      { text: '🗝️ Kunci Akun', callback_data: 'service_lock' }
-    ]);
-    keyboard.splice(4, 0, [
+    keyboard.splice(1, 0, [
       { text: '📊 Statistik Saya', callback_data: 'reseller_stats' },
       { text: '🏪 Menu Reseller', callback_data: 'menu_join_reseller' }
     ]);
-
     logger.info('🛡️ Menu reseller ditampilkan untuk user: ' + userId);
   }
 
@@ -11605,6 +11555,53 @@ bot.action('smm_markup_delete', async (ctx) => {
 });
 
 // ══════════════════════════════════════════
+// MENU AKUN VPN (gabungan semua layanan VPN)
+// ══════════════════════════════════════════
+bot.action('menu_vpn', async (ctx) => {
+  await ctx.answerCbQuery();
+  const userId = ctx.from.id;
+  const saldo = await dbH.getSaldo(db, userId).catch(() => 0);
+  const isReseller = fs.existsSync(resselFilePath) &&
+    fs.readFileSync(resselFilePath, 'utf8').split('\n').map(x => x.trim()).includes(userId.toString());
+
+  const keyboard = [
+    [
+      { text: '➕ Buat Akun', callback_data: 'service_create' },
+      { text: '⌛ Trial Akun', callback_data: 'service_trial' }
+    ],
+    [
+      { text: '🔄 Perpanjang Akun', callback_data: 'service_renew' },
+      { text: '📂 Lihat Akun Saya', callback_data: 'view_accounts' }
+    ],
+    [
+      { text: '🗑️ Hapus Akun Saya', callback_data: 'delete_my_account_intro' },
+      { text: '🔍 Cek Masa Aktif', callback_data: 'check_expiry_account' }
+    ],
+    [
+      { text: '📥 Download Config', callback_data: 'download_config_menu' }
+    ],
+  ];
+
+  if (isReseller) {
+    keyboard.push([
+      { text: '🔐 Buka Kunci Akun', callback_data: 'service_unlock' },
+      { text: '🗝️ Kunci Akun', callback_data: 'service_lock' }
+    ]);
+  }
+
+  keyboard.push([{ text: '🏠 Menu Utama', callback_data: 'send_main_menu' }]);
+
+  const msgText =
+    '🔑 <b>Akun VPN</b>\n\n' +
+    '💰 <b>Saldo VPN:</b> <code>Rp ' + Number(saldo || 0).toLocaleString('id-ID') + '</code>\n\n' +
+    'Saldo VPN digunakan untuk: Akun VPN + Suntik Followers.\n\n' +
+    'Pilih layanan:';
+
+  await ctx.editMessageText(msgText, { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } })
+    .catch(async () => { await ctx.reply(msgText, { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } }); });
+});
+
+// ══════════════════════════════════════════
 // MENU AKRAB & CIRCLE
 // ══════════════════════════════════════════
 bot.action('menu_akrab', async (ctx) => {
@@ -11615,11 +11612,15 @@ bot.action('menu_akrab', async (ctx) => {
 
   const keyboard = [
     [
-      { text: '💳 Cek Saldo Akrab', callback_data: 'cek_saldo_akrab' },
-      { text: '💰 Top Up Akrab', callback_data: 'topup_akrab' },
+      { text: '💳 Cek Saldo Tembak Kuota', callback_data: 'cek_saldo_akrab' },
+      { text: '💰 Top Up', callback_data: 'topup_akrab' },
     ],
     [
-      { text: '🛒 Daftar & Beli Produk', callback_data: 'akrab_list_produk' },
+      { text: '📦 Akrab V1', callback_data: 'akrab_grup_v1' },
+      { text: '📦 Akrab V2', callback_data: 'akrab_grup_v2' },
+    ],
+    [
+      { text: '⭕ Circle', callback_data: 'akrab_grup_circle' },
     ],
     [
       { text: '🔍 Cek Status', callback_data: 'akrab_cek_status' },
@@ -11633,7 +11634,8 @@ bot.action('menu_akrab', async (ctx) => {
 
   await ctx.editMessageText(
     '🤝 <b>Akrab & Circle</b>\n\n' +
-    '💳 <b>Saldo Akrab:</b> <code>Rp ' + Number(saldoAkrab || 0).toLocaleString('id-ID') + '</code>' +
+    '💳 <b>Saldo Tembak Kuota:</b> <code>Rp ' + Number(saldoAkrab || 0).toLocaleString('id-ID') + '</code>\n\n' +
+    'Pilih kategori layanan:' +
     (isAdminUser
       ? '\n\nReseller ID: <code>' + (KHFY_RESELLER_ID || '-') + '</code>\n' +
         'Portal: ' + (KHFY_PORTAL || '-')
@@ -11641,6 +11643,74 @@ bot.action('menu_akrab', async (ctx) => {
     { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } }
   );
 });
+
+// ── Grup Akrab V1 / V2 / Circle ─────────────────────────────────────────────
+// Pemetaan kode_provider khfy-store ke grup:
+//   v1     : KUBER, KUBERP        (produk XLA*)
+//   v2     : KUBERV2              (produk XDA*)
+//   circle : sisanya (BEKASAN*, IM, FMAX, PLN, dll)
+const AKRAB_GROUP_PROVIDERS = {
+  v1: ['KUBER', 'KUBERP'],
+  v2: ['KUBERV2'],
+};
+function getAkrabGroup(provider) {
+  const p = String(provider || '').toUpperCase();
+  if (AKRAB_GROUP_PROVIDERS.v1.includes(p)) return 'v1';
+  if (AKRAB_GROUP_PROVIDERS.v2.includes(p)) return 'v2';
+  return 'circle';
+}
+
+bot.action(/^akrab_grup_(v1|v2|circle)$/, async (ctx) => {
+  await ctx.answerCbQuery('Memuat produk...');
+  const userId = ctx.from.id;
+  const grup = ctx.match[1];
+  const grupLabel = grup === 'v1' ? 'Akrab V1' : grup === 'v2' ? 'Akrab V2' : 'Circle';
+
+  try {
+    const products = await akrabModule.getProducts(KHFY_ENDPOINT, KHFY_API_KEY);
+    const filtered = (products || []).filter((p) => getAkrabGroup(p.kode_provider) === grup);
+
+    userState[userId] = Object.assign({}, userState[userId], { akrabProducts: products });
+
+    if (!filtered.length) {
+      await ctx.editMessageText(
+        '📦 <b>' + grupLabel + '</b>\n\nBelum ada produk pada kategori ini.',
+        { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'menu_akrab' }]] } }
+      );
+      return;
+    }
+
+    const markupGlobal = await dbH.getMarkup(db, 'global', 'akrab', null).catch(() => null);
+    const markupReseller = await dbH.getMarkup(db, 'reseller', 'akrab', userId).catch(() => null);
+
+    const keyboard = filtered.slice(0, 40).map((p) => {
+      const code = p.kode_produk || p.code || p.produk;
+      const name = p.nama_produk || p.name || p.nama || code;
+      const base = Number(p.harga_final || p.price || p.harga || 0);
+      const habis = Number(p.kosong || 0) === 1;
+      const finalPrice = wallet.getEffectivePrice(base, markupGlobal, markupReseller);
+      const labelHarga = base > 0 ? ' — Rp ' + finalPrice.toLocaleString('id-ID') : '';
+      return [{
+        text: (habis ? '🔴 ' : '') + name + labelHarga,
+        callback_data: 'akrab_beli_' + code,
+      }];
+    });
+    keyboard.push([{ text: '🔙 Kembali', callback_data: 'menu_akrab' }]);
+
+    await ctx.editMessageText(
+      '📦 <b>' + grupLabel + '</b>\n\nPilih produk (🔴 = kosong):',
+      { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } }
+    );
+  } catch (err) {
+    logger.error('akrab_grup_' + grup + ': ' + (err && err.message ? err.message : err));
+    await ctx.editMessageText('❌ Gagal memuat produk ' + grupLabel + '.', {
+      parse_mode: 'HTML',
+      reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'menu_akrab' }]] },
+    });
+  }
+});
+
+
 
 bot.action('akrab_list_produk', async (ctx) => {
   await ctx.answerCbQuery('Memuat produk...');
