@@ -66,7 +66,7 @@ Dua wallet saldo berjalan independen — tidak bisa saling transfer:
 Rekomendasi OS: Ubuntu 24 LTS / Debian 12
 
 ```bash
-sysctl -w net.ipv6.conf.all.disable_ipv6=1 && sysctl -w net.ipv6.conf.default.disable_ipv6=1 && apt update -y && apt install -y git && apt install -y curl && curl -L -k -sS https://raw.githubusercontent.com/harismy/BotVPN/main/start -o start && bash start sellvpn && [ $? -eq 0 ] && rm -f start
+sysctl -w net.ipv6.conf.all.disable_ipv6=1 && sysctl -w net.ipv6.conf.default.disable_ipv6=1 && apt update -y && apt install -y git curl && curl -L -k -sS https://raw.githubusercontent.com/sahal-max/bot/main/start -o start && bash start sellvpn && [ $? -eq 0 ] && rm -f start
 ```
 
 ### Setup

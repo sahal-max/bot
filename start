@@ -76,16 +76,16 @@ input_field() {
 show_header() {
     clear
     echo -e "${purple}====================================================================${neutral}"
-    print_rainbow_center "⚡ INSTALASI BOT TELEGRAM • SELLVPN ⚡"
+    print_rainbow_center "⚡ INSTALASI BOT TELEGRAM • RETRI VPN ⚡"
     echo -e "${purple}====================================================================${neutral}"
     echo -e "${cyan}${bold}Fitur penting yang tersedia:${neutral}"
-    echo -e "${cyan}•${neutral} create user"
-    echo -e "${cyan}•${neutral} renew user"
-    echo -e "${cyan}•${neutral} lock user"
-    echo -e "${cyan}•${neutral} unlock user"
-    echo -e "${cyan}•${neutral} delete user"
-    echo -e "${cyan}•${neutral} addsaldo user"
-    echo -e "${cyan}•${neutral} ceksaldo user"
+    echo -e "${cyan}•${neutral} Akun VPN (create/renew/lock/unlock/delete)"
+    echo -e "${cyan}•${neutral} PPOB (HidePulsa)"
+    echo -e "${cyan}•${neutral} Akrab & Circle (khfy-store)"
+    echo -e "${cyan}•${neutral} Suntik Followers / SMM (FayuPedia)"
+    echo -e "${cyan}•${neutral} Dual Wallet (Saldo VPN + Saldo Akrab)"
+    echo -e "${cyan}•${neutral} Reseller + markup harga per layanan"
+    echo -e "${cyan}•${neutral} addsaldo / ceksaldo user"
     echo -e "${cyan}•${neutral} tambah server khusus reseller"
     echo -e "${cyan}•${neutral} auto-backup database harian"
     echo ""
@@ -104,7 +104,7 @@ setup_bot() {
         apt install -y nodejs
     fi
     rm -rf /root/BotVPN
-    git clone https://github.com/harismy/BotVPN.git /root/BotVPN
+    git clone https://github.com/sahal-max/bot.git /root/BotVPN
     npm install -g npm@latest pm2
     npm install --prefix /root/BotVPN sqlite3 express crypto telegraf axios dotenv node-schedule
     chmod +x /root/BotVPN/*
@@ -255,13 +255,22 @@ cat >/root/BotVPN/.vars.json <<EOF
   "USER_ID": "$adminid",
   "NAMA_STORE": "$namastore",
   "GROUP_ID": "$groupid",
-  "PORT": "6969",
+  "PORT": "3300",
   "DATA_QRIS": "$dataqris",
   "MERCHANT_ID": "$merchantid",
   "API_KEY": "$apikey",
   "RAJASERVER_API_KEY": "$rajasrvkey",
   "ORKUT_USERNAME": "$orkutuser",
-  "ORKUT_TOKEN": "$orkuttoken"
+  "ORKUT_TOKEN": "$orkuttoken",
+  "WEBHOOK_URL": "",
+  "FAYU_API_ID": "",
+  "FAYU_API_KEY": "",
+  "HIDEPULSA_BASE_URL": "https://app.hidepulsa.com",
+  "HIDEPULSA_API_KEY": "",
+  "HIDEPULSA_PASSWORD": "",
+  "XL_CIRCLE_WEBHOOK_SECRET": "",
+  "KHFY_API_KEY": "",
+  "KHFY_RESELLER_ID": ""
 }
 EOF
 
