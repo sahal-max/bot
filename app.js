@@ -11616,9 +11616,11 @@ bot.action('menu_akrab', async (ctx) => {
 
   await ctx.editMessageText(
     '🤝 <b>Akrab & Circle</b>\n\n' +
-    '💳 <b>Saldo Akrab:</b> <code>Rp ' + Number(saldoAkrab || 0).toLocaleString('id-ID') + '</code>\n\n' +
-    'Reseller ID: <code>' + (KHFY_RESELLER_ID || '-') + '</code>\n' +
-    'Portal: ' + (KHFY_PORTAL || '-'),
+    '💳 <b>Saldo Akrab:</b> <code>Rp ' + Number(saldoAkrab || 0).toLocaleString('id-ID') + '</code>' +
+    (isAdminUser
+      ? '\n\nReseller ID: <code>' + (KHFY_RESELLER_ID || '-') + '</code>\n' +
+        'Portal: ' + (KHFY_PORTAL || '-')
+      : ''),
     { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } }
   );
 });
