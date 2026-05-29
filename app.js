@@ -11010,8 +11010,7 @@ bot.action('menu_ppob', async (ctx) => {
             { text: '💰 Top Up', callback_data: 'topup_akrab' },
           ],
           [
-            { text: '📋 Daftar Produk', callback_data: 'ppob_list_produk' },
-            { text: '🛒 Beli Produk', callback_data: 'ppob_pilih_kategori' },
+            { text: '🛒 Daftar & Beli Produk', callback_data: 'ppob_list_produk' },
           ],
           [
             { text: '📜 Riwayat', callback_data: 'ppob_riwayat' },
@@ -11287,13 +11286,12 @@ bot.action('menu_suntik', async (ctx) => {
   const keyboard = [
     [
       { text: '💰 Cek Saldo VPN', callback_data: 'smm_cek_saldo' },
-      { text: '📋 Daftar Layanan', callback_data: 'smm_list_layanan' },
+      { text: '🛒 Daftar & Pesan Layanan', callback_data: 'smm_list_layanan' },
     ],
     [
-      { text: '🛒 Pesan Layanan', callback_data: 'smm_list_layanan' },
       { text: '🔍 Cek Status', callback_data: 'smm_cek_status' },
+      { text: '🔄 Refill Pesanan', callback_data: 'smm_refill' },
     ],
-    [{ text: '🔄 Refill Pesanan', callback_data: 'smm_refill' }],
   ];
   if (isAdminUser) {
     keyboard.push([{ text: '📢 Markup Produk SMM', callback_data: 'smm_markup_menu' }]);
