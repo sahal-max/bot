@@ -11772,14 +11772,26 @@ bot.action(/^akrab_grup_(v1|v2|circle)$/, async (ctx) => {
     // Ambil data stok juga (paralel) agar penandaan KOSONG sinkron dengan menu Cek Stok
     let stokMap = {};
     try {
-      const stokResp = await akrabModule.cekStokAkrab(KHFY_ENDPOINT);
-      const stokItems = Array.isArray(stokResp) ? stokResp : (stokResp && Array.isArray(stokResp.data)) ? stokResp.data : [];
-      stokItems.forEach((it) => {
+      const [stokV1Resp, stokV2Resp] = await Promise.all([
+        akrabModule.cekStokAkrab(KHFY_ENDPOINT).catch(() => null),
+        akrabModule.cekStokAkrabV2(KHFY_ENDPOINT).catch(() => null),
+      ]);
+      // V1: array of {type, sisa_slot}
+      const stokV1Items = Array.isArray(stokV1Resp)
+        ? stokV1Resp
+        : (stokV1Resp && Array.isArray(stokV1Resp.data)) ? stokV1Resp.data : [];
+      stokV1Items.forEach((it) => {
         const tipe = String(it.type || it.kode || '').toUpperCase();
-        if (tipe) {
-          stokMap[tipe] = Number(it.sisa_slot ?? it.stok ?? it.stock ?? 0);
-        }
+        if (tipe) stokMap[tipe] = Number(it.sisa_slot ?? it.stok ?? it.stock ?? 0);
       });
+      // V2: parse string message
+      if (stokV2Resp && stokV2Resp.message) {
+        const stokV2Items = akrabModule.parseStokV2Message(stokV2Resp.message);
+        stokV2Items.forEach((it) => {
+          const tipe = String(it.type || '').toUpperCase();
+          if (tipe) stokMap[tipe] = Number(it.sisa_slot || 0);
+        });
+      }
     } catch (_) { /* stok endpoint optional */ }
 
     const filtered = (products || []).filter((p) => getAkrabGroup(p.kode_provider) === grup);
@@ -12000,32 +12012,58 @@ bot.action('akrab_cek_status', async (ctx) => {
 bot.action('akrab_cek_stock', async (ctx) => {
   await ctx.answerCbQuery('Mengecek stok...');
   try {
-    const stok = await akrabModule.cekStokAkrab(KHFY_ENDPOINT);
+    // Fetch stok V1 (XLA*) dan V2 (XDA*) paralel
+    const [stokV1Resp, stokV2Resp] = await Promise.all([
+      akrabModule.cekStokAkrab(KHFY_ENDPOINT).catch(() => null),
+      akrabModule.cekStokAkrabV2(KHFY_ENDPOINT).catch(() => null),
+    ]);
 
-    // Ambil array data dari berbagai kemungkinan format response
-    const items = Array.isArray(stok)
-      ? stok
-      : (stok && Array.isArray(stok.data))
-        ? stok.data
+    // Parse data V1
+    const itemsV1 = Array.isArray(stokV1Resp)
+      ? stokV1Resp
+      : (stokV1Resp && Array.isArray(stokV1Resp.data))
+        ? stokV1Resp.data
         : [];
 
-    let body;
-    if (items.length) {
-      body = items.map((it) => {
-        const nama = it.nama || it.name || it.type || '-';
-        const tipe = it.type || it.kode || '';
-        const slot = Number(it.sisa_slot ?? it.stok ?? it.stock ?? 0);
-        const status = slot > 0 ? '[OK]' : '[KOSONG]';
-        const tipeText = tipe ? ' <code>' + tipe + '</code>' : '';
-        return status + ' <b>' + nama + '</b>' + tipeText + ' - sisa slot: <b>' + slot + '</b>';
-      }).join('\n');
-    } else {
-      // Fallback jika format tak dikenali
-      body = '<pre>' + JSON.stringify(stok, null, 2).slice(0, 3000) + '</pre>';
+    // Parse data V2 (format string multi-line)
+    let itemsV2 = [];
+    if (stokV2Resp && stokV2Resp.message) {
+      itemsV2 = akrabModule.parseStokV2Message(stokV2Resp.message);
+    } else if (stokV2Resp && Array.isArray(stokV2Resp.data)) {
+      itemsV2 = stokV2Resp.data;
     }
 
+    const formatItem = (it) => {
+      const nama = it.nama || it.name || it.type || '-';
+      const tipe = it.type || it.kode || '';
+      const slot = Number(it.sisa_slot ?? it.stok ?? it.stock ?? 0);
+      const status = slot > 0 ? '[OK]' : '[KOSONG]';
+      const tipeText = tipe ? ' <code>' + tipe + '</code>' : '';
+      return status + ' <b>' + nama + '</b>' + tipeText + ' - sisa slot: <b>' + slot + '</b>';
+    };
+
+    let body = '';
+
+    if (itemsV1.length) {
+      body += '<b>AKRAB V1 (XLA)</b>\n' + itemsV1.map(formatItem).join('\n');
+    } else {
+      body += '<b>AKRAB V1 (XLA)</b>\nData stok tidak tersedia.';
+    }
+
+    body += '\n\n';
+
+    if (itemsV2.length) {
+      body += '<b>AKRAB V2 (XDA)</b>\n' + itemsV2.map(formatItem).join('\n');
+    } else {
+      body += '<b>AKRAB V2 (XDA)</b>\nData stok tidak tersedia.';
+    }
+
+    body += '\n\n<b>CIRCLE</b>\n' +
+      '<i>Provider khfy-store tidak menyediakan endpoint stok terpisah untuk Circle. ' +
+      'Status stok ditandai per produk di menu list (lihat tanda [KOSONG] saat memilih produk).</i>';
+
     await ctx.editMessageText(
-      '<blockquote>STOK AKRAB XL/AXIS\n\n' + body + '\n\n[OK] = tersedia, [KOSONG] = habis</blockquote>',
+      '<blockquote expandable>STOK AKRAB & CIRCLE\n\n' + body + '\n\n[OK] = tersedia, [KOSONG] = habis</blockquote>',
       {
         parse_mode: 'HTML',
         reply_markup: { inline_keyboard: [[{ text: 'Kembali', callback_data: 'menu_akrab' }]] },

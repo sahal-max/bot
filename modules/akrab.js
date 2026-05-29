@@ -39,10 +39,28 @@ async function cekStokAkrab(BASE_URL) {
   return resp.data;
 }
 
+async function cekStokAkrabV2(BASE_URL) {
+  // Endpoint khusus XDA (Akrab V2). Format: { status, message: "XDA76 | 93 unit\nXDA31 | 216 unit\n..." }
+  const resp = await axios.get(`${BASE_URL}/api_v3/cek_stock_akrab_v2`);
+  return resp.data;
+}
+
+// Parse string format "XDA76 | 93 unit\nXDA31 | 216 unit" → [{type:"XDA76", sisa_slot:93}, ...]
+function parseStokV2Message(msg) {
+  if (!msg || typeof msg !== 'string') return [];
+  return msg.split('\n').map((line) => {
+    const m = line.match(/^\s*([A-Z0-9]+)\s*\|\s*(\d+)\s*unit/i);
+    if (!m) return null;
+    return { type: m[1].toUpperCase(), nama: m[1], sisa_slot: Number(m[2]) };
+  }).filter(Boolean);
+}
+
 module.exports = {
   generateUUID,
   getProducts,
   createTransaction,
   getTransactionStatus,
   cekStokAkrab,
+  cekStokAkrabV2,
+  parseStokV2Message,
 };
