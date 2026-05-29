@@ -15480,7 +15480,7 @@ bot.action('deleteserver', async (ctx) => {
       const keyboard = servers.map(server => {
         return [{ text: server.nama_server, callback_data: `confirm_delete_server_${server.id}` }];
       });
-      keyboard.push([{ text: ' Kembali ke Menu Utama', callback_data: 'kembali_ke_menu' }]);
+      keyboard.push([{ text: ' Kembali ke Menu Utama', callback_data: 'send_main_menu' }]);
 
       ctx.reply(' *Pilih server yang ingin dihapus:*', {
         reply_markup: {
@@ -15505,13 +15505,6 @@ const getUsernameById = async (userId) => {
     throw new Error(' *PERHATIAN! Terjadi kesalahan saat mengambil username dari Telegram.*');
   }
 };
-/////////////
-bot.action('tambah_saldo', async (ctx) => {
-  await ctx.answerCbQuery();
-  const adminId = ctx.from.id;
-  userState[adminId] = { step: 'addsaldo_userid' };
-  await ctx.reply(' Masukkan ID Telegram user yang ingin ditambahkan saldo:');
-});
 //////
 bot.action(/next_users_(\d+)/, async (ctx) => {
   const currentPage = parseInt(ctx.match[1]);
