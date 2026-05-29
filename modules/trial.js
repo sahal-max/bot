@@ -7,14 +7,14 @@ async function trialssh(username, password, exp, iplimit, serverId, telegramUser
 
   // Validasi username
   if (/\s/.test(username) || /[^a-zA-Z0-9]/.test(username)) {
-    return '❌ Username tidak valid. Mohon gunakan hanya huruf dan angka tanpa spasi.';
+    return ' Username tidak valid. Mohon gunakan hanya huruf dan angka tanpa spasi.';
   }
 
   return new Promise((resolve) => {
     db.get('SELECT * FROM Server WHERE id = ?', [serverId], (err, server) => {
       if (err || !server) {
-        console.error('❌ Error fetching server:', err?.message || 'server null');
-        return resolve('❌ Server tidak ditemukan. Silakan coba lagi.');
+        console.error(' Error fetching server:', err?.message || 'server null');
+        return resolve(' Server tidak ditemukan. Silakan coba lagi.');
       }
 
       const domain = server.domain;
@@ -38,15 +38,15 @@ async function trialssh(username, password, exp, iplimit, serverId, telegramUser
         try {
           d = JSON.parse(stdout);
         } catch (e) {
-          console.error('❌ Gagal parsing JSON:', e.message);
-          console.error('🪵 Output:', stdout);
-          return resolve('❌ Format respon dari server tidak valid.');
+          console.error(' Gagal parsing JSON:', e.message);
+          console.error(' Output:', stdout);
+          return resolve(' Format respon dari server tidak valid.');
         }
 
         if (d?.meta?.code !== 200 || !d.data) {
-          console.error('❌ Respons error:', d);
+          console.error(' Respons error:', d);
           const errMsg = d?.message || d?.meta?.message || JSON.stringify(d, null, 2);
-          return resolve(`❌ Respons error:\n${errMsg}`);
+          return resolve(` Respons error:\n${errMsg}`);
         }
 
         const s = d.data;
@@ -107,14 +107,14 @@ async function trialudphttp(username, password, exp, iplimit, serverId, telegram
   console.log(`Creating UDP HTTP Custom trial for ${username} with expiry ${exp} days, IP limit ${iplimit}, and password ${password}`);
 
   if (/\s/.test(username) || /[^a-zA-Z0-9]/.test(username)) {
-    return '❌ Username tidak valid. Mohon gunakan hanya huruf dan angka tanpa spasi.';
+    return ' Username tidak valid. Mohon gunakan hanya huruf dan angka tanpa spasi.';
   }
 
   return new Promise((resolve) => {
     db.get('SELECT * FROM Server WHERE id = ?', [serverId], (err, server) => {
       if (err || !server) {
-        console.error('❌ Error fetching server:', err?.message || 'server null');
-        return resolve('❌ Server tidak ditemukan. Silakan coba lagi.');
+        console.error(' Error fetching server:', err?.message || 'server null');
+        return resolve(' Server tidak ditemukan. Silakan coba lagi.');
       }
 
       const domain = server.domain;
@@ -135,15 +135,15 @@ async function trialudphttp(username, password, exp, iplimit, serverId, telegram
         try {
           d = JSON.parse(stdout);
         } catch (e) {
-          console.error('❌ Gagal parsing JSON:', e.message);
-          console.error('🪵 Output:', stdout);
-          return resolve('❌ Format respon dari server tidak valid.');
+          console.error(' Gagal parsing JSON:', e.message);
+          console.error(' Output:', stdout);
+          return resolve(' Format respon dari server tidak valid.');
         }
 
         if (d?.meta?.code !== 200 || !d.data) {
-          console.error('❌ Respons error:', d);
+          console.error(' Respons error:', d);
           const errMsg = d?.message || d?.meta?.message || JSON.stringify(d, null, 2);
-          return resolve(`❌ Respons error:\n${errMsg}`);
+          return resolve(` Respons error:\n${errMsg}`);
         }
 
         const s = d.data;
@@ -174,14 +174,14 @@ async function trialvmess(username, exp, quota, limitip, serverId, telegramUserI
 
   // Validasi username
   if (/\s/.test(username) || /[^a-zA-Z0-9]/.test(username)) {
-    return '❌ Username tidak valid. Mohon gunakan hanya huruf dan angka tanpa spasi.';
+    return ' Username tidak valid. Mohon gunakan hanya huruf dan angka tanpa spasi.';
   }
 
   return new Promise((resolve) => {
     db.get('SELECT * FROM Server WHERE id = ?', [serverId], (err, server) => {
       if (err || !server) {
-        console.error('❌ Error fetching server:', err?.message || 'server null');
-        return resolve('❌ Server tidak ditemukan. Silakan coba lagi.');
+        console.error(' Error fetching server:', err?.message || 'server null');
+        return resolve(' Server tidak ditemukan. Silakan coba lagi.');
       }
 
       const domain = server.domain;
@@ -205,15 +205,15 @@ async function trialvmess(username, exp, quota, limitip, serverId, telegramUserI
         try {
           d = JSON.parse(stdout);
         } catch (e) {
-          console.error('❌ Gagal parsing JSON:', e.message);
-          console.error('🪵 Output:', stdout);
-          return resolve('❌ Format respon dari server tidak valid.');
+          console.error(' Gagal parsing JSON:', e.message);
+          console.error(' Output:', stdout);
+          return resolve(' Format respon dari server tidak valid.');
         }
 
         if (d?.meta?.code !== 200 || !d.data) {
-          console.error('❌ Respons error:', d);
+          console.error(' Respons error:', d);
           const errMsg = d?.message || d?.meta?.message || JSON.stringify(d, null, 2);
-          return resolve(`❌ Respons error:\n${errMsg}`);
+          return resolve(` Respons error:\n${errMsg}`);
         }
 
         const s = d.data;
@@ -282,14 +282,14 @@ async function trialvless(username, exp, quota, limitip, serverId, telegramUserI
 
   // Validasi username
   if (/\s/.test(username) || /[^a-zA-Z0-9]/.test(username)) {
-    return '❌ Username tidak valid. Mohon gunakan hanya huruf dan angka tanpa spasi.';
+    return ' Username tidak valid. Mohon gunakan hanya huruf dan angka tanpa spasi.';
   }
 
   return new Promise((resolve) => {
     db.get('SELECT * FROM Server WHERE id = ?', [serverId], (err, server) => {
       if (err || !server) {
-        console.error('❌ Error fetching server:', err?.message || 'server null');
-        return resolve('❌ Server tidak ditemukan. Silakan coba lagi.');
+        console.error(' Error fetching server:', err?.message || 'server null');
+        return resolve(' Server tidak ditemukan. Silakan coba lagi.');
       }
 
       const domain = server.domain;
@@ -313,15 +313,15 @@ async function trialvless(username, exp, quota, limitip, serverId, telegramUserI
         try {
           d = JSON.parse(stdout);
         } catch (e) {
-          console.error('❌ Gagal parsing JSON:', e.message);
-          console.error('🪵 Output:', stdout);
-          return resolve('❌ Format respon dari server tidak valid.');
+          console.error(' Gagal parsing JSON:', e.message);
+          console.error(' Output:', stdout);
+          return resolve(' Format respon dari server tidak valid.');
         }
 
         if (d?.meta?.code !== 200 || !d.data) {
-          console.error('❌ Respons error:', d);
+          console.error(' Respons error:', d);
           const errMsg = d?.message || d?.meta?.message || JSON.stringify(d, null, 2);
-          return resolve(`❌ Respons error:\n${errMsg}`);
+          return resolve(` Respons error:\n${errMsg}`);
         }
 
         const s = d.data;
@@ -396,14 +396,14 @@ async function trialtrojan(username, exp, quota, limitip, serverId, telegramUser
 
   // Validasi username
   if (/\s/.test(username) || /[^a-zA-Z0-9]/.test(username)) {
-    return '❌ Username tidak valid. Mohon gunakan hanya huruf dan angka tanpa spasi.';
+    return ' Username tidak valid. Mohon gunakan hanya huruf dan angka tanpa spasi.';
   }
 
   return new Promise((resolve) => {
     db.get('SELECT * FROM Server WHERE id = ?', [serverId], (err, server) => {
       if (err || !server) {
-        console.error('❌ Error fetching server:', err?.message || 'server null');
-        return resolve('❌ Server tidak ditemukan. Silakan coba lagi.');
+        console.error(' Error fetching server:', err?.message || 'server null');
+        return resolve(' Server tidak ditemukan. Silakan coba lagi.');
       }
 
       const domain = server.domain;
@@ -427,15 +427,15 @@ async function trialtrojan(username, exp, quota, limitip, serverId, telegramUser
         try {
           d = JSON.parse(stdout);
         } catch (e) {
-          console.error('❌ Gagal parsing JSON:', e.message);
-          console.error('🪵 Output:', stdout);
-          return resolve('❌ Format respon dari server tidak valid.');
+          console.error(' Gagal parsing JSON:', e.message);
+          console.error(' Output:', stdout);
+          return resolve(' Format respon dari server tidak valid.');
         }
 
         if (d?.meta?.code !== 200 || !d.data) {
-          console.error('❌ Respons error:', d);
+          console.error(' Respons error:', d);
           const errMsg = d?.message || d?.meta?.message || JSON.stringify(d, null, 2);
-          return resolve(`❌ Respons error:\n${errMsg}`);
+          return resolve(` Respons error:\n${errMsg}`);
         }
 
         const s = d.data;
@@ -507,7 +507,7 @@ async function trialshadowsocks(username, exp, quota, limitip, serverId) {
   
   // Validasi username
   if (/\s/.test(username) || /[^a-zA-Z0-9]/.test(username)) {
-    return '❌ Username tidak valid. Mohon gunakan hanya huruf dan angka tanpa spasi.';
+    return ' Username tidak valid. Mohon gunakan hanya huruf dan angka tanpa spasi.';
   }
 
   // Ambil domain dari database
@@ -515,10 +515,10 @@ async function trialshadowsocks(username, exp, quota, limitip, serverId) {
     db.get('SELECT * FROM Server WHERE id = ?', [serverId], (err, server) => {
       if (err) {
         console.error('Error fetching server:', err.message);
-        return resolve('❌ Server tidak ditemukan. Silakan coba lagi.');
+        return resolve(' Server tidak ditemukan. Silakan coba lagi.');
       }
 
-      if (!server) return resolve('❌ Server tidak ditemukan. Silakan coba lagi.');
+      if (!server) return resolve(' Server tidak ditemukan. Silakan coba lagi.');
 
       const domain = server.domain;
       const auth = server.auth;
@@ -529,9 +529,9 @@ async function trialshadowsocks(username, exp, quota, limitip, serverId) {
           if (response.data.status === "success") {
             const shadowsocksData = response.data.data;
             const msg = `
-🌟 *AKUN SHADOWSOCKS PREMIUM* 🌟
+ *AKUN SHADOWSOCKS PREMIUM* 
 
-🔹 *Informasi Akun*
+ *Informasi Akun*
 ┌─────────────────────
 │ *Username* : \`${shadowsocksData.username}\`
 │ *Domain*   : \`${shadowsocksData.domain}\`
@@ -544,15 +544,15 @@ async function trialshadowsocks(username, exp, quota, limitip, serverId) {
 │ *Path*     : \`/shadowsocks\`
 │ *Path GRPC*: \`shadowsocks-grpc\`
 └─────────────────────
-🔐 *URL SHADOWSOCKS TLS*
+ *URL SHADOWSOCKS TLS*
 \`\`\`
 ${shadowsocksData.ss_link_ws}
 \`\`\`
-🔒 *URL SHADOWSOCKS GRPC*
+ *URL SHADOWSOCKS GRPC*
 \`\`\`
 ${shadowsocksData.ss_link_grpc}
 \`\`\`
-🔒 *PUBKEY*
+ *PUBKEY*
 \`\`\`
 ${shadowsocksData.pubkey}
 \`\`\`
@@ -562,18 +562,18 @@ ${shadowsocksData.pubkey}
 │ IP Limit: \`${shadowsocksData.ip_limit === '0' ? 'Unlimited' : shadowsocksData.ip_limit} IP\`
 └─────────────────────
 Save Account Link: [Save Account](https://${shadowsocksData.domain}:81/shadowsocks-${shadowsocksData.username}.txt)
-✨ Selamat menggunakan layanan kami! ✨
+ Selamat menggunakan layanan kami! 
 `;
               console.log('Shadowsocks account created successfully');
               return resolve(msg);
             } else {
               console.log('Error creating Shadowsocks account');
-              return resolve(`❌ Terjadi kesalahan: ${response.data.message}`);
+              return resolve(` Terjadi kesalahan: ${response.data.message}`);
             }
           })
         .catch(error => {
           console.error('Error saat membuat Shadowsocks:', error);
-          return resolve('❌ Terjadi kesalahan saat membuat Shadowsocks. Silakan coba lagi nanti.');
+          return resolve(' Terjadi kesalahan saat membuat Shadowsocks. Silakan coba lagi nanti.');
         });
     });
   });

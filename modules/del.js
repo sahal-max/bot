@@ -8,14 +8,14 @@ async function delssh(username, password, exp, iplimit, serverId) {
 
   // Validasi username
   if (/\s/.test(username) || /[^a-zA-Z0-9]/.test(username)) {
-    return '❌ Username tidak valid. Mohon gunakan hanya huruf dan angka tanpa spasi.';
+    return ' Username tidak valid. Mohon gunakan hanya huruf dan angka tanpa spasi.';
   }
 
   return new Promise((resolve) => {
     db.get('SELECT * FROM Server WHERE id = ?', [serverId], (err, server) => {
       if (err || !server) {
-        console.error('❌ Error fetching server:', err?.message || 'server null');
-        return resolve('❌ Server tidak ditemukan. Silakan coba lagi.');
+        console.error(' Error fetching server:', err?.message || 'server null');
+        return resolve(' Server tidak ditemukan. Silakan coba lagi.');
       }
 
       const domain = server.domain;
@@ -32,23 +32,23 @@ async function delssh(username, password, exp, iplimit, serverId) {
         try {
           d = JSON.parse(stdout);
         } catch (e) {
-          console.error('❌ Gagal parsing JSON:', e.message);
-          console.error('🪵 Output:', stdout);
-          return resolve('❌ Format respon dari server tidak valid.');
+          console.error(' Gagal parsing JSON:', e.message);
+          console.error(' Output:', stdout);
+          return resolve(' Format respon dari server tidak valid.');
         }
 
         if (d?.meta?.code !== 200 || !d.data) {
-          console.error('❌ Respons error:', d);
+          console.error(' Respons error:', d);
           const errMsg = d?.message || d?.meta?.message || JSON.stringify(d, null, 2);
-          return resolve(`❌ Respons error:\n${errMsg}`);
+          return resolve(` Respons error:\n${errMsg}`);
         }
 
         const s = d.data;
-        const msg = `✅ *Delete SSH Account Success!*
+        const msg = ` *Delete SSH Account Success!*
 
-🔄 *Akun berhasil dihapus*
+ *Akun berhasil dihapus*
 ────────────────────────────
-👤 *Username*     : \`${s.username}\`
+ *Username*     : \`${s.username}\`
 ────────────────────────────
 
 *© Telegram Bots - 2025*`;
@@ -63,14 +63,14 @@ async function deludphttp(username, password, exp, iplimit, serverId) {
   console.log(`Delete UDP HTTP account for ${username} with expiry ${exp} days, IP limit ${iplimit}, and password ${password}`);
 
   if (/\s/.test(username) || /[^a-zA-Z0-9]/.test(username)) {
-    return '❌ Username tidak valid. Mohon gunakan hanya huruf dan angka tanpa spasi.';
+    return ' Username tidak valid. Mohon gunakan hanya huruf dan angka tanpa spasi.';
   }
 
   return new Promise((resolve) => {
     db.get('SELECT * FROM Server WHERE id = ?', [serverId], (err, server) => {
       if (err || !server) {
-        console.error('❌ Error fetching server:', err?.message || 'server null');
-        return resolve('❌ Server tidak ditemukan. Silakan coba lagi.');
+        console.error(' Error fetching server:', err?.message || 'server null');
+        return resolve(' Server tidak ditemukan. Silakan coba lagi.');
       }
 
       const domain = server.domain;
@@ -87,19 +87,19 @@ async function deludphttp(username, password, exp, iplimit, serverId) {
         try {
           d = JSON.parse(stdout);
         } catch (e) {
-          console.error('❌ Gagal parsing JSON:', e.message);
-          console.error('🪵 Output:', stdout);
-          return resolve('❌ Format respon dari server tidak valid.');
+          console.error(' Gagal parsing JSON:', e.message);
+          console.error(' Output:', stdout);
+          return resolve(' Format respon dari server tidak valid.');
         }
 
         if (d?.meta?.code !== 200 || !d.data) {
-          console.error('❌ Respons error:', d);
+          console.error(' Respons error:', d);
           const errMsg = d?.message || d?.meta?.message || JSON.stringify(d, null, 2);
-          return resolve(`❌ Respons error:\n${errMsg}`);
+          return resolve(` Respons error:\n${errMsg}`);
         }
 
         const s = d.data;
-        const msg = `✅ *Delete UDP HTTP Account Success!*\n\n*Username* : \`${s.username}\``;
+        const msg = ` *Delete UDP HTTP Account Success!*\n\n*Username* : \`${s.username}\``;
         return resolve(msg);
       });
     });
@@ -110,14 +110,14 @@ async function delvmess(username, exp, quota, limitip, serverId) {
 
   // Validasi username
   if (/\s/.test(username) || /[^a-zA-Z0-9]/.test(username)) {
-    return '❌ Username tidak valid. Mohon gunakan hanya huruf dan angka tanpa spasi.';
+    return ' Username tidak valid. Mohon gunakan hanya huruf dan angka tanpa spasi.';
   }
 
   return new Promise((resolve) => {
     db.get('SELECT * FROM Server WHERE id = ?', [serverId], (err, server) => {
       if (err || !server) {
-        console.error('❌ Error fetching server:', err?.message || 'server null');
-        return resolve('❌ Server tidak ditemukan. Silakan coba lagi.');
+        console.error(' Error fetching server:', err?.message || 'server null');
+        return resolve(' Server tidak ditemukan. Silakan coba lagi.');
       }
 
       const domain = server.domain;
@@ -134,23 +134,23 @@ async function delvmess(username, exp, quota, limitip, serverId) {
         try {
           d = JSON.parse(stdout);
         } catch (e) {
-          console.error('❌ Gagal parsing JSON:', e.message);
-          console.error('🪵 Output:', stdout);
-          return resolve('❌ Format respon dari server tidak valid.');
+          console.error(' Gagal parsing JSON:', e.message);
+          console.error(' Output:', stdout);
+          return resolve(' Format respon dari server tidak valid.');
         }
 
         if (d?.meta?.code !== 200 || !d.data) {
-          console.error('❌ Respons error:', d);
+          console.error(' Respons error:', d);
           const errMsg = d?.message || d?.meta?.message || JSON.stringify(d, null, 2);
-          return resolve(`❌ Respons error:\n${errMsg}`);
+          return resolve(` Respons error:\n${errMsg}`);
         }
 
         const s = d.data;
-        const msg = `✅ *Delete VMess Account Success!*
+        const msg = ` *Delete VMess Account Success!*
 
-🔄 *Akun berhasil dihapus*
+ *Akun berhasil dihapus*
 ────────────────────────────
-👤 *Username*    : \`${s.username}\`
+ *Username*    : \`${s.username}\`
 ────────────────────────────
 
 *© Telegram Bots - 2025*`;
@@ -165,14 +165,14 @@ async function delvless(username, exp, quota, limitip, serverId) {
 
   // Validasi username
   if (/\s/.test(username) || /[^a-zA-Z0-9]/.test(username)) {
-    return '❌ Username tidak valid. Mohon gunakan hanya huruf dan angka tanpa spasi.';
+    return ' Username tidak valid. Mohon gunakan hanya huruf dan angka tanpa spasi.';
   }
 
   return new Promise((resolve) => {
     db.get('SELECT * FROM Server WHERE id = ?', [serverId], (err, server) => {
       if (err || !server) {
-        console.error('❌ Error fetching server:', err?.message || 'server null');
-        return resolve('❌ Server tidak ditemukan. Silakan coba lagi.');
+        console.error(' Error fetching server:', err?.message || 'server null');
+        return resolve(' Server tidak ditemukan. Silakan coba lagi.');
       }
 
       const domain = server.domain;
@@ -189,23 +189,23 @@ async function delvless(username, exp, quota, limitip, serverId) {
         try {
           d = JSON.parse(stdout);
         } catch (e) {
-          console.error('❌ Gagal parsing JSON:', e.message);
-          console.error('🪵 Output:', stdout);
-          return resolve('❌ Format respon dari server tidak valid.');
+          console.error(' Gagal parsing JSON:', e.message);
+          console.error(' Output:', stdout);
+          return resolve(' Format respon dari server tidak valid.');
         }
 
         if (d?.meta?.code !== 200 || !d.data) {
-          console.error('❌ Respons error:', d);
+          console.error(' Respons error:', d);
           const errMsg = d?.message || d?.meta?.message || JSON.stringify(d, null, 2);
-          return resolve(`❌ Respons error:\n${errMsg}`);
+          return resolve(` Respons error:\n${errMsg}`);
         }
 
         const s = d.data;
-        const msg = `✅ *Delete VLESS Account Success!*
+        const msg = ` *Delete VLESS Account Success!*
 
-🔄 *Akun berhasil dihapus*
+ *Akun berhasil dihapus*
 ────────────────────────────
-👤 *Username*    : \`${s.username}\`
+ *Username*    : \`${s.username}\`
 ────────────────────────────
 
 *© Telegram Bots - 2025*`;
@@ -220,14 +220,14 @@ async function deltrojan(username, exp, quota, limitip, serverId) {
 
   // Validasi username
   if (/\s/.test(username) || /[^a-zA-Z0-9]/.test(username)) {
-    return '❌ Username tidak valid. Mohon gunakan hanya huruf dan angka tanpa spasi.';
+    return ' Username tidak valid. Mohon gunakan hanya huruf dan angka tanpa spasi.';
   }
 
   return new Promise((resolve) => {
     db.get('SELECT * FROM Server WHERE id = ?', [serverId], (err, server) => {
       if (err || !server) {
-        console.error('❌ Error fetching server:', err?.message || 'server null');
-        return resolve('❌ Server tidak ditemukan. Silakan coba lagi.');
+        console.error(' Error fetching server:', err?.message || 'server null');
+        return resolve(' Server tidak ditemukan. Silakan coba lagi.');
       }
 
       const domain = server.domain;
@@ -244,23 +244,23 @@ async function deltrojan(username, exp, quota, limitip, serverId) {
         try {
           d = JSON.parse(stdout);
         } catch (e) {
-          console.error('❌ Gagal parsing JSON:', e.message);
-          console.error('🪵 Output:', stdout);
-          return resolve('❌ Format respon dari server tidak valid.');
+          console.error(' Gagal parsing JSON:', e.message);
+          console.error(' Output:', stdout);
+          return resolve(' Format respon dari server tidak valid.');
         }
 
         if (d?.meta?.code !== 200 || !d.data) {
-          console.error('❌ Respons error:', d);
+          console.error(' Respons error:', d);
           const errMsg = d?.message || d?.meta?.message || JSON.stringify(d, null, 2);
-          return resolve(`❌ Respons error:\n${errMsg}`);
+          return resolve(` Respons error:\n${errMsg}`);
         }
 
         const s = d.data;
-        const msg = `✅ *Delete TROJAN Account Success!*
+        const msg = ` *Delete TROJAN Account Success!*
 
-🔄 *Akun berhasil dihapus*
+ *Akun berhasil dihapus*
 ────────────────────────────
-👤 *Username*    : \`${s.username}\`
+ *Username*    : \`${s.username}\`
 ────────────────────────────
 
 *© Telegram Bots - 2025*`;
@@ -275,14 +275,14 @@ async function delzivpn(username, password, exp, iplimit, serverId) {
   console.log(`Delete ZIVPN account for ${username} with expiry ${exp} days, IP limit ${iplimit}, and password ${password}`);
 
   if (/\s/.test(username) || /[^a-zA-Z0-9]/.test(username)) {
-    return '❌ Username tidak valid. Mohon gunakan hanya huruf dan angka tanpa spasi.';
+    return ' Username tidak valid. Mohon gunakan hanya huruf dan angka tanpa spasi.';
   }
 
   return new Promise((resolve) => {
     db.get('SELECT * FROM Server WHERE id = ?', [serverId], (err, server) => {
       if (err || !server) {
-        console.error('❌ Error fetching server:', err?.message || 'server null');
-        return resolve('❌ Server tidak ditemukan. Silakan coba lagi.');
+        console.error(' Error fetching server:', err?.message || 'server null');
+        return resolve(' Server tidak ditemukan. Silakan coba lagi.');
       }
 
       const domain = server.domain;
@@ -299,19 +299,19 @@ async function delzivpn(username, password, exp, iplimit, serverId) {
         try {
           d = JSON.parse(stdout);
         } catch (e) {
-          console.error('❌ Gagal parsing JSON:', e.message);
-          console.error('🪵 Output:', stdout);
-          return resolve('❌ Format respon dari server tidak valid.');
+          console.error(' Gagal parsing JSON:', e.message);
+          console.error(' Output:', stdout);
+          return resolve(' Format respon dari server tidak valid.');
         }
 
         if (d?.meta?.code !== 200 || !d.data) {
-          console.error('❌ Respons error:', d);
+          console.error(' Respons error:', d);
           const errMsg = d?.message || d?.meta?.message || JSON.stringify(d, null, 2);
-          return resolve(`❌ Respons error:\n${errMsg}`);
+          return resolve(` Respons error:\n${errMsg}`);
         }
 
         const s = d.data;
-        const msg = `✅ *Delete ZIVPN Account Success!*\n\n*Username* : \`${s.username}\``;
+        const msg = ` *Delete ZIVPN Account Success!*\n\n*Username* : \`${s.username}\``;
         return resolve(msg);
       });
     });

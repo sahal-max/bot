@@ -8,14 +8,14 @@ async function lockssh(username, password, exp, iplimit, serverId) {
 
   // Validasi username
   if (/\s/.test(username) || /[^a-zA-Z0-9]/.test(username)) {
-    return '❌ Username tidak valid. Mohon gunakan hanya huruf dan angka tanpa spasi.';
+    return ' Username tidak valid. Mohon gunakan hanya huruf dan angka tanpa spasi.';
   }
 
   return new Promise((resolve) => {
     db.get('SELECT * FROM Server WHERE id = ?', [serverId], (err, server) => {
       if (err || !server) {
-        console.error('❌ Error fetching server:', err?.message || 'server null');
-        return resolve('❌ Server tidak ditemukan. Silakan coba lagi.');
+        console.error(' Error fetching server:', err?.message || 'server null');
+        return resolve(' Server tidak ditemukan. Silakan coba lagi.');
       }
 
       const domain = server.domain;
@@ -32,26 +32,26 @@ async function lockssh(username, password, exp, iplimit, serverId) {
         try {
           d = JSON.parse(stdout);
         } catch (e) {
-          console.error('❌ Gagal parsing JSON:', e.message);
-          console.error('🪵 Output:', stdout);
-          return resolve('❌ Format respon dari server tidak valid.');
+          console.error(' Gagal parsing JSON:', e.message);
+          console.error(' Output:', stdout);
+          return resolve(' Format respon dari server tidak valid.');
         }
 
         if (d?.meta?.code !== 200 || !d.data) {
-          console.error('❌ Respons error:', d);
+          console.error(' Respons error:', d);
           const errMsg = d?.message || d?.meta?.message || JSON.stringify(d, null, 2);
-          return resolve(`❌ Respons error:\n${errMsg}`);
+          return resolve(` Respons error:\n${errMsg}`);
         }
 
         const s = d.data;
-        const msg = `✅ *Lock SSH Account Success!*
+        const msg = ` *Lock SSH Account Success!*
 
-🔄 *Akun berhasil dikunci*
+ *Akun berhasil dikunci*
 ────────────────────────────
-👤 *Username*     : \`${s.username}\`
+ *Username*     : \`${s.username}\`
 ────────────────────────────
 
-✨ Terima kasih telah memperpanjang layanan kami!
+ Terima kasih telah memperpanjang layanan kami!
 *© Telegram Bots - 2025*`;
 
         return resolve(msg);
@@ -64,14 +64,14 @@ async function lockvmess(username, exp, quota, limitip, serverId) {
 
   // Validasi username
   if (/\s/.test(username) || /[^a-zA-Z0-9]/.test(username)) {
-    return '❌ Username tidak valid. Mohon gunakan hanya huruf dan angka tanpa spasi.';
+    return ' Username tidak valid. Mohon gunakan hanya huruf dan angka tanpa spasi.';
   }
 
   return new Promise((resolve) => {
     db.get('SELECT * FROM Server WHERE id = ?', [serverId], (err, server) => {
       if (err || !server) {
-        console.error('❌ Error fetching server:', err?.message || 'server null');
-        return resolve('❌ Server tidak ditemukan. Silakan coba lagi.');
+        console.error(' Error fetching server:', err?.message || 'server null');
+        return resolve(' Server tidak ditemukan. Silakan coba lagi.');
       }
 
       const domain = server.domain;
@@ -88,26 +88,26 @@ async function lockvmess(username, exp, quota, limitip, serverId) {
         try {
           d = JSON.parse(stdout);
         } catch (e) {
-          console.error('❌ Gagal parsing JSON:', e.message);
-          console.error('🪵 Output:', stdout);
-          return resolve('❌ Format respon dari server tidak valid.');
+          console.error(' Gagal parsing JSON:', e.message);
+          console.error(' Output:', stdout);
+          return resolve(' Format respon dari server tidak valid.');
         }
 
         if (d?.meta?.code !== 200 || !d.data) {
-          console.error('❌ Respons error:', d);
+          console.error(' Respons error:', d);
           const errMsg = d?.message || d?.meta?.message || JSON.stringify(d, null, 2);
-          return resolve(`❌ Respons error:\n${errMsg}`);
+          return resolve(` Respons error:\n${errMsg}`);
         }
 
         const s = d.data;
-        const msg = `✅ *Lock VMess Account Success!*
+        const msg = ` *Lock VMess Account Success!*
 
-🔄 *Akun berhasil dikunci*
+ *Akun berhasil dikunci*
 ────────────────────────────
-👤 *Username*    : \`${s.username}\`
+ *Username*    : \`${s.username}\`
 ────────────────────────────
 
-✨ Terima kasih telah memperpanjang layanan kami!
+ Terima kasih telah memperpanjang layanan kami!
 *© Telegram Bots - 2025*`;
 
         return resolve(msg);
@@ -120,14 +120,14 @@ async function lockvless(username, exp, quota, limitip, serverId) {
 
   // Validasi username
   if (/\s/.test(username) || /[^a-zA-Z0-9]/.test(username)) {
-    return '❌ Username tidak valid. Mohon gunakan hanya huruf dan angka tanpa spasi.';
+    return ' Username tidak valid. Mohon gunakan hanya huruf dan angka tanpa spasi.';
   }
 
   return new Promise((resolve) => {
     db.get('SELECT * FROM Server WHERE id = ?', [serverId], (err, server) => {
       if (err || !server) {
-        console.error('❌ Error fetching server:', err?.message || 'server null');
-        return resolve('❌ Server tidak ditemukan. Silakan coba lagi.');
+        console.error(' Error fetching server:', err?.message || 'server null');
+        return resolve(' Server tidak ditemukan. Silakan coba lagi.');
       }
 
       const domain = server.domain;
@@ -144,26 +144,26 @@ async function lockvless(username, exp, quota, limitip, serverId) {
         try {
           d = JSON.parse(stdout);
         } catch (e) {
-          console.error('❌ Gagal parsing JSON:', e.message);
-          console.error('🪵 Output:', stdout);
-          return resolve('❌ Format respon dari server tidak valid.');
+          console.error(' Gagal parsing JSON:', e.message);
+          console.error(' Output:', stdout);
+          return resolve(' Format respon dari server tidak valid.');
         }
 
         if (d?.meta?.code !== 200 || !d.data) {
-          console.error('❌ Respons error:', d);
+          console.error(' Respons error:', d);
           const errMsg = d?.message || d?.meta?.message || JSON.stringify(d, null, 2);
-          return resolve(`❌ Respons error:\n${errMsg}`);
+          return resolve(` Respons error:\n${errMsg}`);
         }
 
         const s = d.data;
-        const msg = `✅ *Lock VLESS Account Success!*
+        const msg = ` *Lock VLESS Account Success!*
 
-🔄 *Akun berhasil dikunci*
+ *Akun berhasil dikunci*
 ────────────────────────────
-👤 *Username*    : \`${s.username}\`
+ *Username*    : \`${s.username}\`
 ────────────────────────────
 
-✨ Terima kasih telah memperpanjang layanan kami!
+ Terima kasih telah memperpanjang layanan kami!
 *© Telegram Bots - 2025*`;
 
         return resolve(msg);
@@ -176,14 +176,14 @@ async function locktrojan(username, exp, quota, limitip, serverId) {
 
   // Validasi username
   if (/\s/.test(username) || /[^a-zA-Z0-9]/.test(username)) {
-    return '❌ Username tidak valid. Mohon gunakan hanya huruf dan angka tanpa spasi.';
+    return ' Username tidak valid. Mohon gunakan hanya huruf dan angka tanpa spasi.';
   }
 
   return new Promise((resolve) => {
     db.get('SELECT * FROM Server WHERE id = ?', [serverId], (err, server) => {
       if (err || !server) {
-        console.error('❌ Error fetching server:', err?.message || 'server null');
-        return resolve('❌ Server tidak ditemukan. Silakan coba lagi.');
+        console.error(' Error fetching server:', err?.message || 'server null');
+        return resolve(' Server tidak ditemukan. Silakan coba lagi.');
       }
 
       const domain = server.domain;
@@ -200,26 +200,26 @@ async function locktrojan(username, exp, quota, limitip, serverId) {
         try {
           d = JSON.parse(stdout);
         } catch (e) {
-          console.error('❌ Gagal parsing JSON:', e.message);
-          console.error('🪵 Output:', stdout);
-          return resolve('❌ Format respon dari server tidak valid.');
+          console.error(' Gagal parsing JSON:', e.message);
+          console.error(' Output:', stdout);
+          return resolve(' Format respon dari server tidak valid.');
         }
 
         if (d?.meta?.code !== 200 || !d.data) {
-          console.error('❌ Respons error:', d);
+          console.error(' Respons error:', d);
           const errMsg = d?.message || d?.meta?.message || JSON.stringify(d, null, 2);
-          return resolve(`❌ Respons error:\n${errMsg}`);
+          return resolve(` Respons error:\n${errMsg}`);
         }
 
         const s = d.data;
-        const msg = `✅ *Lock TROJAN Account Success!*
+        const msg = ` *Lock TROJAN Account Success!*
 
-🔄 *Akun berhasil dikunci*
+ *Akun berhasil dikunci*
 ────────────────────────────
-👤 *Username*    : \`${s.username}\`
+ *Username*    : \`${s.username}\`
 ────────────────────────────
 
-✨ Terima kasih telah memperpanjang layanan kami!
+ Terima kasih telah memperpanjang layanan kami!
 *© Telegram Bots - 2025*`;
 
         return resolve(msg);
@@ -233,7 +233,7 @@ async function locktrojan(username, exp, quota, limitip, serverId) {
     
     // Validasi username
     if (/\s/.test(username) || /[^a-zA-Z0-9]/.test(username)) {
-      return '❌ Username tidak valid. Mohon gunakan hanya huruf dan angka tanpa spasi.';
+      return ' Username tidak valid. Mohon gunakan hanya huruf dan angka tanpa spasi.';
     }
   
     // Ambil domain dari database
@@ -241,10 +241,10 @@ async function locktrojan(username, exp, quota, limitip, serverId) {
       db.get('SELECT * FROM Server WHERE id = ?', [serverId], (err, server) => {
         if (err) {
           console.error('Error fetching server:', err.message);
-          return resolve('❌ Server tidak ditemukan. Silakan coba lagi.');
+          return resolve(' Server tidak ditemukan. Silakan coba lagi.');
         }
   
-        if (!server) return resolve('❌ Server tidak ditemukan. Silakan coba lagi.');
+        if (!server) return resolve(' Server tidak ditemukan. Silakan coba lagi.');
   
         const domain = server.domain;
         const auth = server.auth;
@@ -255,29 +255,29 @@ async function locktrojan(username, exp, quota, limitip, serverId) {
             if (response.data.status === "success") {
               const shadowsocksData = response.data.data;
               const msg = `
-  🌟 *RENEW SHADOWSOCKS PREMIUM* 🌟
+   *RENEW SHADOWSOCKS PREMIUM* 
   
-  🔹 *Informasi Akun*
+   *Informasi Akun*
   ┌─────────────────────────────
   │ Username: \`${username}\`
   │ Kadaluarsa: \`${vmessData.exp}\`
   │ Kuota: \`${vmessData.quota}\`
   │ Batas IP: \`${shadowsocksData.limitip} IP\`
   └─────────────────────────────
-  ✅ Akun ${username} berhasil diperbarui
-  ✨ Selamat menggunakan layanan kami! ✨
+   Akun ${username} berhasil diperbarui
+   Selamat menggunakan layanan kami! 
   `;
            
                 console.log('Shadowsocks account renewed successfully');
                 return resolve(msg);
               } else {
                 console.log('Error renewing Shadowsocks account');
-                return resolve(`❌ Terjadi kesalahan: ${response.data.message}`);
+                return resolve(` Terjadi kesalahan: ${response.data.message}`);
               }
             })
           .catch(error => {
             console.error('Error saat memperbarui Shadowsocks:', error);
-            return resolve('❌ Terjadi kesalahan saat memperbarui Shadowsocks. Silakan coba lagi nanti.');
+            return resolve(' Terjadi kesalahan saat memperbarui Shadowsocks. Silakan coba lagi nanti.');
           });
       });
     });

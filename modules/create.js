@@ -89,7 +89,7 @@ async function createssh(username, password, exp, iplimit, serverId, telegramUse
         const d = parseJsonFromCurlOutput(body);
         if (!d) {
           if (isHttp2xx(statusCode)) {
-            return resolve(`✅ Akun SSH berhasil dibuat\nUsername: \`${username}\`\nExpired: \`${days} hari\`\nIP Limit: \`${LIMIT_IP}\``);
+            return resolve(` Akun SSH berhasil dibuat\nUsername: \`${username}\`\nExpired: \`${days} hari\`\nIP Limit: \`${LIMIT_IP}\``);
           }
           if (errExec) console.error('Curl request gagal:', errExec.message);
           if (stderr) console.error('Curl stderr:', stderr);
@@ -192,7 +192,7 @@ async function createudphttp(username, password, exp, iplimit, serverId, telegra
         const d = parseJsonFromCurlOutput(body);
         if (!d) {
           if (isHttp2xx(statusCode)) {
-            return resolve(`✅ Akun UDP HTTP berhasil dibuat\nUsername: \`${username}\`\nExpired: \`${days} hari\`\nIP Limit: \`${LIMIT_IP}\``);
+            return resolve(` Akun UDP HTTP berhasil dibuat\nUsername: \`${username}\`\nExpired: \`${days} hari\`\nIP Limit: \`${LIMIT_IP}\``);
           }
           if (errExec) console.error('Curl request gagal:', errExec.message);
           if (stderr) console.error('Curl stderr:', stderr);
@@ -269,7 +269,7 @@ async function createvmess(username, exp, quota, limitip, serverId, telegramUser
         const d = parseJsonFromCurlOutput(body);
         if (!d) {
           if (isHttp2xx(statusCode)) {
-            return resolve(`✅ Akun VMESS berhasil dibuat\nUsername: \`${username}\`\nExpired: \`${days} hari\`\nQuota: \`${KUOTA} GB\`\nIP Limit: \`${LIMIT_IP}\``);
+            return resolve(` Akun VMESS berhasil dibuat\nUsername: \`${username}\`\nExpired: \`${days} hari\`\nQuota: \`${KUOTA} GB\`\nIP Limit: \`${LIMIT_IP}\``);
           }
           if (errExec) console.error('Curl request failed:', errExec.message);
           if (stderr) console.error('Curl stderr:', stderr);
@@ -408,7 +408,7 @@ async function createvless(username, exp, quota, limitip, serverId, telegramUser
         const d = parseJsonFromCurlOutput(body);
         if (!d) {
           if (isHttp2xx(statusCode)) {
-            return resolve(`✅ Akun VLESS berhasil dibuat\nUsername: \`${username}\`\nExpired: \`${days} hari\`\nQuota: \`${KUOTA} GB\`\nIP Limit: \`${LIMIT_IP}\``);
+            return resolve(` Akun VLESS berhasil dibuat\nUsername: \`${username}\`\nExpired: \`${days} hari\`\nQuota: \`${KUOTA} GB\`\nIP Limit: \`${LIMIT_IP}\``);
           }
           if (errExec) console.error('Curl request gagal:', errExec.message);
           if (stderr) console.error('Curl stderr:', stderr);
@@ -518,7 +518,7 @@ async function createtrojan(username, exp, quota, limitip, serverId, telegramUse
         const d = parseJsonFromCurlOutput(body);
         if (!d) {
           if (isHttp2xx(statusCode)) {
-            return resolve(`✅ Akun TROJAN berhasil dibuat\nUsername: \`${username}\`\nExpired: \`${days} hari\`\nQuota: \`${KUOTA} GB\`\nIP Limit: \`${LIMIT_IP}\``);
+            return resolve(` Akun TROJAN berhasil dibuat\nUsername: \`${username}\`\nExpired: \`${days} hari\`\nQuota: \`${KUOTA} GB\`\nIP Limit: \`${LIMIT_IP}\``);
           }
           if (errExec) console.error('Curl request gagal:', errExec.message);
           if (stderr) console.error('Curl stderr:', stderr);

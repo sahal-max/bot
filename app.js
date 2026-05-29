@@ -925,7 +925,7 @@ async function sendNonResellerCreateNotification(payload) {
   if (!NOTIF_BOT_TOKEN || !NOTIF_CHAT_ID) return;
   try {
     const text =
-      `🔔 NOTIFIKASI AKUN BARU (NON-RESELLER)\n\n` +
+      ` NOTIFIKASI AKUN BARU (NON-RESELLER)\n\n` +
       `Layanan: ${payload.service}\n` +
       `Server: ${payload.serverName || '-'}\n` +
       `Domain: ${payload.domain || '-'}\n` +
@@ -941,7 +941,7 @@ async function sendNonResellerCreateNotification(payload) {
       { chat_id: NOTIF_CHAT_ID, text }
     );
   } catch (err) {
-    logger.error('❌ Gagal kirim notif create non-reseller:', err.message);
+    logger.error(' Gagal kirim notif create non-reseller:', err.message);
   }
 }
 
@@ -972,7 +972,7 @@ async function sendGlobalCreateAccountNotification(payload) {
   if (!Number.isFinite(groupId) || groupId === 0) return;
 
   const text =
-    '*🔥AKUN BERHASIL DIBUAT !!*\n\n' +
+    '*AKUN BERHASIL DIBUAT !!*\n\n' +
     '```Informasi\n' +
     `ID TELE PEMBUAT : ${payload.creatorId || '-'}\n` +
     `USERNAME TELE   : ${payload.creatorUsername || '-'}\n` +
@@ -998,11 +998,11 @@ let BW_NOTIF_GROUP_ID_NUM = null;
 
 try {
   // Debug: log asli dari config
-  logger.info(`🔍 GROUP_ID dari .vars.json: "${GROUP_ID}" (type: ${typeof GROUP_ID})`);
+  logger.info(` GROUP_ID dari .vars.json: "${GROUP_ID}" (type: ${typeof GROUP_ID})`);
   
   // Konversi ke number dengan handle berbagai format
   if (GROUP_ID === undefined || GROUP_ID === null || GROUP_ID === "") {
-    logger.error('❌ GROUP_ID tidak ditemukan di config!');
+    logger.error(' GROUP_ID tidak ditemukan di config!');
   } else {
     // Handle string atau number
     let groupIdStr = String(GROUP_ID).trim();
@@ -1015,19 +1015,19 @@ try {
     
     if (!isNaN(converted)) {
       GROUP_ID_NUM = converted;
-      logger.info(`✅ GROUP_ID valid: ${GROUP_ID_NUM}`);
+      logger.info(` GROUP_ID valid: ${GROUP_ID_NUM}`);
       
       // Cek apakah ID negatif (semua grup Telegram punya ID negatif)
       if (GROUP_ID_NUM > 0) {
-        logger.warn(`⚠️ GROUP_ID positif (${GROUP_ID_NUM}), biasanya grup Telegram ID-nya negatif`);
-        logger.warn(`⚠️ Jika notifikasi gagal, coba ubah ke negatif di .vars.json`);
+        logger.warn(` GROUP_ID positif (${GROUP_ID_NUM}), biasanya grup Telegram ID-nya negatif`);
+        logger.warn(` Jika notifikasi gagal, coba ubah ke negatif di .vars.json`);
       }
     } else {
-      logger.error(`❌ GROUP_ID tidak valid: "${GROUP_ID}" - harus berupa angka`);
+      logger.error(` GROUP_ID tidak valid: "${GROUP_ID}" - harus berupa angka`);
     }
   }
 } catch (e) {
-  logger.error(`❌ Error processing GROUP_ID:`, e.message);
+  logger.error(` Error processing GROUP_ID:`, e.message);
 }
 
 try {
@@ -1036,13 +1036,13 @@ try {
     const convertedBw = Number(bwGroupStr);
     if (!Number.isNaN(convertedBw)) {
       BW_NOTIF_GROUP_ID_NUM = convertedBw;
-      logger.info(`✅ BW_NOTIF_GROUP_ID valid: ${BW_NOTIF_GROUP_ID_NUM}`);
+      logger.info(` BW_NOTIF_GROUP_ID valid: ${BW_NOTIF_GROUP_ID_NUM}`);
     } else {
-      logger.warn(`⚠️ BW_NOTIF_GROUP_ID tidak valid: "${BW_NOTIF_GROUP_ID}"`);
+      logger.warn(` BW_NOTIF_GROUP_ID tidak valid: "${BW_NOTIF_GROUP_ID}"`);
     }
   }
 } catch (e) {
-  logger.warn(`⚠️ Error processing BW_NOTIF_GROUP_ID: ${e.message}`);
+  logger.warn(` Error processing BW_NOTIF_GROUP_ID: ${e.message}`);
 }
 
 const bot = new Telegraf(BOT_TOKEN);
@@ -1054,7 +1054,7 @@ function buildMaintenanceNotice() {
   const setting = loadMaintenanceSetting();
   const estimateText = setting.estimate || 'belum ditentukan';
   return (
-    '🚧 *Bot Sedang Maintenance*\n\n' +
+    ' *Bot Sedang Maintenance*\n\n' +
     'Mohon maaf, layanan bot sementara tidak tersedia.\n' +
     `Estimasi selesai maintenance: *${estimateText}*.\n\n` +
     'Silakan coba lagi nanti.'
@@ -1119,7 +1119,7 @@ function formatMultiLoginUserNotification(payload = {}) {
       ? `Info      : Terdeteksi raw ${detectedRaw} IP, dihitung ${detected} IP/device`
       : '';
   return [
-    '⚠️ NOTIFIKASI MULTI LOGIN',
+    ' NOTIFIKASI MULTI LOGIN',
     '',
     `Layanan  : ${service}`,
     `Username : ${username}`,
@@ -1181,10 +1181,10 @@ app.post('/sc1forcr/events/multi-login', async (req, res) => {
 
     const text = formatMultiLoginUserNotification(payload);
     await bot.telegram.sendMessage(targetChatId, text);
-    logger.info(`✅ Multi-login notif dikirim ke user ${targetChatId} (${payload.service || '-'}:${payload.username || '-'})`);
+    logger.info(` Multi-login notif dikirim ke user ${targetChatId} (${payload.service || '-'}:${payload.username || '-'})`);
     return res.json({ ok: true });
   } catch (err) {
-    logger.error('❌ Gagal proses webhook multi-login:', err.message);
+    logger.error(' Gagal proses webhook multi-login:', err.message);
     return res.status(500).json({ ok: false, message: 'internal error' });
   }
 });
@@ -1203,7 +1203,7 @@ app.post('/webhook/hidepulsa', async (req, res) => {
         const ts = Number(tsHeader);
         const diffSec = Math.abs(Date.now() / 1000 - ts);
         if (diffSec > 300) {
-          logger.warn('❌ Webhook HidePulsa: timestamp expired (' + Math.round(diffSec) + 's)');
+          logger.warn(' Webhook HidePulsa: timestamp expired (' + Math.round(diffSec) + 's)');
           return res.status(401).json({ ok: false, message: 'timestamp expired' });
         }
       }
@@ -1226,7 +1226,7 @@ app.post('/webhook/hidepulsa', async (req, res) => {
           require('crypto').timingSafeEqual(bufA, bufB);
 
         if (!valid) {
-          logger.warn('❌ Webhook HidePulsa: HMAC tidak cocok');
+          logger.warn(' Webhook HidePulsa: HMAC tidak cocok');
           return res.status(401).json({ ok: false, message: 'invalid signature' });
         }
       } else {
@@ -1237,7 +1237,7 @@ app.post('/webhook/hidepulsa', async (req, res) => {
           req.body?.secret || ''
         ).trim();
         if (incoming !== XL_CIRCLE_WEBHOOK_SECRET) {
-          logger.warn('❌ Webhook HidePulsa: secret tidak cocok');
+          logger.warn(' Webhook HidePulsa: secret tidak cocok');
           return res.status(401).json({ ok: false, message: 'unauthorized' });
         }
       }
@@ -1259,14 +1259,14 @@ app.post('/webhook/hidepulsa', async (req, res) => {
     const status = statusMap[rawStatus] || rawStatus || 'unknown';
 
     await dbH.updatePpobOrderStatus(db, orderId, status);
-    logger.info(`✅ Webhook HidePulsa: order ${orderId} → ${status}`);
+    logger.info(` Webhook HidePulsa: order ${orderId} → ${status}`);
 
     const order = await new Promise((resolve) => {
       db.get('SELECT * FROM ppob_orders WHERE order_id = ?', [orderId], (err, row) => resolve(row || null));
     });
 
     if (order && order.user_id) {
-      const emoji = status === 'success' ? '✅' : status === 'failed' ? '❌' : '⏳';
+      const emoji = status === 'success' ? '' : status === 'failed' ? '' : '';
       const label = status === 'success' ? 'Berhasil' : status === 'failed' ? 'Gagal' : 'Diproses';
       const msg =
         `${emoji} <b>Update Transaksi PPOB</b>\n\n` +
@@ -1280,7 +1280,7 @@ app.post('/webhook/hidepulsa', async (req, res) => {
 
     return res.json({ ok: true });
   } catch (err) {
-    logger.error('❌ Webhook HidePulsa error: ' + (err && err.message ? err.message : err));
+    logger.error(' Webhook HidePulsa error: ' + (err && err.message ? err.message : err));
     return res.status(500).json({ ok: false, message: 'internal error' });
   }
 });
@@ -1296,7 +1296,7 @@ app.get('/webhook/akrab', async (req, res) => {
       req.query.RC || ''
     ).trim();
 
-    logger.info('📩 Webhook Akrab diterima: ' + (msg || JSON.stringify(req.query)));
+    logger.info(' Webhook Akrab diterima: ' + (msg || JSON.stringify(req.query)));
 
     // Parse format: RC={reffid} TrxID={id} {produk}.{tujuan} {status} {keterangan}
     let reffId = String(req.query.RC || req.query.reff_id || req.query.refid || '').trim();
@@ -1314,7 +1314,7 @@ app.get('/webhook/akrab', async (req, res) => {
     }
 
     if (!reffId) {
-      logger.warn('⚠️ Webhook Akrab: reff_id tidak ditemukan');
+      logger.warn(' Webhook Akrab: reff_id tidak ditemukan');
       return res.status(200).send('OK'); // Selalu 200 agar provider tidak retry terus
     }
 
@@ -1330,13 +1330,13 @@ app.get('/webhook/akrab', async (req, res) => {
 
     if (newStatus) {
       await dbH.updateAkrabOrderStatus(db, reffId, newStatus);
-      logger.info(`✅ Webhook Akrab: reff_id ${reffId} → ${newStatus}`);
+      logger.info(` Webhook Akrab: reff_id ${reffId} → ${newStatus}`);
 
       // Notifikasi ke user jika status final
       if (newStatus === 'success' || newStatus === 'failed') {
         const order = await dbH.getAkrabOrderByReffId(db, reffId).catch(() => null);
         if (order && order.user_id) {
-          const emoji = newStatus === 'success' ? '✅' : '❌';
+          const emoji = newStatus === 'success' ? '' : '';
           const label = newStatus === 'success' ? 'Berhasil' : 'Gagal';
           const keterangan = String(req.query.keterangan || rawStatus || '').trim();
           const msg2 =
@@ -1352,12 +1352,12 @@ app.get('/webhook/akrab', async (req, res) => {
         }
       }
     } else {
-      logger.info(`ℹ️ Webhook Akrab: reff_id ${reffId}, status tidak dikenali: "${rawStatus}"`);
+      logger.info(`ℹ Webhook Akrab: reff_id ${reffId}, status tidak dikenali: "${rawStatus}"`);
     }
 
     return res.status(200).send('OK');
   } catch (err) {
-    logger.error('❌ Webhook Akrab error: ' + (err && err.message ? err.message : err));
+    logger.error(' Webhook Akrab error: ' + (err && err.message ? err.message : err));
     return res.status(200).send('OK'); // Selalu 200 agar provider tidak retry
   }
 });
@@ -1389,11 +1389,11 @@ app.post('/webhook/akrab', async (req, res) => {
 
   if (newStatus) {
     await dbH.updateAkrabOrderStatus(db, reffId, newStatus).catch(() => {});
-    logger.info(`✅ Webhook Akrab (POST): reff_id ${reffId} → ${newStatus}`);
+    logger.info(` Webhook Akrab (POST): reff_id ${reffId} → ${newStatus}`);
     if (newStatus === 'success' || newStatus === 'failed') {
       const order = await dbH.getAkrabOrderByReffId(db, reffId).catch(() => null);
       if (order && order.user_id) {
-        const emoji = newStatus === 'success' ? '✅' : '❌';
+        const emoji = newStatus === 'success' ? '' : '';
         const label = newStatus === 'success' ? 'Berhasil' : 'Gagal';
         const msg2 =
           `${emoji} <b>Update Transaksi Akrab</b>\n\n` +
@@ -1559,7 +1559,7 @@ db.run("UPDATE Server SET total_create_akun = 0 WHERE total_create_akun IS NULL"
     logger.error('Error fixing NULL total_create_akun:', err.message);
   } else {
     if (this.changes > 0) {
-      logger.info(`✅ Fixed ${this.changes} servers with NULL total_create_akun`);
+      logger.info(` Fixed ${this.changes} servers with NULL total_create_akun`);
     }
   }
 });
@@ -1889,7 +1889,7 @@ db.run(`CREATE TABLE IF NOT EXISTS hidepulsa_tokens (
 const userState = {};
 const lastMenuMessageId = new Map();
 const allResellerStatsSessions = new Map();
-const ORDERKUOTA_CHECK_REPLY_TEXT = '✅ Sudah Bayar, Cek Status';
+const ORDERKUOTA_CHECK_REPLY_TEXT = ' Sudah Bayar, Cek Status';
 logger.info('User state initialized');
 
 const dbAllAsync = (sql, params = []) => new Promise((resolve, reject) => {
@@ -3206,35 +3206,35 @@ bot.command('hapussaldo', async (ctx) => {
     
     // Hanya admin
     if (!adminIds.includes(adminId)) {
-      return ctx.reply('❌ *Hanya admin yang bisa menggunakan command ini!*', { parse_mode: 'Markdown' });
+      return ctx.reply(' *Hanya admin yang bisa menggunakan command ini!*', { parse_mode: 'Markdown' });
     }
     
     const args = ctx.message.text.trim().split(/\s+/);
     if (args.length !== 3) {
-      return ctx.reply('❌ *Format salah!*\n\nGunakan:\n`/hapussaldo <user_id> <jumlah>`\n\nContoh:\n`/hapussaldo 123456789 50000`', { parse_mode: 'Markdown' });
+      return ctx.reply(' *Format salah!*\n\nGunakan:\n`/hapussaldo <user_id> <jumlah>`\n\nContoh:\n`/hapussaldo 123456789 50000`', { parse_mode: 'Markdown' });
     }
     
     const targetUserId = args[1].trim();
     const amount = parseInt(args[2], 10);
     
     if (isNaN(amount) || amount <= 0) {
-      return ctx.reply('❌ *Jumlah harus angka positif lebih dari 0!*', { parse_mode: 'Markdown' });
+      return ctx.reply(' *Jumlah harus angka positif lebih dari 0!*', { parse_mode: 'Markdown' });
     }
     
     // Cek apakah user ada
     db.get('SELECT user_id, saldo FROM users WHERE user_id = ?', [targetUserId], (err, user) => {
       if (err) {
-        logger.error('❌ Error cek user:', err.message);
-        return ctx.reply('❌ Terjadi kesalahan saat memeriksa user.');
+        logger.error(' Error cek user:', err.message);
+        return ctx.reply(' Terjadi kesalahan saat memeriksa user.');
       }
       
       if (!user) {
-        return ctx.reply(`❌ *User dengan ID ${targetUserId} tidak ditemukan!*`, { parse_mode: 'Markdown' });
+        return ctx.reply(` *User dengan ID ${targetUserId} tidak ditemukan!*`, { parse_mode: 'Markdown' });
       }
       
       // Cek apakah saldo mencukupi
       if (user.saldo < amount) {
-        return ctx.reply(`❌ *Saldo user tidak mencukupi!*\n\nSaldo user: Rp ${user.saldo.toLocaleString('id-ID')}\nJumlah hapus: Rp ${amount.toLocaleString('id-ID')}\nKekurangan: Rp ${(amount - user.saldo).toLocaleString('id-ID')}`, { 
+        return ctx.reply(` *Saldo user tidak mencukupi!*\n\nSaldo user: Rp ${user.saldo.toLocaleString('id-ID')}\nJumlah hapus: Rp ${amount.toLocaleString('id-ID')}\nKekurangan: Rp ${(amount - user.saldo).toLocaleString('id-ID')}`, { 
           parse_mode: 'Markdown' 
         });
       }
@@ -3242,21 +3242,21 @@ bot.command('hapussaldo', async (ctx) => {
       // Lakukan pengurangan saldo
       db.run('UPDATE users SET saldo = saldo - ? WHERE user_id = ?', [amount, targetUserId], function (err) {
         if (err) {
-          logger.error('❌ Error hapus saldo:', err.message);
-          return ctx.reply('❌ Gagal menghapus saldo.');
+          logger.error(' Error hapus saldo:', err.message);
+          return ctx.reply(' Gagal menghapus saldo.');
         }
         
         if (this.changes === 0) {
-          return ctx.reply('⚠️ Tidak ada user yang diupdate. Pastikan ID benar.');
+          return ctx.reply(' Tidak ada user yang diupdate. Pastikan ID benar.');
         }
         
         // Ambil saldo terbaru
         db.get('SELECT saldo FROM users WHERE user_id = ?', [targetUserId], (err2, updatedRow) => {
           if (err2) {
-            ctx.reply(`✅ Saldo sebesar *Rp ${amount.toLocaleString('id-ID')}* berhasil dihapus dari user \`${targetUserId}\`.`);
+            ctx.reply(` Saldo sebesar *Rp ${amount.toLocaleString('id-ID')}* berhasil dihapus dari user \`${targetUserId}\`.`);
           } else {
             ctx.reply(
-              `✅ Saldo sebesar *Rp ${amount.toLocaleString('id-ID')}* berhasil dihapus dari user \`${targetUserId}\`.\n💰 Saldo user sekarang: *Rp ${updatedRow.saldo.toLocaleString('id-ID')}*`,
+              ` Saldo sebesar *Rp ${amount.toLocaleString('id-ID')}* berhasil dihapus dari user \`${targetUserId}\`.\n Saldo user sekarang: *Rp ${updatedRow.saldo.toLocaleString('id-ID')}*`,
               { parse_mode: 'Markdown' }
             );
           }
@@ -3278,8 +3278,8 @@ bot.command('hapussaldo', async (ctx) => {
     });
     
   } catch (e) {
-    logger.error('❌ Error in /hapussaldo:', e);
-    return ctx.reply('❌ Terjadi kesalahan internal.');
+    logger.error(' Error in /hapussaldo:', e);
+    return ctx.reply(' Terjadi kesalahan internal.');
   }
 });
 
@@ -3292,14 +3292,14 @@ bot.command('resellerstats', async (ctx) => {
     const isReseller = await isUserReseller(userId);
     
     if (!isReseller) {
-      return ctx.reply('❌ *Fitur ini hanya untuk reseller!*', { parse_mode: 'Markdown' });
+      return ctx.reply(' *Fitur ini hanya untuk reseller!*', { parse_mode: 'Markdown' });
     }
     
     // Ambil saldo user
     db.get('SELECT saldo FROM users WHERE user_id = ?', [userId], async (err, user) => {
       if (err) {
-        logger.error('❌ Error ambil saldo:', err.message);
-        return ctx.reply('❌ Terjadi kesalahan saat mengambil data.');
+        logger.error(' Error ambil saldo:', err.message);
+        return ctx.reply(' Terjadi kesalahan saat mengambil data.');
       }
       
       const saldo = user ? user.saldo : 0;
@@ -3326,8 +3326,8 @@ bot.command('resellerstats', async (ctx) => {
       
       db.all(query, [userId, startTimestamp, endTimestamp], async (err, rows) => {
         if (err) {
-          logger.error('❌ Error ambil transaksi:', err.message);
-          return ctx.reply('❌ Terjadi kesalahan saat mengambil transaksi.');
+          logger.error(' Error ambil transaksi:', err.message);
+          return ctx.reply(' Terjadi kesalahan saat mengambil transaksi.');
         }
         
         const totalTopup = await new Promise((resolve) => {
@@ -3358,17 +3358,17 @@ bot.command('resellerstats', async (ctx) => {
         const currentYear = now.getFullYear();
         
         const message = 
-          `📊 *STATISTIK RESELLER*\n` +
-          `📅 Periode: ${currentMonth} ${currentYear}\n` +
-          `👤 ID Reseller: ${userId}\n\n` +
-          `💰 *Saldo Saat Ini:* Rp ${saldo.toLocaleString('id-ID')}\n` +
-          `💳 *Top Up Bulan Ini:* Rp ${totalTopup.toLocaleString('id-ID')}\n\n` +
-          `📈 *AKTIVITAS BULAN INI:*\n` +
+          ` *STATISTIK RESELLER*\n` +
+          ` Periode: ${currentMonth} ${currentYear}\n` +
+          ` ID Reseller: ${userId}\n\n` +
+          ` *Saldo Saat Ini:* Rp ${saldo.toLocaleString('id-ID')}\n` +
+          ` *Top Up Bulan Ini:* Rp ${totalTopup.toLocaleString('id-ID')}\n\n` +
+          ` *AKTIVITAS BULAN INI:*\n` +
           (typeDetails.length > 0 ? typeDetails.join('\n') : '• Belum ada transaksi') + `\n\n` +
-          `📊 *TOTAL BULAN INI:*\n` +
+          ` *TOTAL BULAN INI:*\n` +
           `• Jumlah Akun: ${totalAccounts} akun\n` +
           `• Total Pendapatan: Rp ${totalRevenue.toLocaleString('id-ID')}\n\n` +
-          `📌 *Catatan:*\n` +
+          ` *Catatan:*\n` +
           `• Data diambil dari 1 ${currentMonth} ${currentYear}\n` +
           `• Hanya menampilkan transaksi pembuatan/perpanjangan akun\n` +
           `• Update real-time setiap transaksi`;
@@ -3376,13 +3376,13 @@ bot.command('resellerstats', async (ctx) => {
         await ctx.reply(message, { parse_mode: 'Markdown' });
         
         // Log
-        logger.info(`📊 Stats reseller ditampilkan untuk ${userId}: ${totalAccounts} akun bulan ini`);
+        logger.info(` Stats reseller ditampilkan untuk ${userId}: ${totalAccounts} akun bulan ini`);
       });
     });
     
   } catch (error) {
-    logger.error('❌ Error di /resellerstats:', error);
-    await ctx.reply('❌ Terjadi kesalahan saat memproses permintaan.');
+    logger.error(' Error di /resellerstats:', error);
+    await ctx.reply(' Terjadi kesalahan saat memproses permintaan.');
   }
 });
 
@@ -3393,14 +3393,14 @@ bot.command('allresellerstats', async (ctx) => {
     
     // Hanya admin
     if (!adminIds.includes(adminId)) {
-      return ctx.reply('❌ Hanya admin yang bisa menggunakan command ini!');
+      return ctx.reply(' Hanya admin yang bisa menggunakan command ini!');
     }
     
     // Ambil semua user yang reseller
     const resellers = listResellersSync();
     
     if (resellers.length === 0) {
-      return ctx.reply('📭 Belum ada reseller terdaftar.');
+      return ctx.reply(' Belum ada reseller terdaftar.');
     }
     
     const now = new Date();
@@ -3475,12 +3475,12 @@ bot.command('allresellerstats', async (ctx) => {
       }
       const displayId = `<code>${stat.resellerId}</code>`;
       const entry =
-        `<b>👤 Username:</b> ${escapeHtml(usernameText)}\n` +
+        `<b> Username:</b> ${escapeHtml(usernameText)}\n` +
         `<b>🆔 ID:</b> ${displayId}\n` +
-        `<code>💰 Saldo:</code> Rp ${stat.saldo.toLocaleString('id-ID')}\n` +
-        `<code>📊 Akun Bulan Ini:</code> ${stat.count}\n` +
-        `<code>💵 Pendapatan:</code> Rp ${stat.total.toLocaleString('id-ID')}\n` +
-        `<code>💳 Top Up Bulan Ini:</code> Rp ${stat.topup.toLocaleString('id-ID')}\n` +
+        `<code> Saldo:</code> Rp ${stat.saldo.toLocaleString('id-ID')}\n` +
+        `<code> Akun Bulan Ini:</code> ${stat.count}\n` +
+        `<code> Pendapatan:</code> Rp ${stat.total.toLocaleString('id-ID')}\n` +
+        `<code> Top Up Bulan Ini:</code> Rp ${stat.topup.toLocaleString('id-ID')}\n` +
         `────────────────────`;
       entries.push(entry);
     }
@@ -3488,7 +3488,7 @@ bot.command('allresellerstats', async (ctx) => {
     const totalResellers = resellers.length;
     const periodText = escapeHtml(now.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }));
     const summaryText =
-      `\n<b>📈 RINGKASAN:</b>\n` +
+      `\n<b> RINGKASAN:</b>\n` +
       `• <b>Total Reseller:</b> ${totalResellers} orang\n` +
       `• <b>Total Akun Bulan Ini:</b> ${totalAllAccounts} akun\n` +
       `• <b>Total Pendapatan:</b> Rp ${totalAllRevenue.toLocaleString('id-ID')}\n` +
@@ -3503,9 +3503,9 @@ bot.command('allresellerstats', async (ctx) => {
       const start = page * pageSize;
       const body = entries.slice(start, start + pageSize).join('\n');
       const header =
-        `<b>📊 STATISTIK SEMUA RESELLER</b>\n` +
-        `<i>📅 Periode: ${periodText}</i>\n` +
-        `<i>📄 Halaman ${page + 1}/${totalPages}</i>\n\n`;
+        `<b> STATISTIK SEMUA RESELLER</b>\n` +
+        `<i> Periode: ${periodText}</i>\n` +
+        `<i> Halaman ${page + 1}/${totalPages}</i>\n\n`;
       const withSummary = page === totalPages - 1 ? `\n${summaryText}` : '';
       pages.push(`${header}${body}${withSummary}`);
     }
@@ -3519,18 +3519,18 @@ bot.command('allresellerstats', async (ctx) => {
     });
 
     const firstKeyboard = totalPages > 1
-      ? { inline_keyboard: [[{ text: 'Next ➡️', callback_data: 'allresellerstats_page_1' }]] }
+      ? { inline_keyboard: [[{ text: 'Next ', callback_data: 'allresellerstats_page_1' }]] }
       : null;
     const firstReplyOptions = { parse_mode: 'HTML' };
     if (firstKeyboard) firstReplyOptions.reply_markup = firstKeyboard;
 
     await ctx.reply(pages[0], firstReplyOptions);
     
-    logger.info(`📊 Admin ${adminId} melihat statistik semua reseller`);
+    logger.info(` Admin ${adminId} melihat statistik semua reseller`);
     
   } catch (error) {
-    logger.error('❌ Error di /allresellerstats:', error);
-    await ctx.reply('❌ Terjadi kesalahan saat memproses permintaan.');
+    logger.error(' Error di /allresellerstats:', error);
+    await ctx.reply(' Terjadi kesalahan saat memproses permintaan.');
   }
 });
 
@@ -3539,19 +3539,19 @@ bot.action(/allresellerstats_page_(\d+)/, async (ctx) => {
     await ctx.answerCbQuery().catch(() => {});
     const adminId = ctx.from.id;
     if (!adminIds.includes(adminId)) {
-      return ctx.reply('❌ Hanya admin yang bisa menggunakan menu ini!');
+      return ctx.reply(' Hanya admin yang bisa menggunakan menu ini!');
     }
 
     const sessionKey = `${ctx.chat.id}:${adminId}`;
     const session = allResellerStatsSessions.get(sessionKey);
     if (!session || !Array.isArray(session.pages) || session.pages.length === 0) {
-      return ctx.reply('⚠️ Sesi statistik reseller sudah habis. Jalankan /allresellerstats lagi.');
+      return ctx.reply(' Sesi statistik reseller sudah habis. Jalankan /allresellerstats lagi.');
     }
 
     const maxAgeMs = 10 * 60 * 1000;
     if (Date.now() - Number(session.updatedAt || 0) > maxAgeMs) {
       allResellerStatsSessions.delete(sessionKey);
-      return ctx.reply('⚠️ Sesi statistik reseller sudah kadaluarsa. Jalankan /allresellerstats lagi.');
+      return ctx.reply(' Sesi statistik reseller sudah kadaluarsa. Jalankan /allresellerstats lagi.');
     }
 
     const totalPages = session.pages.length;
@@ -3560,18 +3560,18 @@ bot.action(/allresellerstats_page_(\d+)/, async (ctx) => {
     page = Math.max(0, Math.min(totalPages - 1, page));
 
     const row = [];
-    if (page > 0) row.push({ text: '⬅️ Prev', callback_data: `allresellerstats_page_${page - 1}` });
-    if (page < totalPages - 1) row.push({ text: 'Next ➡️', callback_data: `allresellerstats_page_${page + 1}` });
+    if (page > 0) row.push({ text: '⬅ Prev', callback_data: `allresellerstats_page_${page - 1}` });
+    if (page < totalPages - 1) row.push({ text: 'Next ', callback_data: `allresellerstats_page_${page + 1}` });
     const editOptions = { parse_mode: 'HTML' };
     if (row.length) editOptions.reply_markup = { inline_keyboard: [row] };
     await ctx.editMessageText(session.pages[page], editOptions);
   } catch (error) {
-    logger.error('❌ Error pagination allresellerstats:', error.message);
-    await ctx.reply('❌ Terjadi kesalahan saat membuka halaman statistik reseller.');
+    logger.error(' Error pagination allresellerstats:', error.message);
+    await ctx.reply(' Terjadi kesalahan saat membuka halaman statistik reseller.');
   }
 });
 
-// ✅ FUNGSI UNTUK ESCAPE HTML (untuk aman)
+//  FUNGSI UNTUK ESCAPE HTML (untuk aman)
 function escapeHtml(text) {
   if (!text) return '';
   return text
@@ -3641,7 +3641,7 @@ async function evaluateResellerTermsForPeriod(startTimestamp, endTimestamp, peri
 ////
 bot.command('addserverzivpn_reseller', async (ctx) => {
   if (!adminIds.includes(ctx.from.id)) {
-    return ctx.reply('⚠️ Tidak ada izin.');
+    return ctx.reply(' Tidak ada izin.');
   }
 
   const parts = ctx.message.text.trim().split(/\s+/);
@@ -3649,7 +3649,7 @@ bot.command('addserverzivpn_reseller', async (ctx) => {
 
   if (!(params.length === 7 || params.length === 10)) {
     return ctx.reply(
-      '⚠️ Format:\n`/addserverzivpn_reseller <domain> <auth> <harga_user_1ip> <harga_user_2ip> <harga_reseller_1ip> <harga_reseller_2ip> <nama_server> <quota> <iplimit> <batas_create_akun>`\n\n' +
+      ' Format:\n`/addserverzivpn_reseller <domain> <auth> <harga_user_1ip> <harga_user_2ip> <harga_reseller_1ip> <harga_reseller_2ip> <nama_server> <quota> <iplimit> <batas_create_akun>`\n\n' +
       'Format lama (7 argumen) masih didukung, semua harga akan disamakan.',
       { parse_mode: 'Markdown' }
     );
@@ -3666,7 +3666,7 @@ bot.command('addserverzivpn_reseller', async (ctx) => {
   }
 
   if (![harga1, harga2, hargaRes1, hargaRes2, quota, iplimit, batas].every(v => /^\d+$/.test(v))) {
-    return ctx.reply('⚠️ harga, quota, iplimit, batas harus angka.');
+    return ctx.reply(' harga, quota, iplimit, batas harus angka.');
   }
 
   db.run(
@@ -3690,11 +3690,11 @@ bot.command('addserverzivpn_reseller', async (ctx) => {
     (err) => {
       if (err) {
         logger.error(err.message);
-        return ctx.reply('❌ Gagal menambahkan server ZIVPN reseller.');
+        return ctx.reply(' Gagal menambahkan server ZIVPN reseller.');
       }
 
       ctx.reply(
-        `✅ Server *ZIVPN Reseller* \`${nama_server}\` berhasil ditambahkan.\n` +
+        ` Server *ZIVPN Reseller* \`${nama_server}\` berhasil ditambahkan.\n` +
         `• Harga User 1IP: Rp${parseInt(harga1).toLocaleString('id-ID')}\n` +
         `• Harga User 2IP: Rp${parseInt(harga2).toLocaleString('id-ID')}\n` +
         `• Harga Reseller 1IP: Rp${parseInt(hargaRes1).toLocaleString('id-ID')}\n` +
@@ -3751,53 +3751,53 @@ bot.command('addsaldo', async (ctx) => {
 
     // hanya admin
     if (!adminIds || !adminIds.includes(userId)) {
-      return ctx.reply('⚠️ Anda tidak memiliki izin untuk menggunakan perintah ini.');
+      return ctx.reply(' Anda tidak memiliki izin untuk menggunakan perintah ini.');
     }
 
     const args = ctx.message.text.trim().split(/\s+/);
     if (args.length !== 3) {
-      return ctx.reply('⚠️ Format salah.\nGunakan:\n`/addsaldo <user_id> <jumlah>`', { parse_mode: 'Markdown' });
+      return ctx.reply(' Format salah.\nGunakan:\n`/addsaldo <user_id> <jumlah>`', { parse_mode: 'Markdown' });
     }
 
     const targetUserId = args[1].trim();
     const amount = parseInt(args[2], 10);
 
     if (isNaN(amount) || amount <= 0) {
-      return ctx.reply('⚠️ Jumlah saldo harus berupa angka dan lebih dari 0.');
+      return ctx.reply(' Jumlah saldo harus berupa angka dan lebih dari 0.');
     }
 
     // Cek apakah user ada
     db.get('SELECT saldo FROM users WHERE user_id = ?', [targetUserId], (err, row) => {
       if (err) {
-        logger.error('❌ Gagal memeriksa user_id:', err.message);
-        return ctx.reply('❌ Terjadi kesalahan saat memeriksa user.');
+        logger.error(' Gagal memeriksa user_id:', err.message);
+        return ctx.reply(' Terjadi kesalahan saat memeriksa user.');
       }
 
       if (!row) {
-        return ctx.reply(`⚠️ User dengan ID ${targetUserId} belum terdaftar di database.`);
+        return ctx.reply(` User dengan ID ${targetUserId} belum terdaftar di database.`);
       }
 
       // Lakukan update saldo
       db.run('UPDATE users SET saldo = saldo + ? WHERE user_id = ?', [amount, targetUserId], function (err) {
         if (err) {
-          logger.error('❌ Gagal menambah saldo:', err.message);
-          return ctx.reply('❌ Gagal menambah saldo.');
+          logger.error(' Gagal menambah saldo:', err.message);
+          return ctx.reply(' Gagal menambah saldo.');
         }
 
         // pastikan ada perubahan (this.changes tersedia karena function)
         if (this.changes === 0) {
-          return ctx.reply('⚠️ Tidak ada user yang diupdate. Pastikan ID benar.');
+          return ctx.reply(' Tidak ada user yang diupdate. Pastikan ID benar.');
         }
 
 // Ambil saldo terbaru dan kirim ke Telegram + log
 db.get('SELECT saldo FROM users WHERE user_id = ?', [targetUserId], async (err2, updatedRow) => {
   if (err2 || !updatedRow) {
     logger.info(`Admin ${ctx.from.id} menambah saldo Rp${amount} ke user ${targetUserId}, namun gagal membaca saldo terbaru.`);
-    await ctx.reply(`✅ Saldo sebesar Rp${amount.toLocaleString()} berhasil ditambahkan ke user ${targetUserId}.`);
+    await ctx.reply(` Saldo sebesar Rp${amount.toLocaleString()} berhasil ditambahkan ke user ${targetUserId}.`);
     await bot.telegram.sendMessage(
       targetUserId,
-      `✅ Saldo Anda berhasil ditambahkan admin.\n` +
-      `💰 Nominal: Rp${amount.toLocaleString('id-ID')}`
+      ` Saldo Anda berhasil ditambahkan admin.\n` +
+      ` Nominal: Rp${amount.toLocaleString('id-ID')}`
     ).catch((notifyErr) => {
       logger.error(`Gagal kirim notifikasi tambah saldo ke ${targetUserId}: ${notifyErr.message}`);
     });
@@ -3806,14 +3806,14 @@ db.get('SELECT saldo FROM users WHERE user_id = ?', [targetUserId], async (err2,
 
           // Kirim pesan ke Telegram dengan saldo akhir
           await ctx.reply(
-            `✅ Saldo sebesar *Rp${amount.toLocaleString()}* berhasil ditambahkan ke user \`${targetUserId}\`.\n💰 Saldo user sekarang: *Rp${updatedRow.saldo.toLocaleString()}*`,
+            ` Saldo sebesar *Rp${amount.toLocaleString()}* berhasil ditambahkan ke user \`${targetUserId}\`.\n Saldo user sekarang: *Rp${updatedRow.saldo.toLocaleString()}*`,
             { parse_mode: 'Markdown' }
           );
           await bot.telegram.sendMessage(
             targetUserId,
-            `✅ Saldo Anda berhasil ditambahkan admin.\n` +
-            `💰 Nominal: Rp${amount.toLocaleString('id-ID')}\n` +
-            `🏦 Saldo sekarang: Rp${updatedRow.saldo.toLocaleString('id-ID')}`
+            ` Saldo Anda berhasil ditambahkan admin.\n` +
+            ` Nominal: Rp${amount.toLocaleString('id-ID')}\n` +
+            ` Saldo sekarang: Rp${updatedRow.saldo.toLocaleString('id-ID')}`
           ).catch((notifyErr) => {
             logger.error(`Gagal kirim notifikasi tambah saldo ke ${targetUserId}: ${notifyErr.message}`);
           });
@@ -3824,8 +3824,8 @@ db.get('SELECT saldo FROM users WHERE user_id = ?', [targetUserId], async (err2,
       });
     });
   } catch (e) {
-    logger.error('❌ Error in /addsaldo command:', e);
-    return ctx.reply('❌ Terjadi kesalahan internal saat memproses perintah.');
+    logger.error(' Error in /addsaldo command:', e);
+    return ctx.reply(' Terjadi kesalahan internal saat memproses perintah.');
   }
 });
 
@@ -3834,7 +3834,7 @@ bot.command('admin', async (ctx) => {
   logger.info('Admin menu requested');
   
   if (!adminIds.includes(ctx.from.id)) {
-    await ctx.reply('🚫 Anda tidak memiliki izin untuk mengakses menu admin.');
+    await ctx.reply(' Anda tidak memiliki izin untuk mengakses menu admin.');
     return;
   }
 
@@ -3933,78 +3933,78 @@ async function sendMainMenu(ctx) {
   const latency = (Math.random() * 0.1 + 0.01).toFixed(2);
 
   const messageText = `
-<b>🚀 BOT VPN ${NAMA_STORE}</b>
+<b> BOT VPN ${NAMA_STORE}</b>
 <code>━━━━━━━━━━━━━━━━━━━━━━</code>
 
-<b>👤 INFORMASI PENGGUNA</b>
+<b> INFORMASI PENGGUNA</b>
 <code>──────────────────────</code>
-┃ 👤 Nama   : <b>${userName}</b>
+┃  Nama   : <b>${userName}</b>
 ┃ 🆔 ID     : <code>${userId}</code>
-┃ 🏷️ Status : <b>${statusReseller}</b>
+┃  Status : <b>${statusReseller}</b>
 
-<b>💼 DOMPET SALDO</b>
+<b> DOMPET SALDO</b>
 <code>──────────────────────</code>
-┃ 💰 Saldo VPN         : <code>Rp ${Number(saldo || 0).toLocaleString('id-ID')}</code>
-┃ 💳 Saldo Tembak Kuota : <code>Rp ${Number(saldoAkrab || 0).toLocaleString('id-ID')}</code>
+┃  Saldo VPN         : <code>Rp ${Number(saldo || 0).toLocaleString('id-ID')}</code>
+┃  Saldo Tembak Kuota : <code>Rp ${Number(saldoAkrab || 0).toLocaleString('id-ID')}</code>
 
-<b>📊 STATISTIK ANDA</b>
+<b> STATISTIK ANDA</b>
 <code>──────────────────────</code>
-┃ 📅 Hari Ini   : <b>${userToday}</b> akun
-┃ 📆 Minggu Ini : <b>${userWeek}</b> akun
-┃ 🗓️ Bulan Ini  : <b>${userMonth}</b> akun
+┃  Hari Ini   : <b>${userToday}</b> akun
+┃  Minggu Ini : <b>${userWeek}</b> akun
+┃  Bulan Ini  : <b>${userMonth}</b> akun
 
-<b>🌍 STATISTIK GLOBAL</b>
+<b> STATISTIK GLOBAL</b>
 <code>──────────────────────</code>
-┃ 📅 Hari Ini   : <b>${globalToday}</b> akun
-┃ 📆 Minggu Ini : <b>${globalWeek}</b> akun
-┃ 🗓️ Bulan Ini  : <b>${globalMonth}</b> akun
+┃  Hari Ini   : <b>${globalToday}</b> akun
+┃  Minggu Ini : <b>${globalWeek}</b> akun
+┃  Bulan Ini  : <b>${globalMonth}</b> akun
 
-<b>📈 STATUS SISTEM</b>
+<b> STATUS SISTEM</b>
 <code>──────────────────────</code>
-┃ 👥 Total Users : <b>${jumlahPengguna}</b>
-┃ ⏱️ Latency     : <b>${latency} ms</b>
-┃ 👨‍💻 Edited by    : <b>RetriVPN</b>
+┃  Total Users : <b>${jumlahPengguna}</b>
+┃  Latency     : <b>${latency} ms</b>
+┃  Edited by    : <b>RetriVPN</b>
 <code>━━━━━━━━━━━━━━━━━━━━━━</code>
-<i>Pilih menu di bawah untuk mulai 👇</i>
+<i>Pilih menu di bawah untuk mulai </i>
 `;
 
   // Buat keyboard dasar untuk semua user
   let keyboard = [
     [
-      { text: '🔑 Akun VPN', callback_data: 'menu_vpn' }
+      { text: ' Akun VPN', callback_data: 'menu_vpn' }
     ],
     [
-      { text: '🧰 Tools', callback_data: 'menu_tools' },
-      { text: '📞 Hubungi Admin', callback_data: 'hubungi_admin' }
+      { text: ' Tools', callback_data: 'menu_tools' },
+      { text: ' Hubungi Admin', callback_data: 'hubungi_admin' }
     ],
     [
-      { text: '📱 PPOB', callback_data: 'menu_ppob' },
-      { text: '🤝 Akrab & Circle', callback_data: 'menu_akrab' }
+      { text: ' PPOB', callback_data: 'menu_ppob' },
+      { text: ' Akrab & Circle', callback_data: 'menu_akrab' }
     ],
     [
-      { text: '💉 Suntik Followers', callback_data: 'menu_suntik' }
+      { text: ' Suntik Followers', callback_data: 'menu_suntik' }
     ],
     [
-      { text: '🤝 Jadi Reseller harga lebih murah!!', callback_data: 'jadi_reseller' }
+      { text: ' Jadi Reseller harga lebih murah!!', callback_data: 'jadi_reseller' }
     ],
   ];
 
   // Satu tombol Top Up yang membuka submenu (VPN + Tembak Kuota)
-  keyboard.push([{ text: '💳 Top Up Saldo', callback_data: 'menu_topup' }]);
+  keyboard.push([{ text: ' Top Up Saldo', callback_data: 'menu_topup' }]);
 
   if (loadScNexusMenuSetting()) {
     keyboard.push([
-      { text: '🛰️ SC 1FORCR NEXUS', url: 'https://t.me/sc1forcrnexusbot' }
+      { text: ' SC 1FORCR NEXUS', url: 'https://t.me/sc1forcrnexusbot' }
     ]);
   }
 
   // Jika user adalah reseller, tambahkan tombol khusus di bawah Akun VPN
   if (isReseller) {
     keyboard.splice(1, 0, [
-      { text: '📊 Statistik Saya', callback_data: 'reseller_stats' },
-      { text: '🏪 Menu Reseller', callback_data: 'menu_join_reseller' }
+      { text: ' Statistik Saya', callback_data: 'reseller_stats' },
+      { text: ' Menu Reseller', callback_data: 'menu_join_reseller' }
     ]);
-    logger.info('🛡️ Menu reseller ditampilkan untuk user: ' + userId);
+    logger.info(' Menu reseller ditampilkan untuk user: ' + userId);
   }
 
   try {
@@ -4138,7 +4138,7 @@ bot.command('restartserver', async (ctx) => {
 async function sendHelpAdmin(ctx) {
   const userId = ctx.from?.id;
   if (!adminIds.includes(userId)) {
-    return ctx.reply('⚠️ Anda tidak memiliki izin untuk menggunakan perintah ini.', { parse_mode: 'Markdown' });
+    return ctx.reply(' Anda tidak memiliki izin untuk menggunakan perintah ini.', { parse_mode: 'Markdown' });
   }
   
   const helpMessage = `
@@ -4189,7 +4189,7 @@ bot.command('addserver_reseller', async (ctx) => {
     const params = ctx.message.text.trim().split(/\s+/).slice(1);
     if (!(params.length === 7 || params.length === 10)) {
       return ctx.reply(
-        '⚠️ Format salah!\n\n' +
+        ' Format salah!\n\n' +
         'Format baru:\n/addserver_reseller <domain> <auth> <harga_user_1ip> <harga_user_2ip> <harga_reseller_1ip> <harga_reseller_2ip> <nama_server> <quota> <iplimit> <batas_create_akun>\n\n' +
         'Format lama (7 argumen) masih didukung, semua harga akan disamakan.',
         { parse_mode: 'Markdown' }
@@ -4207,7 +4207,7 @@ bot.command('addserver_reseller', async (ctx) => {
     }
 
     if (![harga1, harga2, hargaRes1, hargaRes2, quota, iplimit, batas_create_akun].every(v => /^\d+$/.test(v))) {
-      return ctx.reply('⚠️ Semua nilai harga/quota/iplimit/batas harus angka.', { parse_mode: 'Markdown' });
+      return ctx.reply(' Semua nilai harga/quota/iplimit/batas harus angka.', { parse_mode: 'Markdown' });
     }
 
     db.run(`INSERT INTO Server (domain, auth, harga, harga_reseller, harga_1ip, harga_2ip, harga_reseller_1ip, harga_reseller_2ip, nama_server, quota, iplimit, batas_create_akun, is_reseller_only, total_create_akun, support_zivpn, support_udp_http, service) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0, 0, 0, 'ssh')`,
@@ -4227,11 +4227,11 @@ bot.command('addserver_reseller', async (ctx) => {
       ],
       function (err) {
         if (err) {
-          logger.error('❌ Gagal menambah server reseller:', err.message);
-          return ctx.reply('❌ *Gagal menambah server reseller.*', { parse_mode: 'Markdown' });
+          logger.error(' Gagal menambah server reseller:', err.message);
+          return ctx.reply(' *Gagal menambah server reseller.*', { parse_mode: 'Markdown' });
         }
         ctx.reply(
-          '✅ *Server khusus reseller berhasil ditambahkan!*\n' +
+          ' *Server khusus reseller berhasil ditambahkan!*\n' +
           `• Harga User 1IP: Rp${parseInt(harga1).toLocaleString('id-ID')}\n` +
           `• Harga User 2IP: Rp${parseInt(harga2).toLocaleString('id-ID')}\n` +
           `• Harga Reseller 1IP: Rp${parseInt(hargaRes1).toLocaleString('id-ID')}\n` +
@@ -4242,7 +4242,7 @@ bot.command('addserver_reseller', async (ctx) => {
     );
   } catch (e) {
     logger.error('Error di /addserver_reseller:', e);
-    ctx.reply('❌ *Terjadi kesalahan.*', { parse_mode: 'Markdown' });
+    ctx.reply(' *Terjadi kesalahan.*', { parse_mode: 'Markdown' });
   }
 });
 //////////
@@ -4531,8 +4531,8 @@ bot.command('broadcast', async (ctx) => {
   const userId = ctx.message.from.id;
   logger.info(`Broadcast command received from user_id: ${userId}`);
   if (!adminIds.includes(userId)) {
-      logger.info(`⚠️ User ${userId} tidak memiliki izin untuk menggunakan perintah ini.`);
-      return ctx.reply('⚠️ Anda tidak memiliki izin untuk menggunakan perintah ini.', { parse_mode: 'Markdown' });
+      logger.info(` User ${userId} tidak memiliki izin untuk menggunakan perintah ini.`);
+      return ctx.reply(' Anda tidak memiliki izin untuk menggunakan perintah ini.', { parse_mode: 'Markdown' });
   }
 
   const commandPattern = /^\/broadcast(?:@\w+)?\s*/i;
@@ -4554,7 +4554,7 @@ bot.command('broadcast', async (ctx) => {
     });
 
     return ctx.reply(
-      '✅ Broadcast foto selesai.\n' +
+      ' Broadcast foto selesai.\n' +
       '- Berhasil: ' + result.ok + '\n' +
       '- Gagal: ' + result.fail
     );
@@ -4565,9 +4565,9 @@ bot.command('broadcast', async (ctx) => {
     : rawText.replace(commandPattern, '');
 
   if (!String(message || '').trim()) {
-      logger.info('⚠️ Pesan untuk disiarkan tidak diberikan.');
+      logger.info(' Pesan untuk disiarkan tidak diberikan.');
       return ctx.reply(
-        '⚠️ Mohon berikan pesan untuk disiarkan.\n' +
+        ' Mohon berikan pesan untuk disiarkan.\n' +
         'Kamu juga bisa kirim foto + caption pakai /broadcast.',
         { parse_mode: 'Markdown' }
       );
@@ -4575,7 +4575,7 @@ bot.command('broadcast', async (ctx) => {
 
   const result = await broadcastMessageToAllUsers(String(message).trim());
   return ctx.reply(
-    '✅ Broadcast pesan selesai.\n' +
+    ' Broadcast pesan selesai.\n' +
     '- Berhasil: ' + result.ok + '\n' +
     '- Gagal: ' + result.fail
   );
@@ -4590,13 +4590,13 @@ bot.on('photo', async (ctx, next) => {
 
     const userId = Number(ctx.message?.from?.id || 0);
     if (!adminIds.includes(userId)) {
-      return ctx.reply('⚠️ Anda tidak memiliki izin untuk menggunakan perintah ini.', { parse_mode: 'Markdown' });
+      return ctx.reply(' Anda tidak memiliki izin untuk menggunakan perintah ini.', { parse_mode: 'Markdown' });
     }
 
     const photos = ctx.message?.photo || [];
     const sourcePhoto = photos.length ? photos[photos.length - 1] : null;
     if (!sourcePhoto?.file_id) {
-      return ctx.reply('⚠️ Foto tidak ditemukan. Coba kirim ulang.');
+      return ctx.reply(' Foto tidak ditemukan. Coba kirim ulang.');
     }
 
     const textCaption = caption.replace(/^\/broadcast(?:@\w+)?\s*/i, '').trim();
@@ -4607,20 +4607,20 @@ bot.on('photo', async (ctx, next) => {
     });
 
     return ctx.reply(
-      '✅ Broadcast foto selesai.\n' +
+      ' Broadcast foto selesai.\n' +
       '- Berhasil: ' + result.ok + '\n' +
       '- Gagal: ' + result.fail
     );
   } catch (err) {
     logger.error('Gagal proses broadcast foto dari caption:', err.message || err);
-    return ctx.reply('⚠️ Terjadi kesalahan saat broadcast foto.');
+    return ctx.reply(' Terjadi kesalahan saat broadcast foto.');
   }
 });
 
 bot.command('broadcastreseller', async (ctx) => {
   const userId = Number(ctx.message?.from?.id || 0);
   if (!adminIds.includes(userId)) {
-    return ctx.reply('⚠️ Anda tidak memiliki izin untuk menggunakan perintah ini.', { parse_mode: 'Markdown' });
+    return ctx.reply(' Anda tidak memiliki izin untuk menggunakan perintah ini.', { parse_mode: 'Markdown' });
   }
 
   const rawText = ctx.message.text || '';
@@ -4630,7 +4630,7 @@ bot.command('broadcastreseller', async (ctx) => {
 
   if (!message || !String(message).trim()) {
     return ctx.reply(
-      '⚠️ Mohon berikan pesan untuk reseller.\n\n' +
+      ' Mohon berikan pesan untuk reseller.\n\n' +
       'Contoh:\n`/broadcastreseller Halo reseller, ada update harga.`',
       { parse_mode: 'Markdown' }
     );
@@ -4638,11 +4638,11 @@ bot.command('broadcastreseller', async (ctx) => {
 
   const result = await broadcastMessageToResellers(String(message).trim());
   if (result.total === 0) {
-    return ctx.reply('ℹ️ Belum ada reseller terdaftar.');
+    return ctx.reply('ℹ Belum ada reseller terdaftar.');
   }
 
   return ctx.reply(
-    `✅ Broadcast reseller selesai.\n` +
+    ` Broadcast reseller selesai.\n` +
     `- Total reseller: ${result.total}\n` +
     `- Berhasil: ${result.ok}\n` +
     `- Gagal: ${result.fail}`
@@ -4699,7 +4699,7 @@ bot.command('broadcastpoll', async (ctx) => {
 bot.command('addserver', async (ctx) => {
   const userId = ctx.message.from.id;
   if (!adminIds.includes(userId)) {
-    return ctx.reply('⚠️ Anda tidak memiliki izin untuk menggunakan perintah ini.', { parse_mode: 'Markdown' });
+    return ctx.reply(' Anda tidak memiliki izin untuk menggunakan perintah ini.', { parse_mode: 'Markdown' });
   }
 
   const parts = ctx.message.text.trim().split(/\s+/);
@@ -4709,7 +4709,7 @@ bot.command('addserver', async (ctx) => {
   // Format lama (7 arg) masih didukung, semua harga disamakan.
   if (!(params.length === 7 || params.length === 10)) {
     return ctx.reply(
-      '⚠️ Format salah.\n' +
+      ' Format salah.\n' +
       'Format baru:\n`/addserver <domain> <auth> <harga_user_1ip> <harga_user_2ip> <harga_reseller_1ip> <harga_reseller_2ip> <nama_server> <quota> <iplimit> <batas_create_akun>`\n\n' +
       'Format lama (7 argumen) masih bisa dipakai, semua harga akan disamakan.',
       { parse_mode: 'Markdown' }
@@ -4731,7 +4731,7 @@ bot.command('addserver', async (ctx) => {
   if (
     ![harga1, harga2, hargaRes1, hargaRes2, quota, iplimit, batas_create_akun].every(v => numberOnlyRegex.test(v))
   ) {
-    return ctx.reply('⚠️ Semua nilai harga/quota/iplimit/batas harus berupa angka.', { parse_mode: 'Markdown' });
+    return ctx.reply(' Semua nilai harga/quota/iplimit/batas harus berupa angka.', { parse_mode: 'Markdown' });
   }
 
   const service = userState[ctx.chat.id]?.service || 'ssh';
@@ -4759,14 +4759,14 @@ bot.command('addserver', async (ctx) => {
     ],
     function (err) {
       if (err) {
-        logger.error('⚠️ Kesalahan saat menambahkan server:', err.message);
-        return ctx.reply('⚠️ Kesalahan saat menambahkan server.', { parse_mode: 'Markdown' });
+        logger.error(' Kesalahan saat menambahkan server:', err.message);
+        return ctx.reply(' Kesalahan saat menambahkan server.', { parse_mode: 'Markdown' });
       }
 
       delete userState[ctx.chat.id];
 
       ctx.reply(
-        `✅ Server \`${nama_server}\` berhasil ditambahkan.\n` +
+        ` Server \`${nama_server}\` berhasil ditambahkan.\n` +
         `• Harga User 1IP: Rp${hargaInt1.toLocaleString('id-ID')}\n` +
         `• Harga User 2IP: Rp${hargaInt2.toLocaleString('id-ID')}\n` +
         `• Harga Reseller 1IP: Rp${hargaResInt1.toLocaleString('id-ID')}\n` +
@@ -4781,7 +4781,7 @@ bot.command('addserver', async (ctx) => {
 bot.command('addserverzivpn', async (ctx) => {
   const userId = ctx.message.from.id;
   if (!adminIds.includes(userId)) {
-    return ctx.reply('⚠️ Anda tidak memiliki izin untuk menggunakan perintah ini.');
+    return ctx.reply(' Anda tidak memiliki izin untuk menggunakan perintah ini.');
   }
 
   const parts = ctx.message.text.trim().split(/\s+/);
@@ -4789,7 +4789,7 @@ bot.command('addserverzivpn', async (ctx) => {
 
   if (!(params.length === 7 || params.length === 10)) {
     return ctx.reply(
-      '⚠️ Format salah.\n' +
+      ' Format salah.\n' +
       'Format baru:\n`/addserverzivpn <domain> <auth> <harga_user_1ip> <harga_user_2ip> <harga_reseller_1ip> <harga_reseller_2ip> <nama_server> <quota> <iplimit> <batas_create_akun>`\n\n' +
       'Format lama (7 argumen) masih bisa dipakai, semua harga akan disamakan.',
       { parse_mode: 'Markdown' }
@@ -4809,7 +4809,7 @@ bot.command('addserverzivpn', async (ctx) => {
 
   const numberOnlyRegex = /^\d+$/;
   if (![harga1, harga2, hargaRes1, hargaRes2, quota, iplimit, batas_create_akun].every(v => numberOnlyRegex.test(v))) {
-    return ctx.reply('⚠️ Semua nilai harga/quota/iplimit/batas harus berupa angka.');
+    return ctx.reply(' Semua nilai harga/quota/iplimit/batas harus berupa angka.');
   }
 
   db.run(
@@ -4830,12 +4830,12 @@ bot.command('addserverzivpn', async (ctx) => {
     ],
     function (err) {
       if (err) {
-        logger.error('⚠️ Kesalahan saat menambahkan server ZIVPN:', err.message);
-        return ctx.reply('⚠️ Kesalahan saat menambahkan server ZIVPN.');
+        logger.error(' Kesalahan saat menambahkan server ZIVPN:', err.message);
+        return ctx.reply(' Kesalahan saat menambahkan server ZIVPN.');
       }
 
       ctx.reply(
-        `✅ Server ZIVPN \`${nama_server}\` berhasil ditambahkan.\n` +
+        ` Server ZIVPN \`${nama_server}\` berhasil ditambahkan.\n` +
         `• Harga User 1IP: Rp${parseInt(harga1).toLocaleString('id-ID')}\n` +
         `• Harga User 2IP: Rp${parseInt(harga2).toLocaleString('id-ID')}\n` +
         `• Harga Reseller 1IP: Rp${parseInt(hargaRes1).toLocaleString('id-ID')}\n` +
@@ -4850,28 +4850,28 @@ bot.command('addserverzivpn', async (ctx) => {
 bot.command('editharga', async (ctx) => {
   const userId = ctx.message.from.id;
   if (!adminIds.includes(userId)) {
-      return ctx.reply('⚠️ Anda tidak memiliki izin untuk menggunakan perintah ini.', { parse_mode: 'Markdown' });
+      return ctx.reply(' Anda tidak memiliki izin untuk menggunakan perintah ini.', { parse_mode: 'Markdown' });
   }
 
   const args = ctx.message.text.split(' ');
   if (args.length !== 3) {
-      return ctx.reply('⚠️ Format salah. Gunakan: `/editharga <domain> <harga>`', { parse_mode: 'Markdown' });
+      return ctx.reply(' Format salah. Gunakan: `/editharga <domain> <harga>`', { parse_mode: 'Markdown' });
   }
 
   const [domain, harga] = args.slice(1);
 
   if (!/^\d+$/.test(harga)) {
-      return ctx.reply('⚠️ `harga` harus berupa angka.', { parse_mode: 'Markdown' });
+      return ctx.reply(' `harga` harus berupa angka.', { parse_mode: 'Markdown' });
   }
 
   db.run("INSERT INTO Server (domain, auth, harga, nama_server, quota, iplimit, batas_create_akun, total_create_akun, support_zivpn, support_udp_http, service) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, 0, 'ssh')", 
       [domain, auth, parseInt(harga), nama_server, parseInt(quota), parseInt(iplimit), parseInt(batas_create_akun)], function(err) {
       if (err) {
-          logger.error('⚠️ Kesalahan saat menambahkan server:', err.message);
-          return ctx.reply('⚠️ Kesalahan saat menambahkan server.', { parse_mode: 'Markdown' });
+          logger.error(' Kesalahan saat menambahkan server:', err.message);
+          return ctx.reply(' Kesalahan saat menambahkan server.', { parse_mode: 'Markdown' });
       }
 
-      ctx.reply(`✅ Server \`${nama_server}\` berhasil ditambahkan.`, { parse_mode: 'Markdown' });
+      ctx.reply(` Server \`${nama_server}\` berhasil ditambahkan.`, { parse_mode: 'Markdown' });
   });
 });
 
@@ -4879,204 +4879,204 @@ bot.command('editharga', async (ctx) => {
 bot.command('editnama', async (ctx) => {
   const userId = ctx.message.from.id;
   if (!adminIds.includes(userId)) {
-      return ctx.reply('⚠️ Anda tidak memiliki izin untuk menggunakan perintah ini.', { parse_mode: 'Markdown' });
+      return ctx.reply(' Anda tidak memiliki izin untuk menggunakan perintah ini.', { parse_mode: 'Markdown' });
   }
 
   const args = ctx.message.text.split(' ');
   if (args.length !== 3) {
-      return ctx.reply('⚠️ Format salah. Gunakan: `/editnama <domain> <nama_server>`', { parse_mode: 'Markdown' });
+      return ctx.reply(' Format salah. Gunakan: `/editnama <domain> <nama_server>`', { parse_mode: 'Markdown' });
   }
 
   const [domain, nama_server] = args.slice(1);
 
   db.run("UPDATE Server SET nama_server = ? WHERE domain = ?", [nama_server, domain], function(err) {
       if (err) {
-          logger.error('⚠️ Kesalahan saat mengedit nama server:', err.message);
-          return ctx.reply('⚠️ Kesalahan saat mengedit nama server.', { parse_mode: 'Markdown' });
+          logger.error(' Kesalahan saat mengedit nama server:', err.message);
+          return ctx.reply(' Kesalahan saat mengedit nama server.', { parse_mode: 'Markdown' });
       }
 
       if (this.changes === 0) {
-          return ctx.reply('⚠️ Server tidak ditemukan.', { parse_mode: 'Markdown' });
+          return ctx.reply(' Server tidak ditemukan.', { parse_mode: 'Markdown' });
       }
 
-      ctx.reply(`✅ Nama server \`${domain}\` berhasil diubah menjadi \`${nama_server}\`.`, { parse_mode: 'Markdown' });
+      ctx.reply(` Nama server \`${domain}\` berhasil diubah menjadi \`${nama_server}\`.`, { parse_mode: 'Markdown' });
   });
 });
 
 bot.command('editdomain', async (ctx) => {
   const userId = ctx.message.from.id;
   if (!adminIds.includes(userId)) {
-      return ctx.reply('⚠️ Anda tidak memiliki izin untuk menggunakan perintah ini.', { parse_mode: 'Markdown' });
+      return ctx.reply(' Anda tidak memiliki izin untuk menggunakan perintah ini.', { parse_mode: 'Markdown' });
   }
 
   const args = ctx.message.text.split(' ');
   if (args.length !== 3) {
-      return ctx.reply('⚠️ Format salah. Gunakan: `/editdomain <old_domain> <new_domain>`', { parse_mode: 'Markdown' });
+      return ctx.reply(' Format salah. Gunakan: `/editdomain <old_domain> <new_domain>`', { parse_mode: 'Markdown' });
   }
 
   const [old_domain, new_domain] = args.slice(1);
 
   db.run("UPDATE Server SET domain = ? WHERE domain = ?", [new_domain, old_domain], function(err) {
       if (err) {
-          logger.error('⚠️ Kesalahan saat mengedit domain server:', err.message);
-          return ctx.reply('⚠️ Kesalahan saat mengedit domain server.', { parse_mode: 'Markdown' });
+          logger.error(' Kesalahan saat mengedit domain server:', err.message);
+          return ctx.reply(' Kesalahan saat mengedit domain server.', { parse_mode: 'Markdown' });
       }
 
       if (this.changes === 0) {
-          return ctx.reply('⚠️ Server tidak ditemukan.', { parse_mode: 'Markdown' });
+          return ctx.reply(' Server tidak ditemukan.', { parse_mode: 'Markdown' });
       }
 
-      ctx.reply(`✅ Domain server \`${old_domain}\` berhasil diubah menjadi \`${new_domain}\`.`, { parse_mode: 'Markdown' });
+      ctx.reply(` Domain server \`${old_domain}\` berhasil diubah menjadi \`${new_domain}\`.`, { parse_mode: 'Markdown' });
   });
 });
 
 bot.command('editauth', async (ctx) => {
   const userId = ctx.message.from.id;
   if (!adminIds.includes(userId)) {
-      return ctx.reply('⚠️ Anda tidak memiliki izin untuk menggunakan perintah ini.', { parse_mode: 'Markdown' });
+      return ctx.reply(' Anda tidak memiliki izin untuk menggunakan perintah ini.', { parse_mode: 'Markdown' });
   }
 
   const args = ctx.message.text.split(' ');
   if (args.length !== 3) {
-      return ctx.reply('⚠️ Format salah. Gunakan: `/editauth <domain> <auth>`', { parse_mode: 'Markdown' });
+      return ctx.reply(' Format salah. Gunakan: `/editauth <domain> <auth>`', { parse_mode: 'Markdown' });
   }
 
   const [domain, auth] = args.slice(1);
 
   db.run("UPDATE Server SET auth = ? WHERE domain = ?", [auth, domain], function(err) {
       if (err) {
-          logger.error('⚠️ Kesalahan saat mengedit auth server:', err.message);
-          return ctx.reply('⚠️ Kesalahan saat mengedit auth server.', { parse_mode: 'Markdown' });
+          logger.error(' Kesalahan saat mengedit auth server:', err.message);
+          return ctx.reply(' Kesalahan saat mengedit auth server.', { parse_mode: 'Markdown' });
       }
 
       if (this.changes === 0) {
-          return ctx.reply('⚠️ Server tidak ditemukan.', { parse_mode: 'Markdown' });
+          return ctx.reply(' Server tidak ditemukan.', { parse_mode: 'Markdown' });
       }
 
-      ctx.reply(`✅ Auth server \`${domain}\` berhasil diubah menjadi \`${auth}\`.`, { parse_mode: 'Markdown' });
+      ctx.reply(` Auth server \`${domain}\` berhasil diubah menjadi \`${auth}\`.`, { parse_mode: 'Markdown' });
   });
 });
 
 bot.command('editlimitquota', async (ctx) => {
   const userId = ctx.message.from.id;
   if (!adminIds.includes(userId)) {
-      return ctx.reply('⚠️ Anda tidak memiliki izin untuk menggunakan perintah ini.', { parse_mode: 'Markdown' });
+      return ctx.reply(' Anda tidak memiliki izin untuk menggunakan perintah ini.', { parse_mode: 'Markdown' });
   }
 
   const args = ctx.message.text.split(' ');
   if (args.length !== 3) {
-      return ctx.reply('⚠️ Format salah. Gunakan: `/editlimitquota <domain> <quota>`', { parse_mode: 'Markdown' });
+      return ctx.reply(' Format salah. Gunakan: `/editlimitquota <domain> <quota>`', { parse_mode: 'Markdown' });
   }
 
   const [domain, quota] = args.slice(1);
 
   if (!/^\d+$/.test(quota)) {
-      return ctx.reply('⚠️ `quota` harus berupa angka.', { parse_mode: 'Markdown' });
+      return ctx.reply(' `quota` harus berupa angka.', { parse_mode: 'Markdown' });
   }
 
   db.run("UPDATE Server SET quota = ? WHERE domain = ?", [parseInt(quota), domain], function(err) {
       if (err) {
-          logger.error('⚠️ Kesalahan saat mengedit quota server:', err.message);
-          return ctx.reply('⚠️ Kesalahan saat mengedit quota server.', { parse_mode: 'Markdown' });
+          logger.error(' Kesalahan saat mengedit quota server:', err.message);
+          return ctx.reply(' Kesalahan saat mengedit quota server.', { parse_mode: 'Markdown' });
       }
 
       if (this.changes === 0) {
-          return ctx.reply('⚠️ Server tidak ditemukan.', { parse_mode: 'Markdown' });
+          return ctx.reply(' Server tidak ditemukan.', { parse_mode: 'Markdown' });
       }
 
-      ctx.reply(`✅ Quota server \`${domain}\` berhasil diubah menjadi \`${quota}\`.`, { parse_mode: 'Markdown' });
+      ctx.reply(` Quota server \`${domain}\` berhasil diubah menjadi \`${quota}\`.`, { parse_mode: 'Markdown' });
   });
 });
 
 bot.command('editlimitip', async (ctx) => {
   const userId = ctx.message.from.id;
   if (!adminIds.includes(userId)) {
-      return ctx.reply('⚠️ Anda tidak memiliki izin untuk menggunakan perintah ini.', { parse_mode: 'Markdown' });
+      return ctx.reply(' Anda tidak memiliki izin untuk menggunakan perintah ini.', { parse_mode: 'Markdown' });
   }
 
   const args = ctx.message.text.split(' ');
   if (args.length !== 3) {
-      return ctx.reply('⚠️ Format salah. Gunakan: `/editlimitip <domain> <iplimit>`', { parse_mode: 'Markdown' });
+      return ctx.reply(' Format salah. Gunakan: `/editlimitip <domain> <iplimit>`', { parse_mode: 'Markdown' });
   }
 
   const [domain, iplimit] = args.slice(1);
 
   if (!/^\d+$/.test(iplimit)) {
-      return ctx.reply('⚠️ `iplimit` harus berupa angka.', { parse_mode: 'Markdown' });
+      return ctx.reply(' `iplimit` harus berupa angka.', { parse_mode: 'Markdown' });
   }
 
   db.run("UPDATE Server SET iplimit = ? WHERE domain = ?", [parseInt(iplimit), domain], function(err) {
       if (err) {
-          logger.error('⚠️ Kesalahan saat mengedit iplimit server:', err.message);
-          return ctx.reply('⚠️ Kesalahan saat mengedit iplimit server.', { parse_mode: 'Markdown' });
+          logger.error(' Kesalahan saat mengedit iplimit server:', err.message);
+          return ctx.reply(' Kesalahan saat mengedit iplimit server.', { parse_mode: 'Markdown' });
       }
 
       if (this.changes === 0) {
-          return ctx.reply('⚠️ Server tidak ditemukan.', { parse_mode: 'Markdown' });
+          return ctx.reply(' Server tidak ditemukan.', { parse_mode: 'Markdown' });
       }
 
-      ctx.reply(`✅ Iplimit server \`${domain}\` berhasil diubah menjadi \`${iplimit}\`.`, { parse_mode: 'Markdown' });
+      ctx.reply(` Iplimit server \`${domain}\` berhasil diubah menjadi \`${iplimit}\`.`, { parse_mode: 'Markdown' });
   });
 });
 
 bot.command('editlimitcreate', async (ctx) => {
   const userId = ctx.message.from.id;
   if (!adminIds.includes(userId)) {
-      return ctx.reply('⚠️ Anda tidak memiliki izin untuk menggunakan perintah ini.', { parse_mode: 'Markdown' });
+      return ctx.reply(' Anda tidak memiliki izin untuk menggunakan perintah ini.', { parse_mode: 'Markdown' });
   }
 
   const args = ctx.message.text.split(' ');
   if (args.length !== 3) {
-      return ctx.reply('⚠️ Format salah. Gunakan: `/editlimitcreate <domain> <batas_create_akun>`', { parse_mode: 'Markdown' });
+      return ctx.reply(' Format salah. Gunakan: `/editlimitcreate <domain> <batas_create_akun>`', { parse_mode: 'Markdown' });
   }
 
   const [domain, batas_create_akun] = args.slice(1);
 
   if (!/^\d+$/.test(batas_create_akun)) {
-      return ctx.reply('⚠️ `batas_create_akun` harus berupa angka.', { parse_mode: 'Markdown' });
+      return ctx.reply(' `batas_create_akun` harus berupa angka.', { parse_mode: 'Markdown' });
   }
 
   db.run("UPDATE Server SET batas_create_akun = ? WHERE domain = ?", [parseInt(batas_create_akun), domain], function(err) {
       if (err) {
-          logger.error('⚠️ Kesalahan saat mengedit batas_create_akun server:', err.message);
-          return ctx.reply('⚠️ Kesalahan saat mengedit batas_create_akun server.', { parse_mode: 'Markdown' });
+          logger.error(' Kesalahan saat mengedit batas_create_akun server:', err.message);
+          return ctx.reply(' Kesalahan saat mengedit batas_create_akun server.', { parse_mode: 'Markdown' });
       }
 
       if (this.changes === 0) {
-          return ctx.reply('⚠️ Server tidak ditemukan.', { parse_mode: 'Markdown' });
+          return ctx.reply(' Server tidak ditemukan.', { parse_mode: 'Markdown' });
       }
 
-      ctx.reply(`✅ Batas create akun server \`${domain}\` berhasil diubah menjadi \`${batas_create_akun}\`.`, { parse_mode: 'Markdown' });
+      ctx.reply(` Batas create akun server \`${domain}\` berhasil diubah menjadi \`${batas_create_akun}\`.`, { parse_mode: 'Markdown' });
   });
 });
 bot.command('edittotalcreate', async (ctx) => {
   const userId = ctx.message.from.id;
   if (!adminIds.includes(userId)) {
-      return ctx.reply('⚠️ Anda tidak memiliki izin untuk menggunakan perintah ini.', { parse_mode: 'Markdown' });
+      return ctx.reply(' Anda tidak memiliki izin untuk menggunakan perintah ini.', { parse_mode: 'Markdown' });
   }
 
   const args = ctx.message.text.split(' ');
   if (args.length !== 3) {
-      return ctx.reply('⚠️ Format salah. Gunakan: `/edittotalcreate <domain> <total_create_akun>`', { parse_mode: 'Markdown' });
+      return ctx.reply(' Format salah. Gunakan: `/edittotalcreate <domain> <total_create_akun>`', { parse_mode: 'Markdown' });
   }
 
   const [domain, total_create_akun] = args.slice(1);
 
   if (!/^\d+$/.test(total_create_akun)) {
-      return ctx.reply('⚠️ `total_create_akun` harus berupa angka.', { parse_mode: 'Markdown' });
+      return ctx.reply(' `total_create_akun` harus berupa angka.', { parse_mode: 'Markdown' });
   }
 
   db.run("UPDATE Server SET total_create_akun = ? WHERE domain = ?", [parseInt(total_create_akun), domain], function(err) {
       if (err) {
-          logger.error('⚠️ Kesalahan saat mengedit total_create_akun server:', err.message);
-          return ctx.reply('⚠️ Kesalahan saat mengedit total_create_akun server.', { parse_mode: 'Markdown' });
+          logger.error(' Kesalahan saat mengedit total_create_akun server:', err.message);
+          return ctx.reply(' Kesalahan saat mengedit total_create_akun server.', { parse_mode: 'Markdown' });
       }
 
       if (this.changes === 0) {
-          return ctx.reply('⚠️ Server tidak ditemukan.', { parse_mode: 'Markdown' });
+          return ctx.reply(' Server tidak ditemukan.', { parse_mode: 'Markdown' });
       }
 
-      ctx.reply(`✅ Total create akun server \`${domain}\` berhasil diubah menjadi \`${total_create_akun}\`.`, { parse_mode: 'Markdown' });
+      ctx.reply(` Total create akun server \`${domain}\` berhasil diubah menjadi \`${total_create_akun}\`.`, { parse_mode: 'Markdown' });
   });
 });
 async function handleServiceAction(ctx, action) {
@@ -5160,17 +5160,17 @@ async function handleServiceAction(ctx, action) {
 }
 async function sendAdminMenu(ctx) {
   const adminKeyboard = [
-    [{ text: '🖥️ Server', callback_data: 'admin_menu_server' }],
-    [{ text: '💳 Saldo', callback_data: 'admin_menu_saldo' }],
-    [{ text: '🤝 Reseller', callback_data: 'admin_menu_reseller' }],
-    [{ text: '🧰 Tools', callback_data: 'admin_menu_tools' }],
-    [{ text: '🔑 Setting API Keys', callback_data: 'admin_setting_api' }],
-    [{ text: '📢 Markup Global Produk', callback_data: 'admin_markup_global_menu' }],
-    [{ text: '🔙 Kembali', callback_data: 'send_main_menu' }]
+    [{ text: ' Server', callback_data: 'admin_menu_server' }],
+    [{ text: ' Saldo', callback_data: 'admin_menu_saldo' }],
+    [{ text: ' Reseller', callback_data: 'admin_menu_reseller' }],
+    [{ text: ' Tools', callback_data: 'admin_menu_tools' }],
+    [{ text: ' Setting API Keys', callback_data: 'admin_setting_api' }],
+    [{ text: ' Markup Global Produk', callback_data: 'admin_markup_global_menu' }],
+    [{ text: ' Kembali', callback_data: 'send_main_menu' }]
   ];
 
   try {
-    await ctx.editMessageText('*🛠️ MENU ADMIN*', {
+    await ctx.editMessageText('* MENU ADMIN*', {
       parse_mode: 'Markdown',
       reply_markup: {
         inline_keyboard: adminKeyboard
@@ -5180,7 +5180,7 @@ async function sendAdminMenu(ctx) {
   } catch (error) {
     if (error.response && error.response.error_code === 400) {
       try {
-        await ctx.reply('*🛠️ MENU ADMIN*', {
+        await ctx.reply('* MENU ADMIN*', {
           parse_mode: 'Markdown',
           reply_markup: {
             inline_keyboard: adminKeyboard
@@ -5229,7 +5229,7 @@ async function sendServerIpLimitProtocolMenu(ctx, serverId, serverName) {
       callback_data: `edit_server_iplimit_rules_protocol_${serverId}_${item.key}`
     })));
   }
-  keyboard.push([{ text: '🔙 Kembali', callback_data: 'editserver_iplimit_rules' }]);
+  keyboard.push([{ text: ' Kembali', callback_data: 'editserver_iplimit_rules' }]);
 
   await ctx.reply(
     `Pilih protocol untuk server:\n*${serverName || server.nama_server || server.domain || `ID ${serverId}`}*\n\n` +
@@ -5251,32 +5251,32 @@ bot.action('admin_setting_api', async (ctx) => {
   const isAdminUser = Array.isArray(adminIds) ? adminIds.includes(userId) : Number(adminIds) === userId;
   if (!isAdminUser) return ctx.answerCbQuery('Tidak ada izin!', { show_alert: true });
 
-  const fayuStatus = FAYU_API_KEY      ? '✅' : '❌';
-  const hideStatus = HIDEPULSA_API_KEY ? '✅' : '❌';
-  const khfyStatus = KHFY_API_KEY      ? '✅' : '❌';
-  const qrisStatus = (GOPAY_API_KEY || API_KEY || MERCHANT_ID) ? '✅' : '❌';
+  const fayuStatus = FAYU_API_KEY      ? '' : '';
+  const hideStatus = HIDEPULSA_API_KEY ? '' : '';
+  const khfyStatus = KHFY_API_KEY      ? '' : '';
+  const qrisStatus = (GOPAY_API_KEY || API_KEY || MERCHANT_ID) ? '' : '';
   const webhookBase      = WEBHOOK_URL ? WEBHOOK_URL.replace(/\/$/, '') : `http://YOUR_DOMAIN:${port}`;
   const webhookHidepulsa = `${webhookBase}/webhook/hidepulsa`;
   const webhookAkrab     = `${webhookBase}/webhook/akrab`;
 
   const msgText =
-    `🔑 <b>Setting API Keys & Konfigurasi</b>\n\n` +
+    ` <b>Setting API Keys & Konfigurasi</b>\n\n` +
     `${fayuStatus} FayuPedia SMM\n` +
     `${hideStatus} HidePulsa PPOB\n` +
     `${khfyStatus} Akrab & Circle\n` +
     `${qrisStatus} Payment Gateway\n\n` +
-    `📡 <b>Webhook URLs:</b>\n` +
+    ` <b>Webhook URLs:</b>\n` +
     `HidePulsa : <code>${webhookHidepulsa}</code>\n` +
     `Akrab     : <code>${webhookAkrab}</code>\n` +
-    (WEBHOOK_URL ? '' : `\n⚠️ Set <b>Webhook URL</b> dulu agar URL di atas benar.\n`) +
+    (WEBHOOK_URL ? '' : `\n Set <b>Webhook URL</b> dulu agar URL di atas benar.\n`) +
     `\nPilih yang ingin diupdate:`;
   const replyMarkup = { inline_keyboard: [
     [{ text: `${fayuStatus} FayuPedia SMM`,   callback_data: 'setting_fayu'                    }],
     [{ text: `${hideStatus} HidePulsa PPOB`,  callback_data: 'setting_hidepulsa'               }],
     [{ text: `${khfyStatus} Akrab & Circle`,  callback_data: 'setting_khfy'                    }],
     [{ text: `${qrisStatus} Payment Gateway`, callback_data: 'payment_gateway_settings_menu'   }],
-    [{ text: '🌐 Set Webhook URL',            callback_data: 'setting_webhook_url'             }],
-    [{ text: '🔙 Menu Admin',                 callback_data: 'admin_menu'                      }]
+    [{ text: ' Set Webhook URL',            callback_data: 'setting_webhook_url'             }],
+    [{ text: ' Menu Admin',                 callback_data: 'admin_menu'                      }]
   ]};
 
   await ctx.editMessageText(msgText, { parse_mode: 'HTML', reply_markup: replyMarkup })
@@ -5287,14 +5287,14 @@ bot.action('admin_setting_api', async (ctx) => {
 bot.action('setting_fayu', async (ctx) => {
   await ctx.answerCbQuery().catch(() => {});
   const msgText =
-    `⚙️ <b>FayuPedia SMM</b>\n\n` +
+    ` <b>FayuPedia SMM</b>\n\n` +
     `API ID saat ini: <code>${FAYU_API_ID || '-'}</code>\n` +
     `API Key: <code>${maskSecret(FAYU_API_KEY)}</code>\n\n` +
     `Pilih yang ingin diupdate:`;
   const replyMarkup = { inline_keyboard: [
     [{ text: 'Ganti API ID',  callback_data: 'setting_fayu_api_id'  }],
     [{ text: 'Ganti API Key', callback_data: 'setting_fayu_api_key' }],
-    [{ text: '🔙 Kembali',   callback_data: 'admin_setting_api'    }]
+    [{ text: ' Kembali',   callback_data: 'admin_setting_api'    }]
   ]};
   await ctx.editMessageText(msgText, { parse_mode: 'HTML', reply_markup: replyMarkup })
     .catch(async () => { await ctx.reply(msgText, { parse_mode: 'HTML', reply_markup: replyMarkup }); });
@@ -5304,25 +5304,25 @@ bot.action('setting_fayu_api_id', async (ctx) => {
   await ctx.answerCbQuery().catch(() => {});
   userState[ctx.from.id] = { step: 'setting_input_fayu_api_id' };
   await ctx.editMessageText('Masukkan FayuPedia API ID baru:',
-    { reply_markup: { inline_keyboard: [[{ text: '❌ Batal', callback_data: 'setting_fayu' }]] }})
+    { reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'setting_fayu' }]] }})
     .catch(async () => { await ctx.reply('Masukkan FayuPedia API ID baru:',
-      { reply_markup: { inline_keyboard: [[{ text: '❌ Batal', callback_data: 'setting_fayu' }]] }}); });
+      { reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'setting_fayu' }]] }}); });
 });
 
 bot.action('setting_fayu_api_key', async (ctx) => {
   await ctx.answerCbQuery().catch(() => {});
   userState[ctx.from.id] = { step: 'setting_input_fayu_api_key' };
   await ctx.editMessageText('Masukkan FayuPedia API Key baru:',
-    { reply_markup: { inline_keyboard: [[{ text: '❌ Batal', callback_data: 'setting_fayu' }]] }})
+    { reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'setting_fayu' }]] }})
     .catch(async () => { await ctx.reply('Masukkan FayuPedia API Key baru:',
-      { reply_markup: { inline_keyboard: [[{ text: '❌ Batal', callback_data: 'setting_fayu' }]] }}); });
+      { reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'setting_fayu' }]] }}); });
 });
 
 // ── Setting HidePulsa ───────────────────────────────────────────────────────
 bot.action('setting_hidepulsa', async (ctx) => {
   await ctx.answerCbQuery().catch(() => {});
   const msgText =
-    `⚙️ <b>HidePulsa PPOB</b>\n\n` +
+    ` <b>HidePulsa PPOB</b>\n\n` +
     `API Key: <code>${maskSecret(HIDEPULSA_API_KEY)}</code>\n` +
     `Password: <code>${maskSecret(HIDEPULSA_PASSWORD)}</code>\n` +
     `Webhook Secret: <code>${maskSecret(XL_CIRCLE_WEBHOOK_SECRET)}</code>\n\n` +
@@ -5331,7 +5331,7 @@ bot.action('setting_hidepulsa', async (ctx) => {
     [{ text: 'Ganti API Key',        callback_data: 'setting_hidepulsa_api_key'       }],
     [{ text: 'Ganti Password',       callback_data: 'setting_hidepulsa_password'       }],
     [{ text: 'Ganti Webhook Secret', callback_data: 'setting_hidepulsa_webhook_secret' }],
-    [{ text: '🔙 Kembali',           callback_data: 'admin_setting_api'               }]
+    [{ text: ' Kembali',           callback_data: 'admin_setting_api'               }]
   ]};
   await ctx.editMessageText(msgText, { parse_mode: 'HTML', reply_markup: replyMarkup })
     .catch(async () => { await ctx.reply(msgText, { parse_mode: 'HTML', reply_markup: replyMarkup }); });
@@ -5341,41 +5341,41 @@ bot.action('setting_hidepulsa_api_key', async (ctx) => {
   await ctx.answerCbQuery().catch(() => {});
   userState[ctx.from.id] = { step: 'setting_input_hidepulsa_api_key' };
   await ctx.editMessageText('Masukkan HidePulsa API Key baru:',
-    { reply_markup: { inline_keyboard: [[{ text: '❌ Batal', callback_data: 'setting_hidepulsa' }]] }})
+    { reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'setting_hidepulsa' }]] }})
     .catch(async () => { await ctx.reply('Masukkan HidePulsa API Key baru:',
-      { reply_markup: { inline_keyboard: [[{ text: '❌ Batal', callback_data: 'setting_hidepulsa' }]] }}); });
+      { reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'setting_hidepulsa' }]] }}); });
 });
 
 bot.action('setting_hidepulsa_password', async (ctx) => {
   await ctx.answerCbQuery().catch(() => {});
   userState[ctx.from.id] = { step: 'setting_input_hidepulsa_password' };
   await ctx.editMessageText('Masukkan HidePulsa Password baru:',
-    { reply_markup: { inline_keyboard: [[{ text: '❌ Batal', callback_data: 'setting_hidepulsa' }]] }})
+    { reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'setting_hidepulsa' }]] }})
     .catch(async () => { await ctx.reply('Masukkan HidePulsa Password baru:',
-      { reply_markup: { inline_keyboard: [[{ text: '❌ Batal', callback_data: 'setting_hidepulsa' }]] }}); });
+      { reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'setting_hidepulsa' }]] }}); });
 });
 
 bot.action('setting_hidepulsa_webhook_secret', async (ctx) => {
   await ctx.answerCbQuery().catch(() => {});
   userState[ctx.from.id] = { step: 'setting_input_hidepulsa_webhook_secret' };
   await ctx.editMessageText('Masukkan HidePulsa Webhook Secret baru:',
-    { reply_markup: { inline_keyboard: [[{ text: '❌ Batal', callback_data: 'setting_hidepulsa' }]] }})
+    { reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'setting_hidepulsa' }]] }})
     .catch(async () => { await ctx.reply('Masukkan HidePulsa Webhook Secret baru:',
-      { reply_markup: { inline_keyboard: [[{ text: '❌ Batal', callback_data: 'setting_hidepulsa' }]] }}); });
+      { reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'setting_hidepulsa' }]] }}); });
 });
 
 // ── Setting Akrab (khfy) ────────────────────────────────────────────────────
 bot.action('setting_khfy', async (ctx) => {
   await ctx.answerCbQuery().catch(() => {});
   const msgText =
-    `⚙️ <b>Akrab & Circle (khfy-store)</b>\n\n` +
+    ` <b>Akrab & Circle (khfy-store)</b>\n\n` +
     `API Key: <code>${maskSecret(KHFY_API_KEY)}</code>\n` +
     `Reseller ID: <code>${KHFY_RESELLER_ID || '-'}</code>\n\n` +
     `Pilih yang ingin diupdate:`;
   const replyMarkup = { inline_keyboard: [
     [{ text: 'Ganti API Key',     callback_data: 'setting_khfy_api_key'     }],
     [{ text: 'Ganti Reseller ID', callback_data: 'setting_khfy_reseller_id' }],
-    [{ text: '🔙 Kembali',        callback_data: 'admin_setting_api'        }]
+    [{ text: ' Kembali',        callback_data: 'admin_setting_api'        }]
   ]};
   await ctx.editMessageText(msgText, { parse_mode: 'HTML', reply_markup: replyMarkup })
     .catch(async () => { await ctx.reply(msgText, { parse_mode: 'HTML', reply_markup: replyMarkup }); });
@@ -5385,18 +5385,18 @@ bot.action('setting_khfy_api_key', async (ctx) => {
   await ctx.answerCbQuery().catch(() => {});
   userState[ctx.from.id] = { step: 'setting_input_khfy_api_key' };
   await ctx.editMessageText('Masukkan Akrab API Key baru:',
-    { reply_markup: { inline_keyboard: [[{ text: '❌ Batal', callback_data: 'setting_khfy' }]] }})
+    { reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'setting_khfy' }]] }})
     .catch(async () => { await ctx.reply('Masukkan Akrab API Key baru:',
-      { reply_markup: { inline_keyboard: [[{ text: '❌ Batal', callback_data: 'setting_khfy' }]] }}); });
+      { reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'setting_khfy' }]] }}); });
 });
 
 bot.action('setting_khfy_reseller_id', async (ctx) => {
   await ctx.answerCbQuery().catch(() => {});
   userState[ctx.from.id] = { step: 'setting_input_khfy_reseller_id' };
   await ctx.editMessageText('Masukkan Reseller ID baru (contoh: NF01576):',
-    { reply_markup: { inline_keyboard: [[{ text: '❌ Batal', callback_data: 'setting_khfy' }]] }})
+    { reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'setting_khfy' }]] }})
     .catch(async () => { await ctx.reply('Masukkan Reseller ID baru (contoh: NF01576):',
-      { reply_markup: { inline_keyboard: [[{ text: '❌ Batal', callback_data: 'setting_khfy' }]] }}); });
+      { reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'setting_khfy' }]] }}); });
 });
 
 // ── Setting Webhook URL ─────────────────────────────────────────────────────
@@ -5406,7 +5406,7 @@ bot.action('setting_webhook_url', async (ctx) => {
   if (!isAdminUser) return;
   userState[ctx.from.id] = { step: 'setting_input_webhook_url' };
   const msgText =
-    `🌐 <b>Set Webhook URL</b>\n\n` +
+    ` <b>Set Webhook URL</b>\n\n` +
     `URL saat ini: <code>${WEBHOOK_URL || '(belum diset)'}</code>\n\n` +
     `Masukkan URL publik bot (HTTPS direkomendasikan).\n` +
     `Contoh: <code>https://bot.domain.com</code>\n\n` +
@@ -5415,10 +5415,10 @@ bot.action('setting_webhook_url', async (ctx) => {
     `• <code>/webhook/akrab</code> untuk Akrab`;
   await ctx.editMessageText(msgText, {
     parse_mode: 'HTML',
-    reply_markup: { inline_keyboard: [[{ text: '❌ Batal', callback_data: 'admin_setting_api' }]] }
+    reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'admin_setting_api' }]] }
   }).catch(async () => { await ctx.reply(msgText, {
     parse_mode: 'HTML',
-    reply_markup: { inline_keyboard: [[{ text: '❌ Batal', callback_data: 'admin_setting_api' }]] }
+    reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'admin_setting_api' }]] }
   }); });
 });
 
@@ -5434,13 +5434,13 @@ bot.action('admin_markup_global_menu', async (ctx) => {
   const fmtM = m => m ? (m.type === 'pct' ? m.value + '%' : 'Rp ' + Number(m.value).toLocaleString('id-ID')) : 'Tidak ada';
 
   const msgText =
-    `📢 <b>Markup Global Produk</b>\n\n` +
+    ` <b>Markup Global Produk</b>\n\n` +
     `SMM  : ${fmtM(markupSMM)}\n` +
     `Akrab: ${fmtM(markupAkrab)}`;
   const replyMarkup = { inline_keyboard: [
-    [{ text: '📢 Markup SMM',   callback_data: 'smm_markup_menu'   }],
-    [{ text: '📢 Markup Akrab', callback_data: 'akrab_markup_menu' }],
-    [{ text: '🔙 Menu Admin',   callback_data: 'admin_menu'        }]
+    [{ text: ' Markup SMM',   callback_data: 'smm_markup_menu'   }],
+    [{ text: ' Markup Akrab', callback_data: 'akrab_markup_menu' }],
+    [{ text: ' Menu Admin',   callback_data: 'admin_menu'        }]
   ]};
 
   await ctx.editMessageText(msgText, { parse_mode: 'HTML', reply_markup: replyMarkup })
@@ -5449,11 +5449,11 @@ bot.action('admin_markup_global_menu', async (ctx) => {
 
 async function sendAdminServerMenu(ctx) {
   const keyboard = [
-    [{ text: '➕ Add Server', callback_data: 'addserver' }],
+    [{ text: ' Add Server', callback_data: 'addserver' }],
         [
-      { text: '🛠️ Kelola Server', callback_data: 'admin_manage_server' }
+      { text: ' Kelola Server', callback_data: 'admin_manage_server' }
     ],
-    [{ text: '📶 Cek Bandwidth Server', callback_data: 'admin_check_bandwidth_servers' }],
+    [{ text: ' Cek Bandwidth Server', callback_data: 'admin_check_bandwidth_servers' }],
         [
       { text: 'Edit Nama', callback_data: 'nama_server_edit' }
     ],
@@ -5466,31 +5466,31 @@ async function sendAdminServerMenu(ctx) {
       { text: 'Edit Harga Reseller 2IP', callback_data: 'editserver_harga_reseller_2ip' }
     ],
     [
-      { text: '⏱️ Atur Harga Masa Aktif', callback_data: 'editserver_price_duration' }
+      { text: ' Atur Harga Masa Aktif', callback_data: 'editserver_price_duration' }
     ],
     [
-      { text: '🌐 Edit Domain', callback_data: 'editserver_domain' },
-      { text: '🔑 Edit Auth', callback_data: 'editserver_auth' }
+      { text: ' Edit Domain', callback_data: 'editserver_domain' },
+      { text: ' Edit Auth', callback_data: 'editserver_auth' }
     ],
     [
-      { text: '📊 Edit Quota', callback_data: 'editserver_quota' },
-      { text: '📶 Edit Limit IP', callback_data: 'editserver_limit_ip' }
+      { text: ' Edit Quota', callback_data: 'editserver_quota' },
+      { text: ' Edit Limit IP', callback_data: 'editserver_limit_ip' }
     ],
     [
-      { text: '📋 List Server', callback_data: 'listserver' },
-      { text: 'ℹ️ Detail Server', callback_data: 'detailserver' }
+      { text: ' List Server', callback_data: 'listserver' },
+      { text: 'ℹ Detail Server', callback_data: 'detailserver' }
     ],
     [
-      { text: '⚙️ Atur Limit IP Paket', callback_data: 'editserver_iplimit_rules' }
+      { text: ' Atur Limit IP Paket', callback_data: 'editserver_iplimit_rules' }
     ],
     [
-      { text: '❌ Hapus Server', callback_data: 'deleteserver' },
-      { text: '♻️ Reset Server', callback_data: 'resetdb' }
+      { text: ' Hapus Server', callback_data: 'deleteserver' },
+      { text: ' Reset Server', callback_data: 'resetdb' }
     ],
-    [{ text: '🔙 Kembali', callback_data: 'admin_menu' }]
+    [{ text: ' Kembali', callback_data: 'admin_menu' }]
   ];
 
-  await ctx.editMessageText('*🖥️ MENU SERVER*', {
+  await ctx.editMessageText('* MENU SERVER*', {
     parse_mode: 'Markdown',
     reply_markup: { inline_keyboard: keyboard }
   });
@@ -5498,30 +5498,30 @@ async function sendAdminServerMenu(ctx) {
 
 async function sendAdminSaldoMenu(ctx) {
   const manualEnabled = loadTopupManualSetting();
-  const manualLabel = manualEnabled ? '✅ TopUp Manual: Aktif' : '🚫 TopUp Manual: Nonaktif';
+  const manualLabel = manualEnabled ? ' TopUp Manual: Aktif' : ' TopUp Manual: Nonaktif';
   const autoEnabled = loadTopupAutoSetting();
-  const autoLabel = autoEnabled ? '✅ TopUp Otomatis: Aktif' : '🚫 TopUp Otomatis: Nonaktif';
+  const autoLabel = autoEnabled ? ' TopUp Otomatis: Aktif' : ' TopUp Otomatis: Nonaktif';
   const scNexusEnabled = loadScNexusMenuSetting();
-  const scNexusLabel = scNexusEnabled ? '✅ Menu SC 1FORCR NEXUS: Aktif' : '🚫 Menu SC 1FORCR NEXUS: Nonaktif';
+  const scNexusLabel = scNexusEnabled ? ' Menu SC 1FORCR NEXUS: Aktif' : ' Menu SC 1FORCR NEXUS: Nonaktif';
   const keyboard = [
     [
-      { text: '💵 Tambah Saldo', callback_data: 'tambah_saldo' },
-      { text: '🗑️ Hapus Saldo', callback_data: 'hapus_saldo' }
+      { text: ' Tambah Saldo', callback_data: 'tambah_saldo' },
+      { text: ' Hapus Saldo', callback_data: 'hapus_saldo' }
     ],
     [
-      { text: '💳 Lihat Saldo User', callback_data: 'cek_saldo_user' },
-      { text: '🖼️ Upload QRIS', callback_data: 'upload_qris' }
+      { text: ' Lihat Saldo User', callback_data: 'cek_saldo_user' },
+      { text: ' Upload QRIS', callback_data: 'upload_qris' }
     ],
-    [{ text: '🎁 Bonus Topup', callback_data: 'bonus_topup_menu' }],
+    [{ text: ' Bonus Topup', callback_data: 'bonus_topup_menu' }],
     [{ text: 'Pendapatan Hari Ini & Kemarin', callback_data: 'admin_income_summary' }],
     [{ text: 'Pendapatan Topup Bulanan', callback_data: 'admin_income_monthly_non_reseller' }],
     [{ text: scNexusLabel, callback_data: 'toggle_sc_nexus_menu' }],
     [{ text: autoLabel, callback_data: 'toggle_topup_auto' }],
     [{ text: manualLabel, callback_data: 'toggle_topup_manual' }],
-    [{ text: '🔙 Kembali', callback_data: 'admin_menu' }]
+    [{ text: ' Kembali', callback_data: 'admin_menu' }]
   ];
 
-  await ctx.editMessageText('*💳 MENU SALDO*', {
+  await ctx.editMessageText('* MENU SALDO*', {
     parse_mode: 'Markdown',
     reply_markup: { inline_keyboard: keyboard }
   });
@@ -5530,16 +5530,16 @@ async function sendAdminSaldoMenu(ctx) {
 async function sendAdminResellerMenu(ctx) {
   const keyboard = [
     [
-      { text: '➕ Tambah Reseller', callback_data: 'add_reseller_menu' },
-      { text: '🗑️ Hapus Reseller', callback_data: 'del_reseller_menu' }
+      { text: ' Tambah Reseller', callback_data: 'add_reseller_menu' },
+      { text: ' Hapus Reseller', callback_data: 'del_reseller_menu' }
     ],
-    [{ text: '📜 Syarat Reseller', callback_data: 'reseller_terms_menu' }],
-    [{ text: '⚡ Trigger Cek Syarat', callback_data: 'reseller_terms_trigger' }],
-    [{ text: '♻️ Restore Reseller', callback_data: 'reseller_restore' }],
-    [{ text: '🔙 Kembali', callback_data: 'admin_menu' }]
+    [{ text: ' Syarat Reseller', callback_data: 'reseller_terms_menu' }],
+    [{ text: ' Trigger Cek Syarat', callback_data: 'reseller_terms_trigger' }],
+    [{ text: ' Restore Reseller', callback_data: 'reseller_restore' }],
+    [{ text: ' Kembali', callback_data: 'admin_menu' }]
   ];
 
-  await ctx.editMessageText('*🤝 MENU RESELLER*', {
+  await ctx.editMessageText('* MENU RESELLER*', {
     parse_mode: 'Markdown',
     reply_markup: { inline_keyboard: keyboard }
   });
@@ -5549,7 +5549,7 @@ bot.action('add_reseller_menu', async (ctx) => {
   await ctx.answerCbQuery();
   const adminId = ctx.from.id;
   if (!adminIds.includes(adminId)) {
-    return ctx.reply('🚫 Anda tidak memiliki izin untuk melakukan tindakan ini.');
+    return ctx.reply(' Anda tidak memiliki izin untuk melakukan tindakan ini.');
   }
   userState[ctx.chat.id] = { step: 'add_reseller_userid' };
   await ctx.reply('Masukkan ID Telegram user yang ingin dijadikan reseller:');
@@ -5559,7 +5559,7 @@ bot.action('del_reseller_menu', async (ctx) => {
   await ctx.answerCbQuery();
   const adminId = ctx.from.id;
   if (!adminIds.includes(adminId)) {
-    return ctx.reply('🚫 Anda tidak memiliki izin untuk melakukan tindakan ini.');
+    return ctx.reply(' Anda tidak memiliki izin untuk melakukan tindakan ini.');
   }
   userState[ctx.chat.id] = { step: 'del_reseller_userid' };
   await ctx.reply('Masukkan ID Telegram reseller yang ingin dihapus:');
@@ -5568,28 +5568,28 @@ bot.action('del_reseller_menu', async (ctx) => {
 async function sendAdminToolsMenu(ctx) {
   const maintenance = loadMaintenanceSetting();
   const maintenanceLabel = maintenance.enabled
-    ? `🚧 Maintenance: ON (${maintenance.estimate || 'estimasi belum diisi'})`
-    : '✅ Maintenance: OFF';
+    ? ` Maintenance: ON (${maintenance.estimate || 'estimasi belum diisi'})`
+    : ' Maintenance: OFF';
   const keyboard = [
-    [{ text: '📋 Help Admin', callback_data: 'helpadmin_menu' }],
-    [{ text: '📥 Kelola Download Config', callback_data: 'admin_download_config_menu' }],
-    [{ text: '📣 Broadcast Kirim Pesan', callback_data: 'admin_broadcast_menu' }],
+    [{ text: ' Help Admin', callback_data: 'helpadmin_menu' }],
+    [{ text: ' Kelola Download Config', callback_data: 'admin_download_config_menu' }],
+    [{ text: ' Broadcast Kirim Pesan', callback_data: 'admin_broadcast_menu' }],
     [{ text: 'Broadcast Polling', callback_data: 'admin_broadcast_poll_menu' }],
-    [{ text: '💾 Restore Database', callback_data: 'restore_db_menu' }],
+    [{ text: ' Restore Database', callback_data: 'restore_db_menu' }],
     [{ text: 'Backup Database Sekarang', callback_data: 'auto_backup_now' }],
     [{ text: 'Sync Server Sekarang', callback_data: 'admin_sync_server_now' }],
     [{ text: 'Atur Auto Sync Server', callback_data: 'admin_sync_server_toggle_menu' }],
-    [{ text: '🔔 Notif Create (Bot)', callback_data: 'notif_settings_menu' }],
-    [{ text: '🔐 Webhook Multi-Login SC', callback_data: 'sc_webhook_settings_menu' }],
-    [{ text: '🌐 Setup Nginx Webhook', callback_data: 'nginx_webhook_menu' }],
-    [{ text: '📶 Notif BW Server', callback_data: 'bw_notif_settings_menu' }],
-    [{ text: '💳 Setting Payment Gateway', callback_data: 'payment_gateway_settings_menu' }],
+    [{ text: ' Notif Create (Bot)', callback_data: 'notif_settings_menu' }],
+    [{ text: ' Webhook Multi-Login SC', callback_data: 'sc_webhook_settings_menu' }],
+    [{ text: ' Setup Nginx Webhook', callback_data: 'nginx_webhook_menu' }],
+    [{ text: ' Notif BW Server', callback_data: 'bw_notif_settings_menu' }],
+    [{ text: ' Setting Payment Gateway', callback_data: 'payment_gateway_settings_menu' }],
     [{ text: maintenanceLabel, callback_data: 'maintenance_menu' }],
-    [{ text: '📞 Kontak Admin', callback_data: 'admin_contact_settings_menu' }],
-    [{ text: '🔙 Kembali', callback_data: 'admin_menu' }]
+    [{ text: ' Kontak Admin', callback_data: 'admin_contact_settings_menu' }],
+    [{ text: ' Kembali', callback_data: 'admin_menu' }]
   ];
 
-  await ctx.editMessageText('*🧰 MENU TOOLS*', {
+  await ctx.editMessageText('* MENU TOOLS*', {
     parse_mode: 'Markdown',
     reply_markup: { inline_keyboard: keyboard }
   });
@@ -5689,15 +5689,15 @@ function setupNginxWebhookAuto(host, appPort = 6969) {
 async function sendNginxWebhookMenu(ctx) {
   const currentUrl = SC_MULTI_LOGIN_WEBHOOK_URL || '-';
   const message =
-    '*🌐 SETUP NGINX WEBHOOK SC*\n\n' +
+    '* SETUP NGINX WEBHOOK SC*\n\n' +
     `URL webhook saat ini: \`${currentUrl}\`\n\n` +
     'Menu ini bantu generate config Nginx untuk forward port 80 ke bot (6969), lalu set URL webhook SC.';
 
   const keyboard = [
-    [{ text: '⚡ Auto Setup Nginx + SSL', callback_data: 'nginx_webhook_auto_setup' }],
-    [{ text: '🧾 Generate Config Nginx', callback_data: 'nginx_webhook_generate' }],
-    [{ text: '🔗 Set URL Webhook dari Domain/IP', callback_data: 'nginx_webhook_set_url_from_host' }],
-    [{ text: '🔙 Kembali', callback_data: 'admin_menu_tools' }]
+    [{ text: ' Auto Setup Nginx + SSL', callback_data: 'nginx_webhook_auto_setup' }],
+    [{ text: ' Generate Config Nginx', callback_data: 'nginx_webhook_generate' }],
+    [{ text: ' Set URL Webhook dari Domain/IP', callback_data: 'nginx_webhook_set_url_from_host' }],
+    [{ text: ' Kembali', callback_data: 'admin_menu_tools' }]
   ];
 
   await ctx.editMessageText(message, {
@@ -5711,13 +5711,13 @@ async function sendMaintenanceMenu(ctx) {
   const statusText = maintenance.enabled ? 'AKTIF' : 'NONAKTIF';
   const estimateText = maintenance.estimate || 'belum ditentukan';
   const keyboard = [
-    [{ text: maintenance.enabled ? '🚫 Nonaktifkan Maintenance' : '✅ Aktifkan Maintenance', callback_data: 'maintenance_toggle' }],
-    [{ text: '⏱️ Set Estimasi Maintenance', callback_data: 'maintenance_set_estimate' }],
-    [{ text: '🔙 Kembali', callback_data: 'admin_menu_tools' }]
+    [{ text: maintenance.enabled ? ' Nonaktifkan Maintenance' : ' Aktifkan Maintenance', callback_data: 'maintenance_toggle' }],
+    [{ text: ' Set Estimasi Maintenance', callback_data: 'maintenance_set_estimate' }],
+    [{ text: ' Kembali', callback_data: 'admin_menu_tools' }]
   ];
 
   await ctx.editMessageText(
-    '*🚧 MODE MAINTENANCE BOT*\n\n' +
+    '* MODE MAINTENANCE BOT*\n\n' +
     `Status: *${statusText}*\n` +
     `Estimasi: *${estimateText}*\n\n` +
     'Contoh estimasi: `30 menit` atau `2 jam`.',
@@ -5729,10 +5729,10 @@ async function sendMaintenanceMenu(ctx) {
 }
 
 async function sendScWebhookSettingsMenu(ctx) {
-  const tokenStatus = BOT_ACCOUNT_EVENT_WEBHOOK_TOKEN ? `✅ ${maskSecret(BOT_ACCOUNT_EVENT_WEBHOOK_TOKEN)}` : '❌ Belum diisi';
+  const tokenStatus = BOT_ACCOUNT_EVENT_WEBHOOK_TOKEN ? ` ${maskSecret(BOT_ACCOUNT_EVENT_WEBHOOK_TOKEN)}` : ' Belum diisi';
   const urlStatus = SC_MULTI_LOGIN_WEBHOOK_URL || '-';
   const message =
-    '*🔐 WEBHOOK MULTI-LOGIN SC*\n\n' +
+    '* WEBHOOK MULTI-LOGIN SC*\n\n' +
     `Token webhook: ${tokenStatus}\n` +
     `URL webhook: \`${escapeHtmlLocal(urlStatus)}\`\n\n` +
     'URL ini endpoint yang dipanggil server SC saat multi-login terdeteksi.';
@@ -5795,18 +5795,18 @@ bot.action('admin_menu_server', async (ctx) => {
 
 async function sendAdminManageServerMenu(ctx) {
   const keyboard = [
-    [{ text: '🔢 Edit Total + Batas', callback_data: 'manage_edit_total_batas' }],
-    [{ text: '📶 Set Limit Bandwidth', callback_data: 'manage_set_bw_limit' }],
-    [{ text: '🔄 Migrasi User Server', callback_data: 'admin_migrate_users_menu' }],
-    [{ text: '🗑️ Hapus Semua SSH/ZIVPN', callback_data: 'admin_delete_all_accounts_manual' }],
-    [{ text: '🕹️ Aktif/Nonaktifkan dari List', callback_data: 'manage_server_visibility' }],
-    [{ text: '🔌 Aktif/Nonaktifkan Protocol', callback_data: 'manage_server_protocols' }],
-    [{ text: '🚫 Jadikan Server Penuh', callback_data: 'manage_server_full' }],
-    [{ text: '✅ Jadikan Server Tersedia', callback_data: 'manage_server_activate' }],
-    [{ text: '🔙 Kembali', callback_data: 'admin_menu_server' }]
+    [{ text: ' Edit Total + Batas', callback_data: 'manage_edit_total_batas' }],
+    [{ text: ' Set Limit Bandwidth', callback_data: 'manage_set_bw_limit' }],
+    [{ text: ' Migrasi User Server', callback_data: 'admin_migrate_users_menu' }],
+    [{ text: ' Hapus Semua SSH/ZIVPN', callback_data: 'admin_delete_all_accounts_manual' }],
+    [{ text: ' Aktif/Nonaktifkan dari List', callback_data: 'manage_server_visibility' }],
+    [{ text: ' Aktif/Nonaktifkan Protocol', callback_data: 'manage_server_protocols' }],
+    [{ text: ' Jadikan Server Penuh', callback_data: 'manage_server_full' }],
+    [{ text: ' Jadikan Server Tersedia', callback_data: 'manage_server_activate' }],
+    [{ text: ' Kembali', callback_data: 'admin_menu_server' }]
   ];
 
-  await ctx.editMessageText('*🛠️ KELOLA SERVER*', {
+  await ctx.editMessageText('* KELOLA SERVER*', {
     parse_mode: 'Markdown',
     reply_markup: { inline_keyboard: keyboard }
   });
@@ -5910,8 +5910,8 @@ bot.action('admin_check_bandwidth_servers', async (ctx) => {
     [],
     async (err, rows) => {
       if (err) {
-        logger.error('❌ Gagal mengambil data bandwidth server:', err.message);
-        return ctx.reply('❌ Gagal mengambil data bandwidth server.');
+        logger.error(' Gagal mengambil data bandwidth server:', err.message);
+        return ctx.reply(' Gagal mengambil data bandwidth server.');
       }
       if (!rows || rows.length === 0) {
         return ctx.reply('Belum ada server yang ditambahkan.');
@@ -6013,11 +6013,11 @@ bot.action('manage_edit_total_batas', async (ctx) => {
   await ctx.answerCbQuery();
   db.all('SELECT id, nama_server FROM Server ORDER BY nama_server COLLATE NOCASE ASC', [], async (err, servers) => {
     if (err) {
-      logger.error('❌ Kesalahan saat mengambil daftar server:', err.message);
-      return ctx.reply('❌ Terjadi kesalahan saat mengambil daftar server.');
+      logger.error(' Kesalahan saat mengambil daftar server:', err.message);
+      return ctx.reply(' Terjadi kesalahan saat mengambil daftar server.');
     }
     if (!servers || servers.length === 0) {
-      return ctx.reply('⚠️ Tidak ada server yang tersedia.');
+      return ctx.reply(' Tidak ada server yang tersedia.');
     }
 
     const buttons = servers.map(server => ({
@@ -6028,9 +6028,9 @@ bot.action('manage_edit_total_batas', async (ctx) => {
     for (let i = 0; i < buttons.length; i += 2) {
       inlineKeyboard.push(buttons.slice(i, i + 2));
     }
-    inlineKeyboard.push([{ text: '🔙 Kembali', callback_data: 'admin_manage_server' }]);
+    inlineKeyboard.push([{ text: ' Kembali', callback_data: 'admin_manage_server' }]);
 
-    await ctx.reply('📊 Pilih server untuk edit total+batas:', {
+    await ctx.reply(' Pilih server untuk edit total+batas:', {
       parse_mode: 'Markdown',
       reply_markup: { inline_keyboard: inlineKeyboard }
     });
@@ -6041,11 +6041,11 @@ bot.action('manage_server_full', async (ctx) => {
   await ctx.answerCbQuery();
   db.all('SELECT id, nama_server FROM Server ORDER BY nama_server COLLATE NOCASE ASC', [], async (err, servers) => {
     if (err) {
-      logger.error('❌ Kesalahan saat mengambil daftar server:', err.message);
-      return ctx.reply('❌ Terjadi kesalahan saat mengambil daftar server.');
+      logger.error(' Kesalahan saat mengambil daftar server:', err.message);
+      return ctx.reply(' Terjadi kesalahan saat mengambil daftar server.');
     }
     if (!servers || servers.length === 0) {
-      return ctx.reply('⚠️ Tidak ada server yang tersedia.');
+      return ctx.reply(' Tidak ada server yang tersedia.');
     }
 
     const buttons = servers.map(server => ({
@@ -6056,9 +6056,9 @@ bot.action('manage_server_full', async (ctx) => {
     for (let i = 0; i < buttons.length; i += 2) {
       inlineKeyboard.push(buttons.slice(i, i + 2));
     }
-    inlineKeyboard.push([{ text: '🔙 Kembali', callback_data: 'admin_manage_server' }]);
+    inlineKeyboard.push([{ text: ' Kembali', callback_data: 'admin_manage_server' }]);
 
-    await ctx.reply('🚫 Pilih server yang akan dijadikan penuh:', {
+    await ctx.reply(' Pilih server yang akan dijadikan penuh:', {
       parse_mode: 'Markdown',
       reply_markup: { inline_keyboard: inlineKeyboard }
     });
@@ -6069,11 +6069,11 @@ bot.action('manage_server_activate', async (ctx) => {
   await ctx.answerCbQuery();
   db.all('SELECT id, nama_server FROM Server ORDER BY nama_server COLLATE NOCASE ASC', [], async (err, servers) => {
     if (err) {
-      logger.error('❌ Kesalahan saat mengambil daftar server:', err.message);
-      return ctx.reply('❌ Terjadi kesalahan saat mengambil daftar server.');
+      logger.error(' Kesalahan saat mengambil daftar server:', err.message);
+      return ctx.reply(' Terjadi kesalahan saat mengambil daftar server.');
     }
     if (!servers || servers.length === 0) {
-      return ctx.reply('⚠️ Tidak ada server yang tersedia.');
+      return ctx.reply(' Tidak ada server yang tersedia.');
     }
 
     const buttons = servers.map(server => ({
@@ -6084,9 +6084,9 @@ bot.action('manage_server_activate', async (ctx) => {
     for (let i = 0; i < buttons.length; i += 2) {
       inlineKeyboard.push(buttons.slice(i, i + 2));
     }
-    inlineKeyboard.push([{ text: '🔙 Kembali', callback_data: 'admin_manage_server' }]);
+    inlineKeyboard.push([{ text: ' Kembali', callback_data: 'admin_manage_server' }]);
 
-    await ctx.reply('✅ Pilih server yang akan diaktifkan (isi ulang total & batas):', {
+    await ctx.reply(' Pilih server yang akan diaktifkan (isi ulang total & batas):', {
       parse_mode: 'Markdown',
       reply_markup: { inline_keyboard: inlineKeyboard }
     });
@@ -6104,11 +6104,11 @@ bot.action('manage_server_visibility', async (ctx) => {
     [],
     async (err, servers) => {
       if (err) {
-        logger.error('❌ Kesalahan saat mengambil daftar server:', err.message);
-        return ctx.reply('❌ Terjadi kesalahan saat mengambil daftar server.');
+        logger.error(' Kesalahan saat mengambil daftar server:', err.message);
+        return ctx.reply(' Terjadi kesalahan saat mengambil daftar server.');
       }
       if (!servers || servers.length === 0) {
-        return ctx.reply('⚠️ Tidak ada server yang tersedia.');
+        return ctx.reply(' Tidak ada server yang tersedia.');
       }
 
       const buttons = servers.map((server) => {
@@ -6124,7 +6124,7 @@ bot.action('manage_server_visibility', async (ctx) => {
       for (let i = 0; i < buttons.length; i += 1) {
         inlineKeyboard.push([buttons[i]]);
       }
-      inlineKeyboard.push([{ text: '🔙 Kembali', callback_data: 'admin_manage_server' }]);
+      inlineKeyboard.push([{ text: ' Kembali', callback_data: 'admin_manage_server' }]);
 
       return ctx.reply(
         '*AKTIF/NONAKTIF SERVER DI LIST USER*\n\n' +
@@ -6193,18 +6193,18 @@ bot.action('manage_server_protocols', async (ctx) => {
     [],
     async (err, servers) => {
       if (err) {
-        logger.error('❌ Kesalahan saat mengambil daftar server:', err.message);
-        return ctx.reply('❌ Terjadi kesalahan saat mengambil daftar server.');
+        logger.error(' Kesalahan saat mengambil daftar server:', err.message);
+        return ctx.reply(' Terjadi kesalahan saat mengambil daftar server.');
       }
       if (!servers || servers.length === 0) {
-        return ctx.reply('⚠️ Tidak ada server yang tersedia.');
+        return ctx.reply(' Tidak ada server yang tersedia.');
       }
 
       const keyboard = servers.map((server) => ([{
         text: server.nama_server || server.domain || ('ID ' + server.id),
         callback_data: `server_protocols_${server.id}`
       }]));
-      keyboard.push([{ text: '🔙 Kembali', callback_data: 'admin_manage_server' }]);
+      keyboard.push([{ text: ' Kembali', callback_data: 'admin_manage_server' }]);
 
       return ctx.reply(
         '*SUPPORT PROTOCOL SERVER*\n\n' +
@@ -6241,8 +6241,8 @@ async function sendServerProtocolToggleMenu(ctx, serverId) {
       callback_data: `toggle_server_protocol_${server.id}_${key}`
     }];
   });
-  keyboard.push([{ text: '🔙 Pilih Server Lain', callback_data: 'manage_server_protocols' }]);
-  keyboard.push([{ text: '🔙 Kembali', callback_data: 'admin_manage_server' }]);
+  keyboard.push([{ text: ' Pilih Server Lain', callback_data: 'manage_server_protocols' }]);
+  keyboard.push([{ text: ' Kembali', callback_data: 'admin_manage_server' }]);
 
   return ctx.reply(
     '*SUPPORT PROTOCOL*\n\n' +
@@ -6316,11 +6316,11 @@ bot.action('manage_set_bw_limit', async (ctx) => {
     [],
     async (err, servers) => {
       if (err) {
-        logger.error('❌ Kesalahan saat mengambil daftar server:', err.message);
-        return ctx.reply('❌ Terjadi kesalahan saat mengambil daftar server.');
+        logger.error(' Kesalahan saat mengambil daftar server:', err.message);
+        return ctx.reply(' Terjadi kesalahan saat mengambil daftar server.');
       }
       if (!servers || servers.length === 0) {
-        return ctx.reply('⚠️ Tidak ada server yang tersedia.');
+        return ctx.reply(' Tidak ada server yang tersedia.');
       }
 
       const buttons = servers.map((server) => ({
@@ -6331,9 +6331,9 @@ bot.action('manage_set_bw_limit', async (ctx) => {
       for (let i = 0; i < buttons.length; i += 2) {
         inlineKeyboard.push(buttons.slice(i, i + 2));
       }
-      inlineKeyboard.push([{ text: '🔙 Kembali', callback_data: 'admin_manage_server' }]);
+      inlineKeyboard.push([{ text: ' Kembali', callback_data: 'admin_manage_server' }]);
 
-      await ctx.reply('📶 Pilih server untuk set limit bandwidth:', {
+      await ctx.reply(' Pilih server untuk set limit bandwidth:', {
         parse_mode: 'Markdown',
         reply_markup: { inline_keyboard: inlineKeyboard }
       });
@@ -6456,23 +6456,23 @@ bot.action('bonus_topup_menu', async (ctx) => {
   await ctx.answerCbQuery();
   const adminId = ctx.from.id;
   if (!adminIds.includes(adminId)) {
-    return ctx.reply('🚫 Anda tidak memiliki izin untuk mengubah pengaturan ini.');
+    return ctx.reply(' Anda tidak memiliki izin untuk mengubah pengaturan ini.');
   }
   const bonus = loadTopupBonusSetting();
-  const statusLabel = bonus.enabled ? '✅ Aktif' : '🚫 Nonaktif';
+  const statusLabel = bonus.enabled ? ' Aktif' : ' Nonaktif';
   const message =
-    '*🎁 BONUS TOPUP OTOMATIS*\n\n' +
+    '* BONUS TOPUP OTOMATIS*\n\n' +
     `Status: ${statusLabel}\n` +
     `• 10-40rb  : ${bonus.range_10_40}%\n` +
     `• 50-70rb  : ${bonus.range_50_70}%\n` +
     `• 70-100rb+: ${bonus.range_70_100}%\n\n` +
     'Pilih range untuk ubah persen bonus:';
   const keyboard = [
-    [{ text: bonus.enabled ? '🚫 Nonaktifkan Bonus' : '✅ Aktifkan Bonus', callback_data: 'bonus_toggle' }],
+    [{ text: bonus.enabled ? ' Nonaktifkan Bonus' : ' Aktifkan Bonus', callback_data: 'bonus_toggle' }],
     [{ text: 'Set 10-40rb', callback_data: 'bonus_set_10_40' }],
     [{ text: 'Set 50-70rb', callback_data: 'bonus_set_50_70' }],
     [{ text: 'Set 70-100rb+', callback_data: 'bonus_set_70_100' }],
-    [{ text: '🔙 Kembali', callback_data: 'admin_menu_saldo' }]
+    [{ text: ' Kembali', callback_data: 'admin_menu_saldo' }]
   ];
   await ctx.editMessageText(message, { parse_mode: 'Markdown', reply_markup: { inline_keyboard: keyboard } });
 });
@@ -6481,12 +6481,12 @@ bot.action('bonus_toggle', async (ctx) => {
   await ctx.answerCbQuery();
   const adminId = ctx.from.id;
   if (!adminIds.includes(adminId)) {
-    return ctx.reply('🚫 Anda tidak memiliki izin untuk mengubah pengaturan ini.');
+    return ctx.reply(' Anda tidak memiliki izin untuk mengubah pengaturan ini.');
   }
   const current = loadTopupBonusSetting();
   current.enabled = !current.enabled;
   saveTopupBonusSetting(current);
-  await ctx.reply(current.enabled ? '✅ Bonus topup diaktifkan.' : '🚫 Bonus topup dinonaktifkan.');
+  await ctx.reply(current.enabled ? ' Bonus topup diaktifkan.' : ' Bonus topup dinonaktifkan.');
   return sendAdminSaldoMenu(ctx);
 });
 
@@ -6512,14 +6512,14 @@ bot.action('notif_settings_menu', async (ctx) => {
   await ctx.answerCbQuery();
   const adminId = ctx.from.id;
   if (!adminIds.includes(adminId)) {
-    return ctx.reply('🚫 Anda tidak memiliki izin untuk mengakses menu ini.');
+    return ctx.reply(' Anda tidak memiliki izin untuk mengakses menu ini.');
   }
 
-  const tokenStatus = NOTIF_BOT_TOKEN ? '✅ Tersimpan' : '❌ Belum diisi';
-  const chatStatus = NOTIF_CHAT_ID ? '✅ Tersimpan' : '❌ Belum diisi';
-  const globalGroupStatus = GLOBAL_CREATE_NOTIF_GROUP_ID ? `✅ ${GLOBAL_CREATE_NOTIF_GROUP_ID}` : '❌ Belum diisi';
+  const tokenStatus = NOTIF_BOT_TOKEN ? ' Tersimpan' : ' Belum diisi';
+  const chatStatus = NOTIF_CHAT_ID ? ' Tersimpan' : ' Belum diisi';
+  const globalGroupStatus = GLOBAL_CREATE_NOTIF_GROUP_ID ? ` ${GLOBAL_CREATE_NOTIF_GROUP_ID}` : ' Belum diisi';
   const message =
-    '*🔔 PENGATURAN NOTIF CREATE (BOT)*\n\n' +
+    '* PENGATURAN NOTIF CREATE (BOT)*\n\n' +
     `Token Bot: ${tokenStatus}\n` +
     `Chat ID: ${chatStatus}\n` +
     `Group Global Create: ${globalGroupStatus}\n\n` +
@@ -6542,7 +6542,7 @@ bot.action('notif_set_global_group', async (ctx) => {
   await ctx.answerCbQuery();
   const adminId = ctx.from.id;
   if (!adminIds.includes(adminId)) {
-    return ctx.reply('🚫 Anda tidak memiliki izin untuk mengubah pengaturan ini.');
+    return ctx.reply(' Anda tidak memiliki izin untuk mengubah pengaturan ini.');
   }
   userState[ctx.chat.id] = { step: 'notif_global_create_group_id' };
   await ctx.reply('Kirim *GROUP ID GLOBAL* untuk notif create akun.\nContoh: `-1001234567890`\nKetik "batal" untuk membatalkan.', { parse_mode: 'Markdown' });
@@ -6552,7 +6552,7 @@ bot.action('notif_set_token', async (ctx) => {
   await ctx.answerCbQuery();
   const adminId = ctx.from.id;
   if (!adminIds.includes(adminId)) {
-    return ctx.reply('🚫 Anda tidak memiliki izin untuk mengubah pengaturan ini.');
+    return ctx.reply(' Anda tidak memiliki izin untuk mengubah pengaturan ini.');
   }
   userState[ctx.chat.id] = { step: 'notif_bot_token' };
   await ctx.reply('Kirim *BOT TOKEN* untuk notifikasi create akun.\nKetik "batal" untuk membatalkan.', { parse_mode: 'Markdown' });
@@ -6562,7 +6562,7 @@ bot.action('notif_set_chat', async (ctx) => {
   await ctx.answerCbQuery();
   const adminId = ctx.from.id;
   if (!adminIds.includes(adminId)) {
-    return ctx.reply('🚫 Anda tidak memiliki izin untuk mengubah pengaturan ini.');
+    return ctx.reply(' Anda tidak memiliki izin untuk mengubah pengaturan ini.');
   }
   userState[ctx.chat.id] = { step: 'notif_chat_id' };
   await ctx.reply('Kirim *CHAT ID* tujuan notifikasi.\nKetik "batal" untuk membatalkan.', { parse_mode: 'Markdown' });
@@ -6572,7 +6572,7 @@ bot.action('sc_webhook_settings_menu', async (ctx) => {
   await ctx.answerCbQuery();
   const adminId = ctx.from.id;
   if (!adminIds.includes(adminId)) {
-    return ctx.reply('🚫 Anda tidak memiliki izin untuk mengakses menu ini.');
+    return ctx.reply(' Anda tidak memiliki izin untuk mengakses menu ini.');
   }
   return sendScWebhookSettingsMenu(ctx);
 });
@@ -6580,7 +6580,7 @@ bot.action('sc_webhook_settings_menu', async (ctx) => {
 bot.action('nginx_webhook_menu', async (ctx) => {
   await ctx.answerCbQuery();
   if (!adminIds.includes(ctx.from.id)) {
-    return ctx.reply('🚫 Anda tidak memiliki izin untuk mengakses menu ini.');
+    return ctx.reply(' Anda tidak memiliki izin untuk mengakses menu ini.');
   }
   return sendNginxWebhookMenu(ctx);
 });
@@ -6588,7 +6588,7 @@ bot.action('nginx_webhook_menu', async (ctx) => {
 bot.action('nginx_webhook_generate', async (ctx) => {
   await ctx.answerCbQuery();
   if (!adminIds.includes(ctx.from.id)) {
-    return ctx.reply('🚫 Anda tidak memiliki izin.');
+    return ctx.reply(' Anda tidak memiliki izin.');
   }
   userState[ctx.chat.id] = { step: 'nginx_webhook_host_input_generate' };
   return ctx.reply(
@@ -6602,7 +6602,7 @@ bot.action('nginx_webhook_generate', async (ctx) => {
 bot.action('nginx_webhook_auto_setup', async (ctx) => {
   await ctx.answerCbQuery();
   if (!adminIds.includes(ctx.from.id)) {
-    return ctx.reply('🚫 Anda tidak memiliki izin.');
+    return ctx.reply(' Anda tidak memiliki izin.');
   }
   userState[ctx.chat.id] = { step: 'nginx_webhook_host_input_auto' };
   return ctx.reply(
@@ -6617,7 +6617,7 @@ bot.action('nginx_webhook_auto_setup', async (ctx) => {
 bot.action('nginx_webhook_set_url_from_host', async (ctx) => {
   await ctx.answerCbQuery();
   if (!adminIds.includes(ctx.from.id)) {
-    return ctx.reply('🚫 Anda tidak memiliki izin.');
+    return ctx.reply(' Anda tidak memiliki izin.');
   }
   userState[ctx.chat.id] = { step: 'nginx_webhook_host_input_seturl' };
   return ctx.reply(
@@ -6630,21 +6630,21 @@ bot.action('nginx_webhook_set_url_from_host', async (ctx) => {
 
 bot.action('sc_webhook_set_token', async (ctx) => {
   await ctx.answerCbQuery();
-  if (!adminIds.includes(ctx.from.id)) return ctx.reply('🚫 Anda tidak memiliki izin.');
+  if (!adminIds.includes(ctx.from.id)) return ctx.reply(' Anda tidak memiliki izin.');
   userState[ctx.chat.id] = { step: 'sc_webhook_token' };
   return ctx.reply('Kirim token webhook SC.\nKetik "batal" untuk membatalkan.');
 });
 
 bot.action('sc_webhook_set_url', async (ctx) => {
   await ctx.answerCbQuery();
-  if (!adminIds.includes(ctx.from.id)) return ctx.reply('🚫 Anda tidak memiliki izin.');
+  if (!adminIds.includes(ctx.from.id)) return ctx.reply(' Anda tidak memiliki izin.');
   userState[ctx.chat.id] = { step: 'sc_webhook_url' };
   return ctx.reply('Kirim URL webhook SC.\nContoh: https://domain-bot/sc1forcr/events/multi-login\nKetik "batal" untuk membatalkan.');
 });
 
 bot.action('sc_webhook_test', async (ctx) => {
   await ctx.answerCbQuery();
-  if (!adminIds.includes(ctx.from.id)) return ctx.reply('🚫 Anda tidak memiliki izin.');
+  if (!adminIds.includes(ctx.from.id)) return ctx.reply(' Anda tidak memiliki izin.');
   if (!SC_MULTI_LOGIN_WEBHOOK_URL || !BOT_ACCOUNT_EVENT_WEBHOOK_TOKEN) {
     return ctx.reply('URL/token webhook belum diisi. Isi dulu di menu Webhook Multi-Login SC.');
   }
@@ -6671,10 +6671,10 @@ bot.action('sc_webhook_test', async (ctx) => {
         }
       }
     );
-    return ctx.reply('✅ Test webhook terkirim. Cek apakah notif multi-login masuk ke akun Telegram kamu.');
+    return ctx.reply(' Test webhook terkirim. Cek apakah notif multi-login masuk ke akun Telegram kamu.');
   } catch (err) {
     const msg = err?.response?.data?.message || err?.message || 'unknown error';
-    return ctx.reply(`❌ Test webhook gagal: ${msg}`);
+    return ctx.reply(` Test webhook gagal: ${msg}`);
   }
 });
 
@@ -6682,13 +6682,13 @@ bot.action('bw_notif_settings_menu', async (ctx) => {
   await ctx.answerCbQuery();
   const adminId = ctx.from.id;
   if (!adminIds.includes(adminId)) {
-    return ctx.reply('🚫 Anda tidak memiliki izin untuk mengakses menu ini.');
+    return ctx.reply(' Anda tidak memiliki izin untuk mengakses menu ini.');
   }
 
-  const status = BW_NOTIF_GROUP_ID_NUM ? `✅ ${BW_NOTIF_GROUP_ID_NUM}` : '❌ Belum diisi';
+  const status = BW_NOTIF_GROUP_ID_NUM ? ` ${BW_NOTIF_GROUP_ID_NUM}` : ' Belum diisi';
   const intervalText = formatBandwidthReportInterval(BW_REPORT_INTERVAL_MINUTES);
   const message =
-    '*📶 PENGATURAN NOTIF BANDWIDTH SERVER*\n\n' +
+    '* PENGATURAN NOTIF BANDWIDTH SERVER*\n\n' +
     `Group ID tujuan notif BW: ${status}\n` +
     `Interval laporan otomatis: ${intervalText}\n` +
     'Anda bisa ubah ke menit atau jam.';
@@ -6709,7 +6709,7 @@ bot.action('bw_notif_set_group_id', async (ctx) => {
   await ctx.answerCbQuery();
   const adminId = ctx.from.id;
   if (!adminIds.includes(adminId)) {
-    return ctx.reply('🚫 Anda tidak memiliki izin untuk mengubah pengaturan ini.');
+    return ctx.reply(' Anda tidak memiliki izin untuk mengubah pengaturan ini.');
   }
   userState[ctx.chat.id] = { step: 'bw_notif_group_id' };
   await ctx.reply('Kirim *GROUP ID* tujuan notifikasi bandwidth.\nContoh: `-1001234567890`\nKetik "batal" untuk membatalkan.', { parse_mode: 'Markdown' });
@@ -6719,7 +6719,7 @@ bot.action('bw_notif_set_interval', async (ctx) => {
   await ctx.answerCbQuery();
   const adminId = ctx.from.id;
   if (!adminIds.includes(adminId)) {
-    return ctx.reply('🚫 Anda tidak memiliki izin untuk mengubah pengaturan ini.');
+    return ctx.reply(' Anda tidak memiliki izin untuk mengubah pengaturan ini.');
   }
   userState[ctx.chat.id] = { step: 'bw_notif_interval' };
   await ctx.reply(
@@ -6743,9 +6743,9 @@ async function sendPaymentGatewayMainMenu(ctx) {
     [{ text: 'Mode: OrderKuota saja', callback_data: 'payment_gateway_mode_orderkuota' }],
     [{ text: 'Mode: GoPay saja', callback_data: 'payment_gateway_mode_gopay' }],
     [{ text: 'Mode: Keduanya (fallback)', callback_data: 'payment_gateway_mode_both' }],
-    [{ text: '⏱️ Set Masa Aktif QRIS', callback_data: 'payment_gateway_set_all_qris_expire' }],
-    [{ text: '⚙️ Setting OrderKuota', callback_data: 'payment_gateway_menu_orderkuota' }],
-    [{ text: '⚙️ Setting GoPay', callback_data: 'payment_gateway_menu_gopay' }],
+    [{ text: ' Set Masa Aktif QRIS', callback_data: 'payment_gateway_set_all_qris_expire' }],
+    [{ text: ' Setting OrderKuota', callback_data: 'payment_gateway_menu_orderkuota' }],
+    [{ text: ' Setting GoPay', callback_data: 'payment_gateway_menu_gopay' }],
     [{ text: 'Kembali', callback_data: 'admin_menu_tools' }]
   ];
 
@@ -6789,7 +6789,7 @@ async function sendPaymentGatewayOrderKuotaMenu(ctx) {
     [{ text: 'Set Cooldown Tombol (detik)', callback_data: 'payment_gateway_set_orderkuota_check_cooldown' }],
     [{ text: 'Set Maksimal Tekan Tombol', callback_data: 'payment_gateway_set_orderkuota_check_max_taps' }],
     [{ text: 'Set Stop Polling (menit)', callback_data: 'payment_gateway_set_orderkuota_poll_window' }],
-    [{ text: '🔙 Kembali', callback_data: 'payment_gateway_settings_menu' }]
+    [{ text: ' Kembali', callback_data: 'payment_gateway_settings_menu' }]
   ];
 
   await ctx.editMessageText(message, {
@@ -6814,7 +6814,7 @@ async function sendPaymentGatewayGoPayMenu(ctx) {
     [{ text: 'Set Expired QRIS (menit)', callback_data: 'payment_gateway_set_gopay_expire' }],
     [{ text: 'Set Masa Aktif QRIS Semua Gateway', callback_data: 'payment_gateway_set_all_qris_expire' }],
     [{ text: 'Set Minimal TopUp', callback_data: 'payment_gateway_set_gopay_min_topup' }],
-    [{ text: '🔙 Kembali', callback_data: 'payment_gateway_settings_menu' }]
+    [{ text: ' Kembali', callback_data: 'payment_gateway_settings_menu' }]
   ];
 
   await ctx.editMessageText(message, {
@@ -7028,7 +7028,7 @@ bot.action('admin_contact_settings_menu', async (ctx) => {
   await ctx.answerCbQuery();
   const adminId = ctx.from.id;
   if (!adminIds.includes(adminId)) {
-    return ctx.reply('🚫 Anda tidak memiliki izin untuk mengakses menu ini.');
+    return ctx.reply(' Anda tidak memiliki izin untuk mengakses menu ini.');
   }
 
   const wa = getAdminWhatsappNumber();
@@ -7036,11 +7036,11 @@ bot.action('admin_contact_settings_menu', async (ctx) => {
   const keyboard = [
     [{ text: 'Set Nomor WhatsApp', callback_data: 'admin_set_whatsapp' }],
     [{ text: 'Set Username Telegram', callback_data: 'admin_set_telegram' }],
-    [{ text: '🔙 Kembali', callback_data: 'admin_menu_tools' }]
+    [{ text: ' Kembali', callback_data: 'admin_menu_tools' }]
   ];
 
   await ctx.editMessageText(
-    '*📞 PENGATURAN KONTAK ADMIN*\n\n' +
+    '* PENGATURAN KONTAK ADMIN*\n\n' +
     'WhatsApp: ' + (wa || '-') + '\n' +
     'Telegram: `' + tg + '`',
     {
@@ -7054,7 +7054,7 @@ bot.action('admin_set_whatsapp', async (ctx) => {
   await ctx.answerCbQuery();
   const adminId = ctx.from.id;
   if (!adminIds.includes(adminId)) {
-    return ctx.reply('🚫 Anda tidak memiliki izin untuk mengubah pengaturan ini.');
+    return ctx.reply(' Anda tidak memiliki izin untuk mengubah pengaturan ini.');
   }
   userState[ctx.chat.id] = { step: 'admin_contact_whatsapp' };
   await ctx.reply('Kirim nomor WhatsApp admin (format internasional, contoh: 6281234567890).\nKetik "batal" untuk membatalkan.');
@@ -7064,7 +7064,7 @@ bot.action('admin_set_telegram', async (ctx) => {
   await ctx.answerCbQuery();
   const adminId = ctx.from.id;
   if (!adminIds.includes(adminId)) {
-    return ctx.reply('🚫 Anda tidak memiliki izin untuk mengubah pengaturan ini.');
+    return ctx.reply(' Anda tidak memiliki izin untuk mengubah pengaturan ini.');
   }
   userState[ctx.chat.id] = { step: 'admin_contact_telegram' };
   await ctx.reply('Kirim username Telegram admin (contoh: @myadmin atau myadmin).\nKetik "batal" untuk membatalkan.');
@@ -7073,12 +7073,12 @@ bot.action('toggle_topup_manual', async (ctx) => {
   await ctx.answerCbQuery();
   const adminId = ctx.from.id;
   if (!adminIds.includes(adminId)) {
-    return ctx.reply('🚫 Anda tidak memiliki izin untuk mengubah pengaturan ini.');
+    return ctx.reply(' Anda tidak memiliki izin untuk mengubah pengaturan ini.');
   }
 
   const current = loadTopupManualSetting();
   const next = saveTopupManualSetting(!current);
-  const statusText = next ? '✅ TopUp manual diaktifkan.' : '🚫 TopUp manual dinonaktifkan.';
+  const statusText = next ? ' TopUp manual diaktifkan.' : ' TopUp manual dinonaktifkan.';
   await ctx.reply(statusText);
   return sendAdminSaldoMenu(ctx);
 });
@@ -7087,12 +7087,12 @@ bot.action('toggle_topup_auto', async (ctx) => {
   await ctx.answerCbQuery();
   const adminId = ctx.from.id;
   if (!adminIds.includes(adminId)) {
-    return ctx.reply('🚫 Anda tidak memiliki izin untuk mengubah pengaturan ini.');
+    return ctx.reply(' Anda tidak memiliki izin untuk mengubah pengaturan ini.');
   }
 
   const current = loadTopupAutoSetting();
   const next = saveTopupAutoSetting(!current);
-  const statusText = next ? '✅ TopUp otomatis diaktifkan.' : '🚫 TopUp otomatis dinonaktifkan.';
+  const statusText = next ? ' TopUp otomatis diaktifkan.' : ' TopUp otomatis dinonaktifkan.';
   await ctx.reply(statusText);
   return sendAdminSaldoMenu(ctx);
 });
@@ -7101,14 +7101,14 @@ bot.action('toggle_sc_nexus_menu', async (ctx) => {
   await ctx.answerCbQuery();
   const adminId = ctx.from.id;
   if (!adminIds.includes(adminId)) {
-    return ctx.reply('🚫 Anda tidak memiliki izin untuk mengubah pengaturan ini.');
+    return ctx.reply(' Anda tidak memiliki izin untuk mengubah pengaturan ini.');
   }
 
   const current = loadScNexusMenuSetting();
   const next = saveScNexusMenuSetting(!current);
   const statusText = next
-    ? '✅ Menu SC 1FORCR NEXUS diaktifkan.'
-    : '🚫 Menu SC 1FORCR NEXUS dinonaktifkan.';
+    ? ' Menu SC 1FORCR NEXUS diaktifkan.'
+    : ' Menu SC 1FORCR NEXUS dinonaktifkan.';
   await ctx.reply(statusText);
   return sendAdminSaldoMenu(ctx);
 });
@@ -7127,7 +7127,7 @@ bot.action('admin_menu_tools', async (ctx) => {
 bot.action('admin_download_config_menu', async (ctx) => {
   await ctx.answerCbQuery();
   if (!adminIds.includes(ctx.from.id)) {
-    return ctx.reply('🚫 Anda tidak memiliki izin untuk mengakses menu ini.');
+    return ctx.reply(' Anda tidak memiliki izin untuk mengakses menu ini.');
   }
   delete userState[ctx.chat.id];
   return sendAdminDownloadConfigMenu(ctx);
@@ -7136,7 +7136,7 @@ bot.action('admin_download_config_menu', async (ctx) => {
 bot.action('admin_config_upload', async (ctx) => {
   await ctx.answerCbQuery();
   if (!adminIds.includes(ctx.from.id)) {
-    return ctx.reply('🚫 Anda tidak memiliki izin untuk upload config.');
+    return ctx.reply(' Anda tidak memiliki izin untuk upload config.');
   }
 
   userState[ctx.chat.id] = { step: 'admin_config_upload_document' };
@@ -7150,7 +7150,7 @@ bot.action('admin_config_upload', async (ctx) => {
 bot.action(/admin_config_delete_(\d+)/, async (ctx) => {
   await ctx.answerCbQuery();
   if (!adminIds.includes(ctx.from.id)) {
-    return ctx.reply('🚫 Anda tidak memiliki izin untuk menghapus config.');
+    return ctx.reply(' Anda tidak memiliki izin untuk menghapus config.');
   }
 
   const configId = Number(ctx.match[1]);
@@ -7174,7 +7174,7 @@ bot.action(/admin_config_delete_(\d+)/, async (ctx) => {
 bot.action('maintenance_menu', async (ctx) => {
   await ctx.answerCbQuery();
   if (!adminIds.includes(ctx.from.id)) {
-    return ctx.reply('🚫 Anda tidak memiliki izin untuk mengubah pengaturan ini.');
+    return ctx.reply(' Anda tidak memiliki izin untuk mengubah pengaturan ini.');
   }
   return sendMaintenanceMenu(ctx);
 });
@@ -7182,21 +7182,21 @@ bot.action('maintenance_menu', async (ctx) => {
 bot.action('maintenance_toggle', async (ctx) => {
   await ctx.answerCbQuery();
   if (!adminIds.includes(ctx.from.id)) {
-    return ctx.reply('🚫 Anda tidak memiliki izin untuk mengubah pengaturan ini.');
+    return ctx.reply(' Anda tidak memiliki izin untuk mengubah pengaturan ini.');
   }
   const current = loadMaintenanceSetting();
   const next = saveMaintenanceSetting({
     enabled: !current.enabled,
     estimate: current.estimate || ''
   });
-  await ctx.reply(next.enabled ? '✅ Mode maintenance diaktifkan.' : '✅ Mode maintenance dinonaktifkan.');
+  await ctx.reply(next.enabled ? ' Mode maintenance diaktifkan.' : ' Mode maintenance dinonaktifkan.');
   return sendMaintenanceMenu(ctx);
 });
 
 bot.action('maintenance_set_estimate', async (ctx) => {
   await ctx.answerCbQuery();
   if (!adminIds.includes(ctx.from.id)) {
-    return ctx.reply('🚫 Anda tidak memiliki izin untuk mengubah pengaturan ini.');
+    return ctx.reply(' Anda tidak memiliki izin untuk mengubah pengaturan ini.');
   }
   userState[ctx.chat.id] = { step: 'maintenance_estimate_input' };
   return ctx.reply('Masukkan estimasi maintenance. Contoh: 30 menit atau 2 jam.\nKetik "batal" untuk membatalkan.');
@@ -7281,7 +7281,7 @@ bot.action('reseller_terms_trigger', async (ctx) => {
   await ctx.answerCbQuery();
   const adminId = ctx.from.id;
   if (!adminIds.includes(adminId)) {
-    return ctx.reply('🚫 Anda tidak memiliki izin untuk menjalankan cek ini.');
+    return ctx.reply(' Anda tidak memiliki izin untuk menjalankan cek ini.');
   }
 
   try {
@@ -7292,10 +7292,10 @@ bot.action('reseller_terms_trigger', async (ctx) => {
     const end = new Date(year, month, 0, 23, 59, 59, 999);
     const periodLabel = start.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
     await evaluateResellerTermsForPeriod(start.getTime(), end.getTime(), periodLabel);
-    await ctx.reply(`✅ Cek syarat reseller untuk periode ${periodLabel} selesai.`);
+    await ctx.reply(` Cek syarat reseller untuk periode ${periodLabel} selesai.`);
   } catch (err) {
     logger.error('Error trigger cek syarat reseller:', err.message);
-    await ctx.reply('❌ Gagal menjalankan cek syarat reseller.');
+    await ctx.reply(' Gagal menjalankan cek syarat reseller.');
   }
 });
 
@@ -7303,7 +7303,7 @@ bot.action('reseller_restore', async (ctx) => {
   await ctx.answerCbQuery();
   const adminId = ctx.from.id;
   if (!adminIds.includes(adminId)) {
-    return ctx.reply('🚫 Anda tidak memiliki izin untuk mengubah reseller.');
+    return ctx.reply(' Anda tidak memiliki izin untuk mengubah reseller.');
   }
 
   userState[ctx.chat.id] = { step: 'reseller_restore_input' };
@@ -7314,7 +7314,7 @@ bot.action('auto_backup_now', async (ctx) => {
   await ctx.answerCbQuery();
   const adminId = ctx.from.id;
   if (!adminIds.includes(adminId)) {
-    return ctx.reply('🚫 Anda tidak memiliki izin untuk menjalankan backup.');
+    return ctx.reply(' Anda tidak memiliki izin untuk menjalankan backup.');
   }
 
   const files = [
@@ -7330,7 +7330,7 @@ bot.action('auto_backup_now', async (ctx) => {
     }
   }
 
-  await ctx.reply('✅ Backup otomatis telah dikirim.');
+  await ctx.reply(' Backup otomatis telah dikirim.');
 });
 bot.action('admin_sync_server_now', async (ctx) => {
   await ctx.answerCbQuery();
@@ -7482,13 +7482,13 @@ bot.command('addressel', async (ctx) => {
 
     // Hanya admin yang bisa menjalankan perintah ini
     if (!adminIds.includes(requesterId)) {
-      return ctx.reply('🚫 Anda tidak memiliki izin untuk melakukan tindakan ini.');
+      return ctx.reply(' Anda tidak memiliki izin untuk melakukan tindakan ini.');
     }
 
     // Ambil ID Telegram dari argumen
     const args = ctx.message.text.split(' ');
     if (args.length < 2) {
-      return ctx.reply('❌ Format salah. Gunakan perintah:\n/addressel <id_telegram_user>');
+      return ctx.reply(' Format salah. Gunakan perintah:\n/addressel <id_telegram_user>');
     }
 
     const targetId = args[1];
@@ -7502,16 +7502,16 @@ bot.command('addressel', async (ctx) => {
 
     // Cek apakah ID sudah ada
     if (resellerList.includes(targetId)) {
-      return ctx.reply(`⚠️ User dengan ID ${targetId} sudah menjadi reseller.`);
+      return ctx.reply(` User dengan ID ${targetId} sudah menjadi reseller.`);
     }
 
     // Tambahkan ID ke file
     fs.appendFileSync(resselFilePath, `${targetId}\n`);
-    ctx.reply(`✅ User dengan ID ${targetId} berhasil dijadikan reseller.`);
+    ctx.reply(` User dengan ID ${targetId} berhasil dijadikan reseller.`);
 
   } catch (e) {
-    logger.error('❌ Error di command /addressel:', e.message);
-    ctx.reply('❌ Terjadi kesalahan saat menjalankan perintah.');
+    logger.error(' Error di command /addressel:', e.message);
+    ctx.reply(' Terjadi kesalahan saat menjalankan perintah.');
   }
 });
 
@@ -7521,20 +7521,20 @@ bot.command('delressel', async (ctx) => {
 
     // Hanya admin yang bisa menjalankan perintah ini
     if (!adminIds.includes(requesterId)) {
-      return ctx.reply('🚫 Anda tidak memiliki izin untuk melakukan tindakan ini.');
+      return ctx.reply(' Anda tidak memiliki izin untuk melakukan tindakan ini.');
     }
 
     // Ambil ID Telegram dari argumen
     const args = ctx.message.text.split(' ');
     if (args.length < 2) {
-      return ctx.reply('❌ Format salah. Gunakan perintah:\n/delressel <id_telegram_user>');
+      return ctx.reply(' Format salah. Gunakan perintah:\n/delressel <id_telegram_user>');
     }
 
     const targetId = args[1];
 
     // Cek apakah file ressel.db ada
     if (!fs.existsSync(resselFilePath)) {
-      return ctx.reply('📁 File reseller belum dibuat.');
+      return ctx.reply(' File reseller belum dibuat.');
     }
 
     // Baca file dan filter ulang tanpa targetId
@@ -7544,11 +7544,11 @@ bot.command('delressel', async (ctx) => {
     // Tulis ulang file dengan data yang sudah difilter
     fs.writeFileSync(resselFilePath, resellerList.join('\n') + (resellerList.length ? '\n' : ''));
 
-    ctx.reply(`✅ User dengan ID ${targetId} berhasil dihapus dari daftar reseller.`);
+    ctx.reply(` User dengan ID ${targetId} berhasil dihapus dari daftar reseller.`);
 
   } catch (e) {
-    logger.error('❌ Error di command /delressel:', e.message);
-    ctx.reply('❌ Terjadi kesalahan saat menjalankan perintah.');
+    logger.error(' Error di command /delressel:', e.message);
+    ctx.reply(' Terjadi kesalahan saat menjalankan perintah.');
   }
 });
 
@@ -7566,8 +7566,8 @@ bot.on('photo', async (ctx) => {
   const response = await axios.get(fileLink.href, { responseType: 'arraybuffer' });
   fs.writeFileSync(filePath, Buffer.from(response.data));
 
-  await ctx.reply('✅ Gambar QRIS berhasil diunggah!');
-  logger.info('🖼️ QRIS image uploaded by admin');
+  await ctx.reply(' Gambar QRIS berhasil diunggah!');
+  logger.info(' QRIS image uploaded by admin');
   delete userState[adminId];
 });
 
@@ -7668,20 +7668,20 @@ bot.action('menu_topup', async (ctx) => {
 
   // Top Up VPN (otomatis / manual sesuai setting)
   if (loadTopupAutoSetting()) {
-    keyboard.push([{ text: '💰 Top Up Saldo VPN (Otomatis)', callback_data: 'topup_saldo' }]);
+    keyboard.push([{ text: ' Top Up Saldo VPN (Otomatis)', callback_data: 'topup_saldo' }]);
   }
   if (loadTopupManualSetting()) {
-    keyboard.push([{ text: '💰 Top Up Saldo VPN (Manual QRIS)', callback_data: 'topup_manual' }]);
+    keyboard.push([{ text: ' Top Up Saldo VPN (Manual QRIS)', callback_data: 'topup_manual' }]);
   }
   // Top Up Tembak Kuota (wallet Akrab)
-  keyboard.push([{ text: '💳 Top Up Saldo Tembak Kuota', callback_data: 'topup_akrab' }]);
-  keyboard.push([{ text: '🏠 Menu Utama', callback_data: 'send_main_menu' }]);
+  keyboard.push([{ text: ' Top Up Saldo Tembak Kuota', callback_data: 'topup_akrab' }]);
+  keyboard.push([{ text: ' Menu Utama', callback_data: 'send_main_menu' }]);
 
   const msgText =
-    '💳 <b>TOP UP SALDO</b>\n' +
+    ' <b>TOP UP SALDO</b>\n' +
     '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
-    '┃ 💰 Saldo VPN          : <code>Rp ' + Number(saldoVpn || 0).toLocaleString('id-ID') + '</code>\n' +
-    '┃ 💳 Saldo Tembak Kuota : <code>Rp ' + Number(saldoAkrab || 0).toLocaleString('id-ID') + '</code>\n' +
+    '┃  Saldo VPN          : <code>Rp ' + Number(saldoVpn || 0).toLocaleString('id-ID') + '</code>\n' +
+    '┃  Saldo Tembak Kuota : <code>Rp ' + Number(saldoAkrab || 0).toLocaleString('id-ID') + '</code>\n' +
     '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
     '<i>VPN: Akun VPN + Suntik Followers</i>\n' +
     '<i>Tembak Kuota: PPOB + Akrab & Circle</i>\n\n' +
@@ -7691,13 +7691,13 @@ bot.action('menu_topup', async (ctx) => {
     .catch(async () => { await ctx.reply(msgText, { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } }); });
 });
 
-// ✅ BUAT INI SATU SAJA (tempat yang sama dengan action lainnya)
+//  BUAT INI SATU SAJA (tempat yang sama dengan action lainnya)
 bot.action('topup_saldo', async (ctx) => {
   try {
     await ctx.answerCbQuery();
     if (!loadTopupAutoSetting()) {
       await ctx.reply(
-        '❌ *TOP-UP OTOMATIS SEDANG NONAKTIF*\n\n' +
+        ' *TOP-UP OTOMATIS SEDANG NONAKTIF*\n\n' +
         'Silakan gunakan menu *TopUp Manual* untuk sementara.',
         { parse_mode: 'Markdown' }
       );
@@ -7708,11 +7708,11 @@ bot.action('topup_saldo', async (ctx) => {
     const readiness = getPaymentGatewayReadiness();
     if (!hasReadyEnabledPaymentGateway(readiness)) {
       await ctx.reply(
-        '❌ *TOP-UP OTOMATIS SEMENTARA TIDAK TERSEDIA*\n\n' +
+        ' *TOP-UP OTOMATIS SEMENTARA TIDAK TERSEDIA*\n\n' +
         'Admin belum mengkonfigurasi sistem pembayaran.\n' +
         'Sistem tidak dapat memverifikasi pembayaran Anda.\n\n' +
-        `📞 Hubungi admin: ${ADMIN_USERNAME}\n\n` +
-        '🔧 *Admin bisa cek konfigurasi dengan:*\n' +
+        ` Hubungi admin: ${ADMIN_USERNAME}\n\n` +
+        ' *Admin bisa cek konfigurasi dengan:*\n' +
         '`/checkpaymentconfig`\n\n' +
         '_Admin sudah mendapatkan notifikasi untuk segera memperbaiki sistem._',
         { parse_mode: 'Markdown' }
@@ -7721,7 +7721,7 @@ bot.action('topup_saldo', async (ctx) => {
       return;
     }
     
-    // ✅ MODE ENABLED - Credential sudah benar
+    //  MODE ENABLED - Credential sudah benar
     const userId = ctx.from.id;
     
     if (!global.depositState) {
@@ -7740,7 +7740,7 @@ bot.action('topup_saldo', async (ctx) => {
     const bonusCfg = loadTopupBonusSetting();
     const bonusInfo = bonusCfg.enabled
       ? (
-        `🎁 *BONUS TOPUP OTOMATIS:*\n` +
+        ` *BONUS TOPUP OTOMATIS:*\n` +
         `• 10-49rb: ${bonusCfg.range_10_40}%\n` +
         `• 50-79rb: ${bonusCfg.range_50_70}%\n` +
         `• 80rb+: ${bonusCfg.range_70_100}%\n\n`
@@ -7749,11 +7749,11 @@ bot.action('topup_saldo', async (ctx) => {
     const feeDisplay = getTopupFeeDisplay(PAYMENT_GATEWAY_MODE);
 
     await ctx.editMessageText(
-      '💰 *TOP UP SALDO OTOMATIS*\n\n' +
-      `💳 *Minimal:* Rp ${minTopupForMode.toLocaleString('id-ID')}\n\n` +
+      ' *TOP UP SALDO OTOMATIS*\n\n' +
+      ` *Minimal:* Rp ${minTopupForMode.toLocaleString('id-ID')}\n\n` +
       bonusInfo +
       feeDisplay.menuNotice +
-      '⚠️ *PERHATIAN:*\n' +
+      ' *PERHATIAN:*\n' +
       feeDisplay.transferNotice +
       'Silakan masukkan jumlah top-up:',
       {
@@ -7765,9 +7765,9 @@ bot.action('topup_saldo', async (ctx) => {
     logger.info(`User ${userId} memulai topup (credential valid)`);
     
   } catch (error) {
-    logger.error('❌ Error in topup_saldo handler:', error);
+    logger.error(' Error in topup_saldo handler:', error);
     await ctx.reply(
-      '❌ Terjadi kesalahan sistem.\nSilakan coba lagi atau hubungi admin.',
+      ' Terjadi kesalahan sistem.\nSilakan coba lagi atau hubungi admin.',
       { parse_mode: 'Markdown' }
     );
   }
@@ -7823,7 +7823,7 @@ bot.action(/download_config_(\d+)/, async (ctx) => {
   }
 });
 
-// === 📞 HUBUNGI ADMIN (WHATSAPP) ===
+// ===  HUBUNGI ADMIN (WHATSAPP) ===
 bot.action('hubungi_admin', async (ctx) => {
   try {
     await ctx.answerCbQuery();
@@ -7834,7 +7834,7 @@ bot.action('hubungi_admin', async (ctx) => {
     const adminWhatsApp = getAdminWhatsappNumber();
     const adminWhatsappUrl = getAdminWhatsappUrl();
     if (!adminWhatsApp || !adminWhatsappUrl) {
-      return ctx.reply(`⚠️ Kontak WhatsApp admin belum diset. Silakan hubungi ${getAdminTelegramUsername()} terlebih dahulu.`);
+      return ctx.reply(` Kontak WhatsApp admin belum diset. Silakan hubungi ${getAdminTelegramUsername()} terlebih dahulu.`);
     }
 
     const autoMessage = encodeURIComponent(
@@ -7846,19 +7846,19 @@ bot.action('hubungi_admin', async (ctx) => {
     const whatsappUrl = `${adminWhatsappUrl}?text=${autoMessage}`;
 
     await ctx.reply(
-      `📞 *HUBUNGI ADMIN*\n\n` +
+      ` *HUBUNGI ADMIN*\n\n` +
       `Klik tombol di bawah untuk menghubungi admin via WhatsApp:\n\n` +
-      `👤 Nama Anda: *${userName}*\n` +
+      ` Nama Anda: *${userName}*\n` +
       `🆔 ID Telegram: *${userId}*\n\n` +
-      `ℹ️ *ID Telegram Anda sudah disertakan dalam pesan otomatis*\n\n` +
+      `ℹ *ID Telegram Anda sudah disertakan dalam pesan otomatis*\n\n` +
       `Pesan otomatis sudah disiapkan. Anda bisa mengeditnya sebelum mengirim.`,
       {
         parse_mode: 'Markdown',
         reply_markup: {
           inline_keyboard: [
-            [{ text: '📱 Buka WhatsApp (Pesan Otomatis)', url: whatsappUrl }],
-            [{ text: '📝 Kirim Pesan Manual', url: adminWhatsappUrl }],
-            [{ text: '🔙 Kembali', callback_data: 'send_main_menu' }]
+            [{ text: ' Buka WhatsApp (Pesan Otomatis)', url: whatsappUrl }],
+            [{ text: ' Kirim Pesan Manual', url: adminWhatsappUrl }],
+            [{ text: ' Kembali', callback_data: 'send_main_menu' }]
           ]
         }
       }
@@ -7866,8 +7866,8 @@ bot.action('hubungi_admin', async (ctx) => {
 
     logger.info(`User ${userId} membuka menu hubungi admin`);
   } catch (error) {
-    logger.error('❌ Error di tombol hubungi_admin:', error.message);
-    await ctx.reply('⚠️ Terjadi kesalahan saat membuka WhatsApp. Silakan coba lagi.');
+    logger.error(' Error di tombol hubungi_admin:', error.message);
+    await ctx.reply(' Terjadi kesalahan saat membuka WhatsApp. Silakan coba lagi.');
   }
 });
 
@@ -8009,20 +8009,20 @@ bot.action('view_accounts', async (ctx) => {
     [userId, now],
     async (err, row) => {
       if (err) {
-        logger.error('❌ Error hitung akun aktif:', err.message);
-        return ctx.reply('❌ Terjadi kesalahan saat memuat akun.');
+        logger.error(' Error hitung akun aktif:', err.message);
+        return ctx.reply(' Terjadi kesalahan saat memuat akun.');
       }
       const total = row ? row.count : 0;
       const keyboard = [
-        [{ text: '✅ Lihat Akun Aktif Saya', callback_data: 'view_accounts_active' }]
+        [{ text: ' Lihat Akun Aktif Saya', callback_data: 'view_accounts_active' }]
       ];
       if (total > 10) {
-        keyboard.push([{ text: '📂 Lihat Semua Akun Saya', callback_data: 'view_accounts_active_all' }]);
+        keyboard.push([{ text: ' Lihat Semua Akun Saya', callback_data: 'view_accounts_active_all' }]);
       }
-      keyboard.push([{ text: '⌛ Lihat Akun Expired', callback_data: 'view_accounts_expired' }]);
-      keyboard.push([{ text: '🔙 Kembali', callback_data: 'send_main_menu' }]);
+      keyboard.push([{ text: ' Lihat Akun Expired', callback_data: 'view_accounts_expired' }]);
+      keyboard.push([{ text: ' Kembali', callback_data: 'send_main_menu' }]);
 
-      await ctx.reply('📂 *Lihat Akun Saya*', {
+      await ctx.reply(' *Lihat Akun Saya*', {
         parse_mode: 'Markdown',
         reply_markup: { inline_keyboard: keyboard }
       });
@@ -8255,7 +8255,7 @@ function isStrongCreateUsername(username) {
 bot.action('delete_my_account_intro', async (ctx) => {
   await ctx.answerCbQuery().catch(() => {});
   await ctx.reply(
-    '⚠️ *Hapus Akun Saya*\n\n' +
+    ' *Hapus Akun Saya*\n\n' +
     'Penghapusan hanya bisa jika sisa masa aktif minimal 2 hari.\n' +
     'Akun baru bisa dihapus setelah aktif minimal 24 jam.\n' +
     'Konversi saldo dihitung full sesuai sisa hari.\n\n' +
@@ -8264,8 +8264,8 @@ bot.action('delete_my_account_intro', async (ctx) => {
       parse_mode: 'Markdown',
       reply_markup: {
         inline_keyboard: [
-          [{ text: '🗂️ Pilih Server', callback_data: 'delete_my_account_select_server' }],
-          [{ text: '🔙 Kembali', callback_data: 'send_main_menu' }]
+          [{ text: ' Pilih Server', callback_data: 'delete_my_account_select_server' }],
+          [{ text: ' Kembali', callback_data: 'send_main_menu' }]
         ]
       }
     }
@@ -8586,11 +8586,11 @@ bot.action(/delete_my_account_pick_(\d+)/, async (ctx) => {
     [accountId, userId],
     async (err, row) => {
       if (err) {
-        logger.error('❌ Error ambil detail akun untuk hapus mandiri:', err.message);
-        return ctx.reply('❌ Terjadi kesalahan saat memuat detail akun.');
+        logger.error(' Error ambil detail akun untuk hapus mandiri:', err.message);
+        return ctx.reply(' Terjadi kesalahan saat memuat detail akun.');
       }
       if (!row) {
-        return ctx.reply('❌ Akun tidak ditemukan atau bukan milik kamu.');
+        return ctx.reply(' Akun tidak ditemukan atau bukan milik kamu.');
       }
 
       const remainingDays = calcRemainingDays(row.expires_at);
@@ -8650,19 +8650,19 @@ bot.action(/delete_my_account_confirm_(\d+)/, async (ctx) => {
     );
 
     if (!row) {
-      return ctx.reply('❌ Akun tidak ditemukan atau sudah terhapus.');
+      return ctx.reply(' Akun tidak ditemukan atau sudah terhapus.');
     }
 
     const deleteFn = SELF_DELETE_TYPE_HANDLERS[row.type];
     if (!deleteFn) {
-      return ctx.reply(`❌ Layanan ${row.type} belum didukung untuk hapus mandiri.`);
+      return ctx.reply(` Layanan ${row.type} belum didukung untuk hapus mandiri.`);
     }
 
     const result = await deleteFn(row.username, 'none', 'none', 'none', row.server_id);
     const resultText = typeof result === 'string' ? result : JSON.stringify(result || {});
     if (/gagal|error|failed|tidak\s+ditemukan|not\s+found/i.test(resultText)) {
-      logger.error(`❌ Gagal hapus akun mandiri ${row.username} (${row.type}): ${resultText}`);
-      return ctx.reply(`❌ Gagal hapus akun dari server.\n\n${resultText}`);
+      logger.error(` Gagal hapus akun mandiri ${row.username} (${row.type}): ${resultText}`);
+      return ctx.reply(` Gagal hapus akun dari server.\n\n${resultText}`);
     }
 
     const remainingDays = calcRemainingDays(row.expires_at);
@@ -8701,7 +8701,7 @@ bot.action(/delete_my_account_confirm_(\d+)/, async (ctx) => {
     });
 
     await ctx.reply(
-      `✅ Akun berhasil dihapus.\n` +
+      ` Akun berhasil dihapus.\n` +
       `• Username: ${row.username}\n` +
       `• Layanan: ${String(row.type || '-').toUpperCase()}\n` +
       `• Server: ${row.server_name || row.domain || '-'}\n` +
@@ -8709,15 +8709,15 @@ bot.action(/delete_my_account_confirm_(\d+)/, async (ctx) => {
       {
         reply_markup: {
           inline_keyboard: [
-            [{ text: '🗂️ Hapus Akun Lain', callback_data: 'delete_my_account_select_server' }],
-            [{ text: '🔙 Menu Utama', callback_data: 'send_main_menu' }]
+            [{ text: ' Hapus Akun Lain', callback_data: 'delete_my_account_select_server' }],
+            [{ text: ' Menu Utama', callback_data: 'send_main_menu' }]
           ]
         }
       }
     );
   } catch (e) {
-    logger.error('❌ Error konfirmasi hapus akun mandiri:', e.message);
-    await ctx.reply('❌ Terjadi kesalahan saat menghapus akun.');
+    logger.error(' Error konfirmasi hapus akun mandiri:', e.message);
+    await ctx.reply(' Terjadi kesalahan saat menghapus akun.');
   }
 });
 async function renderRemoteOwnedAccountsPage(ctx, page = 0) {
@@ -8762,10 +8762,10 @@ async function renderRemoteOwnedAccountsPage(ctx, page = 0) {
 async function renderLocalOwnedAccountsPage(ctx, listType = 'active', page = 0) {
   const state = userState[ctx.chat.id]?.local_owned_accounts;
   if (!state || !Array.isArray(state.rows) || state.rows.length === 0) {
-    return ctx.reply(listType === 'expired' ? '📭 Tidak ada akun expired.' : '📭 Tidak ada akun aktif.');
+    return ctx.reply(listType === 'expired' ? ' Tidak ada akun expired.' : ' Tidak ada akun aktif.');
   }
   if (String(state.type || 'active') !== String(listType || 'active')) {
-    return ctx.reply('⚠️ Daftar akun sudah berubah. Buka ulang dari menu "Lihat Akun Saya".');
+    return ctx.reply(' Daftar akun sudah berubah. Buka ulang dari menu "Lihat Akun Saya".');
   }
 
   const pageSize = Number(state.pageSize || 4);
@@ -9058,11 +9058,11 @@ async function sendAccountList(ctx, isExpired, limit = 10) {
   db.all(query, params, async (err, rows) => {
     if (err) {
       const errMsg = err && err.message ? err.message : String(err);
-      logger.error('❌ Error ambil akun:', errMsg);
+      logger.error(' Error ambil akun:', errMsg);
       if (errMsg.includes('no such table')) {
-        return ctx.reply('📭 Belum ada data akun. Silakan buat akun dulu.');
+        return ctx.reply(' Belum ada data akun. Silakan buat akun dulu.');
       }
-      return ctx.reply('❌ Terjadi kesalahan saat mengambil data akun.');
+      return ctx.reply(' Terjadi kesalahan saat mengambil data akun.');
     }
     if (!rows || rows.length === 0) {
       if (!isExpired) {
@@ -9100,7 +9100,7 @@ async function sendAccountList(ctx, isExpired, limit = 10) {
           return renderRemoteOwnedAccountsPage(ctx, 0);
         }
       }
-      return ctx.reply(isExpired ? '📭 Tidak ada akun expired.' : '📭 Tidak ada akun aktif.');
+      return ctx.reply(isExpired ? ' Tidak ada akun expired.' : ' Tidak ada akun aktif.');
     }
 
     userState[ctx.chat.id] = userState[ctx.chat.id] || {};
@@ -9188,26 +9188,26 @@ bot.action(/renew_lookup_extend_(\d+)/, async (ctx) => {
 async function sendToolsMenu(ctx) {
   const keyboard = [
     [
-      { text: '♻️ Perpanjang Akun', callback_data: 'service_renew' },
-      { text: '📶 Cek Server', callback_data: 'cek_server' }
+      { text: ' Perpanjang Akun', callback_data: 'service_renew' },
+      { text: ' Cek Server', callback_data: 'cek_server' }
     ],
     [
-      { text: '🧩 Rubah Link Vmess, Vless dan Trojan To JSON', callback_data: 'hc_v2ray' }
+      { text: ' Rubah Link Vmess, Vless dan Trojan To JSON', callback_data: 'hc_v2ray' }
     ],
     [
-      { text: '💳 Riwayat TopUp', callback_data: 'topup_history' }
+      { text: ' Riwayat TopUp', callback_data: 'topup_history' }
     ],
-    [{ text: '🔙 Kembali', callback_data: 'send_main_menu' }]
+    [{ text: ' Kembali', callback_data: 'send_main_menu' }]
   ];
 
   try {
     if (ctx.updateType === 'callback_query') {
-      await ctx.editMessageText('*🧰 MENU TOOLS*', {
+      await ctx.editMessageText('* MENU TOOLS*', {
         parse_mode: 'Markdown',
         reply_markup: { inline_keyboard: keyboard }
       });
     } else {
-      await ctx.reply('*🧰 MENU TOOLS*', {
+      await ctx.reply('* MENU TOOLS*', {
         parse_mode: 'Markdown',
         reply_markup: { inline_keyboard: keyboard }
       });
@@ -9234,11 +9234,11 @@ bot.action('topup_history', async (ctx) => {
     [userId],
     async (err, rows) => {
       if (err) {
-        logger.error('❌ Error ambil riwayat topup:', err.message);
-        return ctx.reply('❌ Terjadi kesalahan saat mengambil riwayat topup.');
+        logger.error(' Error ambil riwayat topup:', err.message);
+        return ctx.reply(' Terjadi kesalahan saat mengambil riwayat topup.');
       }
       if (!rows || rows.length === 0) {
-        return ctx.reply('📭 Belum ada riwayat topup.');
+        return ctx.reply(' Belum ada riwayat topup.');
       }
 
       const blocks = rows.map((row, idx) => {
@@ -9252,7 +9252,7 @@ bot.action('topup_history', async (ctx) => {
         );
       });
 
-      const title = '💳 <b>Riwayat TopUp (10 terakhir)</b>';
+      const title = ' <b>Riwayat TopUp (10 terakhir)</b>';
       const maxLen = 3800;
       let chunk = `${title}\n\n`;
 
@@ -9424,7 +9424,7 @@ bot.action('confirm_hapus_saldo', async (ctx) => {
     const state = userState[adminId];
     
     if (!state || state.step !== 'hapus_saldo_confirm') {
-      return ctx.reply('❌ Sesi sudah berakhir. Silakan ulangi dari awal.');
+      return ctx.reply(' Sesi sudah berakhir. Silakan ulangi dari awal.');
     }
     
     const targetUserId = state.targetUserId;
@@ -9433,8 +9433,8 @@ bot.action('confirm_hapus_saldo', async (ctx) => {
     // Lakukan pengurangan saldo
     db.run('UPDATE users SET saldo = saldo - ? WHERE user_id = ?', [amount, targetUserId], function (err) {
       if (err) {
-        logger.error('❌ Error hapus saldo via menu:', err.message);
-        return ctx.reply('❌ Gagal menghapus saldo.');
+        logger.error(' Error hapus saldo via menu:', err.message);
+        return ctx.reply(' Gagal menghapus saldo.');
       }
       
       // Ambil saldo terbaru
@@ -9442,13 +9442,13 @@ bot.action('confirm_hapus_saldo', async (ctx) => {
         delete userState[adminId];
         
         if (err2) {
-          ctx.reply(`✅ Saldo sebesar *Rp ${amount.toLocaleString('id-ID')}* berhasil dihapus dari user \`${targetUserId}\`.`);
+          ctx.reply(` Saldo sebesar *Rp ${amount.toLocaleString('id-ID')}* berhasil dihapus dari user \`${targetUserId}\`.`);
         } else {
           ctx.reply(
-            `✅ *SALDO BERHASIL DIHAPUS!*\n\n` +
-            `👤 User ID: \`${targetUserId}\`\n` +
-            `🗑️ Jumlah dihapus: *Rp ${amount.toLocaleString('id-ID')}*\n` +
-            `💰 Saldo sekarang: *Rp ${updatedRow.saldo.toLocaleString('id-ID')}*`,
+            ` *SALDO BERHASIL DIHAPUS!*\n\n` +
+            ` User ID: \`${targetUserId}\`\n` +
+            ` Jumlah dihapus: *Rp ${amount.toLocaleString('id-ID')}*\n` +
+            ` Saldo sekarang: *Rp ${updatedRow.saldo.toLocaleString('id-ID')}*`,
             { parse_mode: 'Markdown' }
           );
         }
@@ -9470,10 +9470,10 @@ bot.action('confirm_hapus_saldo', async (ctx) => {
         try {
           bot.telegram.sendMessage(
             targetUserId,
-            `⚠️ *PEMBERITAHUAN SALDO*\n\n` +
+            ` *PEMBERITAHUAN SALDO*\n\n` +
             `Saldo Anda dikurangi sebesar *Rp ${amount.toLocaleString('id-ID')}* oleh admin.\n` +
-            `💰 Saldo sekarang: *Rp ${updatedRow ? updatedRow.saldo.toLocaleString('id-ID') : '0'}*\n\n` +
-            `📅 ${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })}`,
+            ` Saldo sekarang: *Rp ${updatedRow ? updatedRow.saldo.toLocaleString('id-ID') : '0'}*\n\n` +
+            ` ${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })}`,
             { parse_mode: 'Markdown' }
           ).catch(() => {
             // User mungkin memblokir bot, tidak apa-apa
@@ -9485,8 +9485,8 @@ bot.action('confirm_hapus_saldo', async (ctx) => {
     });
     
   } catch (error) {
-    logger.error('❌ Error in confirm_hapus_saldo:', error);
-    await ctx.reply('❌ Terjadi kesalahan saat menghapus saldo.');
+    logger.error(' Error in confirm_hapus_saldo:', error);
+    await ctx.reply(' Terjadi kesalahan saat menghapus saldo.');
   }
 });
 
@@ -9494,7 +9494,7 @@ bot.action('cancel_hapus_saldo', async (ctx) => {
   await ctx.answerCbQuery();
   const adminId = ctx.from.id;
   delete userState[adminId];
-  await ctx.reply('❌ Proses penghapusan saldo dibatalkan.');
+  await ctx.reply(' Proses penghapusan saldo dibatalkan.');
 });
 
 // =================== HANDLER HAPUS SALDO ===================
@@ -9502,12 +9502,12 @@ bot.action('hapus_saldo', async (ctx) => {
   const adminId = ctx.from.id;
   
   if (!adminIds.includes(adminId)) {
-    return ctx.reply('🚫 Anda tidak memiliki izin.');
+    return ctx.reply(' Anda tidak memiliki izin.');
   }
   
   await ctx.answerCbQuery();
   userState[adminId] = { step: 'hapus_saldo_userid' };
-  await ctx.reply('🗑️ *Masukkan ID Telegram user yang saldonya akan dihapus:*', { parse_mode: 'Markdown' });
+  await ctx.reply(' *Masukkan ID Telegram user yang saldonya akan dihapus:*', { parse_mode: 'Markdown' });
 });
 
 //callback handller statistik reseller
@@ -9519,21 +9519,21 @@ bot.action('reseller_stats', async (ctx) => {
     // Cek reseller
     const isReseller = await isUserReseller(userId);
     if (!isReseller) {
-      return ctx.reply('❌ Fitur ini hanya untuk reseller!');
+      return ctx.reply(' Fitur ini hanya untuk reseller!');
     }
     
-    // ✅ KIRIM PESAN LOADING DAN SIMPAN ID-NYA
-    const loadingMsg = await ctx.reply('⏳ Mengambil data statistik...');
+    //  KIRIM PESAN LOADING DAN SIMPAN ID-NYA
+    const loadingMsg = await ctx.reply(' Mengambil data statistik...');
     const loadingMsgId = loadingMsg.message_id;
     
     // Ambil data
     db.get('SELECT saldo FROM users WHERE user_id = ?', [userId], async (err, user) => {
       if (err) {
-        // ❌ HAPUS PESAN LOADING JIKA ERROR
+        //  HAPUS PESAN LOADING JIKA ERROR
         try {
           await ctx.deleteMessage(loadingMsgId);
         } catch (e) {}
-        await ctx.reply('❌ Terjadi kesalahan saat mengambil data.');
+        await ctx.reply(' Terjadi kesalahan saat mengambil data.');
         return;
       }
       
@@ -9550,7 +9550,7 @@ bot.action('reseller_stats', async (ctx) => {
          GROUP BY type`,
         [userId, firstDay.getTime(), lastDay.getTime()],
         async (err, rows) => {
-          // ✅ HAPUS PESAN LOADING SETELAH DATA SIAP
+          //  HAPUS PESAN LOADING SETELAH DATA SIAP
           try {
             await ctx.deleteMessage(loadingMsgId);
           } catch (e) {
@@ -9558,7 +9558,7 @@ bot.action('reseller_stats', async (ctx) => {
           }
           
           if (err) {
-            await ctx.reply('❌ Terjadi kesalahan saat mengambil data transaksi.');
+            await ctx.reply(' Terjadi kesalahan saat mengambil data transaksi.');
             return;
           }
 
@@ -9584,22 +9584,22 @@ bot.action('reseller_stats', async (ctx) => {
                             "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
           
           const statsMessage = 
-            `📊 *STATISTIK RESELLER ANDA*\n\n` +
-            `💰 Saldo: Rp ${saldo.toLocaleString('id-ID')}\n` +
-            `💳 Top Up Bulan Ini: Rp ${totalTopup.toLocaleString('id-ID')}\n` +
-            `📅 Periode: ${monthNames[now.getMonth()]} ${now.getFullYear()}\n\n` +
-            `📈 *Aktivitas Bulan Ini:*\n` +
+            ` *STATISTIK RESELLER ANDA*\n\n` +
+            ` Saldo: Rp ${saldo.toLocaleString('id-ID')}\n` +
+            ` Top Up Bulan Ini: Rp ${totalTopup.toLocaleString('id-ID')}\n` +
+            ` Periode: ${monthNames[now.getMonth()]} ${now.getFullYear()}\n\n` +
+            ` *Aktivitas Bulan Ini:*\n` +
             (details.length > 0 ? details.join('\n') : '• Belum ada transaksi') + `\n\n` +
-            `📊 Total: *${totalAccounts} akun*\n\n` +
-            `🔄 Update terakhir: ${now.toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta' })}`;
+            ` Total: *${totalAccounts} akun*\n\n` +
+            ` Update terakhir: ${now.toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta' })}`;
           
-          // ✅ KIRIM PESAN BARU DENGAN DATA
+          //  KIRIM PESAN BARU DENGAN DATA
           await ctx.reply(statsMessage, { 
             parse_mode: 'Markdown',
             reply_markup: {
               inline_keyboard: [
-                [{ text: '🔄 Refresh', callback_data: 'reseller_stats_refresh' }],
-                [{ text: '🔙 Kembali', callback_data: 'send_main_menu' }]
+                [{ text: ' Refresh', callback_data: 'reseller_stats_refresh' }],
+                [{ text: ' Kembali', callback_data: 'send_main_menu' }]
               ]
             }
           });
@@ -9609,7 +9609,7 @@ bot.action('reseller_stats', async (ctx) => {
     
   } catch (error) {
     logger.error('Error di reseller_stats:', error);
-    await ctx.reply('❌ Terjadi kesalahan.');
+    await ctx.reply(' Terjadi kesalahan.');
   }
 });
 
@@ -9637,18 +9637,18 @@ bot.action('add_server_zivpn', async (ctx) => {
     service: 'zivpn',
     data: {}
   };
-  await ctx.reply('🌐 Masukkan domain server ZIVPN:', { parse_mode: 'Markdown' });
+  await ctx.reply(' Masukkan domain server ZIVPN:', { parse_mode: 'Markdown' });
 });
 
 // Handler untuk info tools reseller
 bot.action('reseller_tools_info', async (ctx) => {
     await ctx.answerCbQuery();
     await ctx.reply(
-        '🛡️ *TOOLS RESELLER*\n\n' +
+        ' *TOOLS RESELLER*\n\n' +
         'Fitur khusus untuk reseller:\n' +
-        '• ❌ Hapus Akun - Hapus akun pelanggan\n' +
-        '• 🗝️ Kunci Akun - Nonaktifkan akun sementara\n' +
-        '• 🔐 Buka Kunci Akun - Aktifkan kembali akun\n\n' +
+        '•  Hapus Akun - Hapus akun pelanggan\n' +
+        '•  Kunci Akun - Nonaktifkan akun sementara\n' +
+        '•  Buka Kunci Akun - Aktifkan kembali akun\n\n' +
         'Fitur ini membantu Anda mengelola akun pelanggan dengan lebih baik.',
         { parse_mode: 'Markdown' }
     );
@@ -9828,25 +9828,25 @@ bot.action('cek_server', async (ctx) => {
 bot.action('tutorial_bot', async (ctx) => {
   try {
     await ctx.reply(
-      '📘 *Panduan Penggunaan Bot*\n\n' +
+      ' *Panduan Penggunaan Bot*\n\n' +
       'Tonton video tutorial lengkap cara menggunakan bot ini di YouTube:\n\n' +
-      '[👉 Klik di sini untuk menonton](https://youtu.be/gUVoAuZqyxo)',
+      '[ Klik di sini untuk menonton](https://youtu.be/gUVoAuZqyxo)',
       { parse_mode: 'Markdown' }
     );
   } catch (err) {
-    logger.error('❌ Error di tombol tutorial_bot:', err.message);
-    await ctx.reply('⚠️ Terjadi kesalahan saat membuka tutorial.');
+    logger.error(' Error di tombol tutorial_bot:', err.message);
+    await ctx.reply(' Terjadi kesalahan saat membuka tutorial.');
   }
 });
 
-// === 🖼️ UPLOAD GAMBAR QRIS ===
+// ===  UPLOAD GAMBAR QRIS ===
 bot.action('upload_qris', async (ctx) => {
   const adminId = ctx.from.id;
   if (!adminIds.includes(adminId)) {
-    return ctx.reply('🚫 Kamu tidak punya izin untuk ini.');
+    return ctx.reply(' Kamu tidak punya izin untuk ini.');
   }
 
-  await ctx.reply('📸 Kirim gambar QRIS yang ingin digunakan:');
+  await ctx.reply(' Kirim gambar QRIS yang ingin digunakan:');
   userState[adminId] = { step: 'upload_qris' };
 });
 
@@ -9863,8 +9863,8 @@ bot.on('photo', async (ctx) => {
   const response = await axios.get(fileLink.href, { responseType: 'arraybuffer' });
   fs.writeFileSync(filePath, Buffer.from(response.data));
 
-  await ctx.reply('✅ Gambar QRIS berhasil diunggah!');
-  logger.info('🖼️ QRIS image uploaded by admin');
+  await ctx.reply(' Gambar QRIS berhasil diunggah!');
+  logger.info(' QRIS image uploaded by admin');
   delete userState[adminId];
 });
 ///////////////////////
@@ -9874,12 +9874,12 @@ bot.action('topup_manual', async (ctx) => {
     const qrisPath = path.join(__dirname, 'qris.jpg');
 
     const captionText =
-      `📲 *Top Up Saldo Manual via QRIS*\n\n` +
-      `💬 Silakan transfer menggunakan QRIS di atas.\n\n` +
+      ` *Top Up Saldo Manual via QRIS*\n\n` +
+      ` Silakan transfer menggunakan QRIS di atas.\n\n` +
       `Setelah transfer, kirim bukti pembayaran ke admin:\n` +
       `hubungi via WhatsApp: [Klik di sini](${getAdminWhatsappUrl() || '#'})\n` +
       `atau Telegram: \`${getAdminTelegramUsername()}\`\n\n` +
-      `📝 *Kirim bukti pembayaran dan sertakan format pesan seperti ini:*\n` +
+      ` *Kirim bukti pembayaran dan sertakan format pesan seperti ini:*\n` +
       `\`\`\`\nSaya sudah top up via QRIS min dan ini ID Telegram saya ${ctx.from.id}\n\`\`\`\n\n` +
       `_Pastikan nominal sesuai dengan saldo yang ingin ditambahkan._`;
 
@@ -9892,53 +9892,53 @@ bot.action('topup_manual', async (ctx) => {
         }
       );
     } else {
-      await ctx.reply(`⚠️ QRIS belum diunggah oleh admin. Silakan hubungi ${getAdminTelegramUsername()}.`);
+      await ctx.reply(` QRIS belum diunggah oleh admin. Silakan hubungi ${getAdminTelegramUsername()}.`);
     }
   } catch (err) {
-    logger.error('❌ Error di topup_manual:', err.message);
-    ctx.reply('❌ Terjadi kesalahan saat menampilkan QRIS.');
+    logger.error(' Error di topup_manual:', err.message);
+    ctx.reply(' Terjadi kesalahan saat menampilkan QRIS.');
   }
 });
 
 /////
 
-// === 🗂️ BACKUP DATABASE DAN KIRIM KE ADMIN ===
+// ===  BACKUP DATABASE DAN KIRIM KE ADMIN ===
 bot.action('backup_db', async (ctx) => {
   try {
     const adminId = ctx.from.id;
 
     // Hanya admin yang bisa pakai
     if (!adminIds.includes(adminId)) {
-      return ctx.reply('🚫 Kamu tidak memiliki izin untuk melakukan tindakan ini.');
+      return ctx.reply(' Kamu tidak memiliki izin untuk melakukan tindakan ini.');
     }
 
     const dbPath = path.join(__dirname, 'sellvpn.db');
     if (!fs.existsSync(dbPath)) {
-      return ctx.reply('⚠️ File database tidak ditemukan.');
+      return ctx.reply(' File database tidak ditemukan.');
     }
 
     // Kirim file sellvpn.db ke admin
     await ctx.replyWithDocument({ source: dbPath, filename: 'sellvpn.db' }, { 
-      caption: '📦 Backup database berhasil dikirim!',
+      caption: ' Backup database berhasil dikirim!',
     });
 
-    logger.info(`📤 Backup database dikirim ke admin ${adminId}`);
+    logger.info(` Backup database dikirim ke admin ${adminId}`);
   } catch (error) {
-    logger.error('❌ Gagal mengirim file backup ke admin:', error);
-    ctx.reply('❌ Terjadi kesalahan saat mengirim file backup.');
+    logger.error(' Gagal mengirim file backup ke admin:', error);
+    ctx.reply(' Terjadi kesalahan saat mengirim file backup.');
   }
 });
 
-// === 💳 CEK SALDO USER ===
+// ===  CEK SALDO USER ===
 bot.action('cek_saldo_user', async (ctx) => {
   const adminId = ctx.from.id;
 
   if (!adminIds.includes(adminId)) {
-    return ctx.reply('🚫 Anda tidak memiliki izin untuk menggunakan fitur ini.');
+    return ctx.reply(' Anda tidak memiliki izin untuk menggunakan fitur ini.');
   }
 
   await ctx.answerCbQuery();
-  await ctx.reply('🔍 Masukkan ID Telegram user yang ingin dicek saldonya:');
+  await ctx.reply(' Masukkan ID Telegram user yang ingin dicek saldonya:');
   userState[adminId] = { step: 'cek_saldo_userid' };
 });
 ///////////////
@@ -10041,29 +10041,29 @@ bot.action('menu_join_reseller', async (ctx) => {
   if (!isReseller) {
     const terms = loadResellerTerms();
     await ctx.editMessageText(
-      `🏪 <b>Join Reseller</b>\n\n` +
-      `💰 Syarat: top up minimum Rp ${terms.join_topup_min.toLocaleString('id-ID')}\n\n` +
-      `✅ <b>Keuntungan Reseller:</b>\n` +
+      ` <b>Join Reseller</b>\n\n` +
+      ` Syarat: top up minimum Rp ${terms.join_topup_min.toLocaleString('id-ID')}\n\n` +
+      ` <b>Keuntungan Reseller:</b>\n` +
       `• Harga server reseller (lebih murah)\n` +
       `• Lock/unlock akun VPN\n` +
       `• Statistik transaksi bulanan\n` +
       `• Markup harga semua layanan (VPN, PPOB, Akrab, SMM)`,
       { parse_mode: 'HTML', reply_markup: { inline_keyboard: [
-        [{ text: '✅ Daftar Jadi Reseller', callback_data: 'jadi_reseller' }],
-        [{ text: '🏠 Menu Utama', callback_data: 'send_main_menu' }]
+        [{ text: ' Daftar Jadi Reseller', callback_data: 'jadi_reseller' }],
+        [{ text: ' Menu Utama', callback_data: 'send_main_menu' }]
       ]}}
     ).catch(async () => {
       await ctx.reply(
-        `🏪 <b>Join Reseller</b>\n\n` +
-        `💰 Syarat: top up minimum Rp ${terms.join_topup_min.toLocaleString('id-ID')}\n\n` +
-        `✅ <b>Keuntungan Reseller:</b>\n` +
+        ` <b>Join Reseller</b>\n\n` +
+        ` Syarat: top up minimum Rp ${terms.join_topup_min.toLocaleString('id-ID')}\n\n` +
+        ` <b>Keuntungan Reseller:</b>\n` +
         `• Harga server reseller (lebih murah)\n` +
         `• Lock/unlock akun VPN\n` +
         `• Statistik transaksi bulanan\n` +
         `• Markup harga semua layanan (VPN, PPOB, Akrab, SMM)`,
         { parse_mode: 'HTML', reply_markup: { inline_keyboard: [
-          [{ text: '✅ Daftar Jadi Reseller', callback_data: 'jadi_reseller' }],
-          [{ text: '🏠 Menu Utama', callback_data: 'send_main_menu' }]
+          [{ text: ' Daftar Jadi Reseller', callback_data: 'jadi_reseller' }],
+          [{ text: ' Menu Utama', callback_data: 'send_main_menu' }]
         ]}}
       );
     });
@@ -10079,21 +10079,21 @@ bot.action('menu_join_reseller', async (ctx) => {
     const saldoAkrab = await dbH.getSaldoAkrab(db, userId).catch(() => 0);
 
     const msgText =
-      `🏪 <b>Menu Reseller</b>\n\n` +
-      `💰 Saldo VPN  : Rp ${Number(saldo).toLocaleString('id-ID')}\n` +
-      `💳 Saldo Akrab: Rp ${Number(saldoAkrab).toLocaleString('id-ID')}\n\n` +
+      ` <b>Menu Reseller</b>\n\n` +
+      ` Saldo VPN  : Rp ${Number(saldo).toLocaleString('id-ID')}\n` +
+      ` Saldo Akrab: Rp ${Number(saldoAkrab).toLocaleString('id-ID')}\n\n` +
       `Markup kamu saat ini:\n` +
       `VPN: ${fmtMarkup(markupVPN)} | PPOB: ${fmtMarkup(markupPPOB)}\n` +
       `Akrab: ${fmtMarkup(markupAkrab)} | SMM: ${fmtMarkup(markupSMM)}`;
 
     const replyMarkup = { inline_keyboard: [
-      [{ text: '💰 Cek Semua Saldo', callback_data: 'reseller_cek_semua_saldo' }],
-      [{ text: '📊 Statistik Saya', callback_data: 'reseller_stats' }],
-      [{ text: '💲 Markup VPN',   callback_data: 'reseller_markup_vpn'  },
-       { text: '💲 Markup PPOB',  callback_data: 'reseller_markup_ppob' }],
-      [{ text: '💲 Markup Akrab', callback_data: 'reseller_markup_akrab'},
-       { text: '💲 Markup SMM',   callback_data: 'reseller_markup_smm'  }],
-      [{ text: '🏠 Menu Utama', callback_data: 'send_main_menu' }]
+      [{ text: ' Cek Semua Saldo', callback_data: 'reseller_cek_semua_saldo' }],
+      [{ text: ' Statistik Saya', callback_data: 'reseller_stats' }],
+      [{ text: ' Markup VPN',   callback_data: 'reseller_markup_vpn'  },
+       { text: ' Markup PPOB',  callback_data: 'reseller_markup_ppob' }],
+      [{ text: ' Markup Akrab', callback_data: 'reseller_markup_akrab'},
+       { text: ' Markup SMM',   callback_data: 'reseller_markup_smm'  }],
+      [{ text: ' Menu Utama', callback_data: 'send_main_menu' }]
     ]};
 
     await ctx.editMessageText(msgText, { parse_mode: 'HTML', reply_markup: replyMarkup })
@@ -10109,15 +10109,15 @@ bot.action('reseller_cek_semua_saldo', async (ctx) => {
   const saldo = await dbH.getSaldo(db, userId).catch(() => 0);
   const saldoAkrab = await dbH.getSaldoAkrab(db, userId).catch(() => 0);
   const msgText =
-    `💰 <b>Semua Saldo Kamu</b>\n\n` +
-    `💰 Saldo VPN   : <code>Rp ${Number(saldo).toLocaleString('id-ID')}</code>\n` +
+    ` <b>Semua Saldo Kamu</b>\n\n` +
+    ` Saldo VPN   : <code>Rp ${Number(saldo).toLocaleString('id-ID')}</code>\n` +
     `   ↳ Untuk: Akun VPN + Suntik Followers\n\n` +
-    `💳 Saldo Akrab : <code>Rp ${Number(saldoAkrab).toLocaleString('id-ID')}</code>\n` +
+    ` Saldo Akrab : <code>Rp ${Number(saldoAkrab).toLocaleString('id-ID')}</code>\n` +
     `   ↳ Untuk: PPOB + Akrab & Circle`;
   const replyMarkup = { inline_keyboard: [
-    [{ text: '💰 Top Up VPN',   callback_data: 'topup_saldo'  },
-     { text: '💳 Top Up Akrab', callback_data: 'topup_akrab'  }],
-    [{ text: '🔙 Kembali', callback_data: 'menu_join_reseller' }]
+    [{ text: ' Top Up VPN',   callback_data: 'topup_saldo'  },
+     { text: ' Top Up Akrab', callback_data: 'topup_akrab'  }],
+    [{ text: ' Kembali', callback_data: 'menu_join_reseller' }]
   ]};
   await ctx.editMessageText(msgText, { parse_mode: 'HTML', reply_markup: replyMarkup })
     .catch(async () => {
@@ -10134,13 +10134,13 @@ async function showResellerMarkupMenu(ctx, service, label) {
     : 'Belum ada markup';
 
   const msgText =
-    `💲 <b>Markup Harga ${label}</b>\n\n${statusText}\n\n` +
+    ` <b>Markup Harga ${label}</b>\n\n${statusText}\n\n` +
     `Harga yang pembeli kamu lihat = harga dasar + markup global admin + markup kamu.`;
   const replyMarkup = { inline_keyboard: [
-    [{ text: `📊 Set Markup %`,    callback_data: `reseller_markup_${service}_set_pct`  }],
-    [{ text: `💰 Set Markup Flat`, callback_data: `reseller_markup_${service}_set_flat` }],
-    [{ text: `🗑️ Hapus Markup`,   callback_data: `reseller_markup_${service}_delete`   }],
-    [{ text: '🔙 Kembali', callback_data: 'menu_join_reseller' }]
+    [{ text: ` Set Markup %`,    callback_data: `reseller_markup_${service}_set_pct`  }],
+    [{ text: ` Set Markup Flat`, callback_data: `reseller_markup_${service}_set_flat` }],
+    [{ text: ` Hapus Markup`,   callback_data: `reseller_markup_${service}_delete`   }],
+    [{ text: ' Kembali', callback_data: 'menu_join_reseller' }]
   ]};
 
   await ctx.editMessageText(msgText, { parse_mode: 'HTML', reply_markup: replyMarkup })
@@ -10162,11 +10162,11 @@ bot.action(/^reseller_markup_(vpn|ppob|akrab|smm)_set_(pct|flat)$/, async (ctx) 
   const type = ctx.match[2];
   userState[userId] = { step: `reseller_markup_input_${service}_${type}` };
   const label = type === 'pct' ? 'persen (contoh: 10 untuk 10%)' : 'Rupiah flat (contoh: 1000)';
-  await ctx.editMessageText(`💲 Masukkan nilai markup ${label}:`,
-    { reply_markup: { inline_keyboard: [[{ text: '❌ Batal', callback_data: `reseller_markup_${service}` }]] }})
+  await ctx.editMessageText(` Masukkan nilai markup ${label}:`,
+    { reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: `reseller_markup_${service}` }]] }})
     .catch(async () => {
-      await ctx.reply(`💲 Masukkan nilai markup ${label}:`,
-        { reply_markup: { inline_keyboard: [[{ text: '❌ Batal', callback_data: `reseller_markup_${service}` }]] }});
+      await ctx.reply(` Masukkan nilai markup ${label}:`,
+        { reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: `reseller_markup_${service}` }]] }});
     });
 });
 
@@ -10175,8 +10175,8 @@ bot.action(/^reseller_markup_(vpn|ppob|akrab|smm)_delete$/, async (ctx) => {
   const userId = ctx.from.id;
   const service = ctx.match[1];
   await dbH.deleteMarkup(db, 'reseller', service, userId).catch(() => {});
-  const msgText = `✅ Markup ${service.toUpperCase()} kamu dihapus.`;
-  const replyMarkup = { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: `reseller_markup_${service}` }]] };
+  const msgText = ` Markup ${service.toUpperCase()} kamu dihapus.`;
+  const replyMarkup = { inline_keyboard: [[{ text: ' Kembali', callback_data: `reseller_markup_${service}` }]] };
   await ctx.editMessageText(msgText, { reply_markup: replyMarkup })
     .catch(async () => { await ctx.reply(msgText, { reply_markup: replyMarkup }); });
 });
@@ -10187,7 +10187,7 @@ bot.action('tambah_saldo', async (ctx) => {
 
   // Pastikan hanya admin
   if (!adminIds.includes(adminId)) {
-    return ctx.reply('🚫 Kamu tidak memiliki izin untuk menggunakan menu ini.');
+    return ctx.reply(' Kamu tidak memiliki izin untuk menggunakan menu ini.');
   }
 
   userState[adminId] = { step: 'addsaldo_userid' };
@@ -10201,8 +10201,8 @@ bot.action('sendMainMenu', async (ctx) => {
     await ctx.answerCbQuery().catch(() => {});
     await sendMainMenu(ctx);
   } catch (error) {
-    console.error('❌ Error saat kembali ke menu utama:', error);
-    await ctx.reply('⚠️ Terjadi kesalahan saat membuka menu utama.');
+    console.error(' Error saat kembali ke menu utama:', error);
+    await ctx.reply(' Terjadi kesalahan saat membuka menu utama.');
   }
 });
 
@@ -10210,7 +10210,7 @@ bot.action('addserver_reseller', async (ctx) => {
   await ctx.answerCbQuery().catch(()=>{});
   userState[ctx.chat.id] = { step: 'addserver_reseller' };
   await ctx.reply(
-    '🪄 Silakan kirim data server reseller dengan format:\n\n' +
+    ' Silakan kirim data server reseller dengan format:\n\n' +
     '/addserver_reseller <domain> <auth> <harga_user_1ip> <harga_user_2ip> <harga_reseller_1ip> <harga_reseller_2ip> <nama_server> <quota> <iplimit> <batas_create_akun>\n\n' +
     'Format lama (7 argumen) masih bisa, semua harga akan disamakan.'
   );
@@ -10218,21 +10218,21 @@ bot.action('addserver_reseller', async (ctx) => {
 
 bot.action('service_trial', async (ctx) => {
   if (!ctx || !ctx.match) {
-    return ctx.reply('❌ *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
+    return ctx.reply(' *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
   }
   await handleServiceAction(ctx, 'trial');
 });
 
 bot.action('service_create', async (ctx) => {
   if (!ctx || !ctx.match) {
-    return ctx.reply('❌ *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
+    return ctx.reply(' *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
   }
   await handleServiceAction(ctx, 'create');
 });
 
 bot.action('service_renew', async (ctx) => {
   if (!ctx) {
-    return ctx.reply('❌ *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
+    return ctx.reply(' *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
   }
   await ctx.answerCbQuery().catch(() => {});
   userState[ctx.chat.id] = userState[ctx.chat.id] || {};
@@ -10246,21 +10246,21 @@ bot.action('service_renew', async (ctx) => {
 
 bot.action('service_del', async (ctx) => {
   if (!ctx || !ctx.match) {
-    return ctx.reply('❌ *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
+    return ctx.reply(' *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
   }
   await handleServiceAction(ctx, 'del');
 });
 
 bot.action('service_lock', async (ctx) => {
   if (!ctx || !ctx.match) {
-    return ctx.reply('❌ *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
+    return ctx.reply(' *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
   }
   await handleServiceAction(ctx, 'lock');
 });
 
 bot.action('service_unlock', async (ctx) => {
   if (!ctx || !ctx.match) {
-    return ctx.reply('❌ *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
+    return ctx.reply(' *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
   } 
   await handleServiceAction(ctx, 'unlock');
 });
@@ -10272,93 +10272,93 @@ bot.action('cek_service', async (ctx) => {
     const resselDbPath = './ressel.db';
     const idUser = ctx.from.id.toString().trim();
 
-    // 🔍 Cek apakah user termasuk reseller
+    //  Cek apakah user termasuk reseller
     fs.readFile(resselDbPath, 'utf8', async (err, data) => {
       if (err) {
-        console.error('❌ Gagal membaca file ressel.db:', err.message);
-        return ctx.reply('❌ *Terjadi kesalahan saat membaca data reseller.*', { parse_mode: 'Markdown' });
+        console.error(' Gagal membaca file ressel.db:', err.message);
+        return ctx.reply(' *Terjadi kesalahan saat membaca data reseller.*', { parse_mode: 'Markdown' });
       }
 
       const resselList = data.split('\n').map(line => line.trim()).filter(Boolean);
       const isRessel = resselList.includes(idUser);
 
       if (!isRessel) {
-        return ctx.reply('❌ *Fitur ini hanya untuk Ressel VPN.*', { parse_mode: 'Markdown' });
+        return ctx.reply(' *Fitur ini hanya untuk Ressel VPN.*', { parse_mode: 'Markdown' });
       }
 
-      // ✅ Jika reseller, lanjut jalankan cek service
-      const message = await ctx.reply('⏳ Sedang mengecek status server...');
+      //  Jika reseller, lanjut jalankan cek service
+      const message = await ctx.reply(' Sedang mengecek status server...');
 
       exec('chmod +x cek-port.sh && bash cek-port.sh', (error, stdout, stderr) => {
         if (error) {
           console.error(`Gagal menjalankan skrip: ${error.message}`);
-          return ctx.reply('❌ Terjadi kesalahan saat menjalankan pengecekan.');
+          return ctx.reply(' Terjadi kesalahan saat menjalankan pengecekan.');
         }
 
         if (stderr) {
           console.error(`Error dari skrip: ${stderr}`);
-          return ctx.reply('❌ Ada output error dari skrip pengecekan.');
+          return ctx.reply(' Ada output error dari skrip pengecekan.');
         }
 
         // Bersihkan kode warna ANSI agar output rapi
         const cleanOutput = stdout.replace(/\x1b\[[0-9;]*m/g, '');
 
-        ctx.reply(`📡 *Hasil Cek Port:*\n\n\`\`\`\n${cleanOutput}\n\`\`\``, {
+        ctx.reply(` *Hasil Cek Port:*\n\n\`\`\`\n${cleanOutput}\n\`\`\``, {
           parse_mode: 'Markdown'
         });
       });
     });
   } catch (err) {
     console.error(err);
-    ctx.reply('❌ Gagal menjalankan pengecekan server.');
+    ctx.reply(' Gagal menjalankan pengecekan server.');
   }
 });
 
 bot.action('send_main_menu', async (ctx) => {
   if (!ctx || !ctx.match) {
-    return ctx.reply('❌ *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
+    return ctx.reply(' *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
   }
   await sendMainMenu(ctx);
 });
 
 bot.action('trial_vmess', async (ctx) => {
   if (!ctx || !ctx.match) {
-    return ctx.reply('❌ *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
+    return ctx.reply(' *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
   }
   await startSelectServer(ctx, 'trial', 'vmess');
 });
 
 bot.action('trial_vless', async (ctx) => {
   if (!ctx || !ctx.match) {
-    return ctx.reply('❌ *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
+    return ctx.reply(' *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
   }
   await startSelectServer(ctx, 'trial', 'vless');
 });
 
 bot.action('trial_trojan', async (ctx) => {
   if (!ctx || !ctx.match) {
-    return ctx.reply('❌ *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
+    return ctx.reply(' *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
   }
   await startSelectServer(ctx, 'trial', 'trojan');
 });
 
 bot.action('trial_shadowsocks', async (ctx) => {
   if (!ctx || !ctx.match) {
-    return ctx.reply('❌ *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
+    return ctx.reply(' *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
   }
   await startSelectServer(ctx, 'trial', 'shadowsocks');
 });
 
 bot.action('trial_ssh', async (ctx) => {
   if (!ctx || !ctx.match) {
-    return ctx.reply('❌ *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
+    return ctx.reply(' *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
   }
   await startSelectServer(ctx, 'trial', 'ssh');
 });
 
 bot.action('trial_udp_http', async (ctx) => {
   if (!ctx || !ctx.match) {
-    return ctx.reply('❌ *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
+    return ctx.reply(' *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
   }
   await startSelectServer(ctx, 'trial', 'udp_http');
 });
@@ -10366,42 +10366,42 @@ bot.action('trial_udp_http', async (ctx) => {
 
 bot.action('create_vmess', async (ctx) => {
   if (!ctx || !ctx.match) {
-    return ctx.reply('❌ *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
+    return ctx.reply(' *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
   }
   await startSelectServer(ctx, 'create', 'vmess');
 });
 
 bot.action('create_vless', async (ctx) => {
   if (!ctx || !ctx.match) {
-    return ctx.reply('❌ *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
+    return ctx.reply(' *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
   }
   await startSelectServer(ctx, 'create', 'vless');
 });
 
 bot.action('create_trojan', async (ctx) => {
   if (!ctx || !ctx.match) {
-    return ctx.reply('❌ *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
+    return ctx.reply(' *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
   }
   await startSelectServer(ctx, 'create', 'trojan');
 });
 
 bot.action('create_shadowsocks', async (ctx) => {
   if (!ctx || !ctx.match) {
-    return ctx.reply('❌ *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
+    return ctx.reply(' *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
   }
   await startSelectServer(ctx, 'create', 'shadowsocks');
 });
 
 bot.action('create_ssh', async (ctx) => {
   if (!ctx || !ctx.match) {
-    return ctx.reply('❌ *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
+    return ctx.reply(' *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
   }
   await startSelectServer(ctx, 'create', 'ssh');
 });
 
 bot.action('create_udp_http', async (ctx) => {
   if (!ctx || !ctx.match) {
-    return ctx.reply('❌ *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
+    return ctx.reply(' *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
   }
   await startSelectServer(ctx, 'create', 'udp_http');
 });
@@ -10418,42 +10418,42 @@ bot.action('trial_zivpn', async (ctx) => {
 //DELETE SSH
 bot.action('del_ssh', async (ctx) => {
   if (!ctx || !ctx.match) {
-    return ctx.reply('❌ *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
+    return ctx.reply(' *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
   }
   await startSelectServer(ctx, 'del', 'ssh');
 });
 
 bot.action('del_udp_http', async (ctx) => {
   if (!ctx || !ctx.match) {
-    return ctx.reply('❌ *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
+    return ctx.reply(' *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
   }
   await startSelectServer(ctx, 'del', 'udp_http');
 });
 
 bot.action('del_zivpn', async (ctx) => {
   if (!ctx || !ctx.match) {
-    return ctx.reply('❌ *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
+    return ctx.reply(' *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
   }
   await startSelectServer(ctx, 'del', 'zivpn');
 });
 
 bot.action('del_vmess', async (ctx) => {
   if (!ctx || !ctx.match) {
-    return ctx.reply('❌ *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
+    return ctx.reply(' *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
   }
   await startSelectServer(ctx, 'del', 'vmess');
 });
 
 bot.action('del_vless', async (ctx) => {
   if (!ctx || !ctx.match) {
-    return ctx.reply('❌ *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
+    return ctx.reply(' *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
   }
   await startSelectServer(ctx, 'del', 'vless');
 });
 
 bot.action('del_trojan', async (ctx) => {
   if (!ctx || !ctx.match) {
-    return ctx.reply('❌ *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
+    return ctx.reply(' *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
   }
   await startSelectServer(ctx, 'del', 'trojan');
 });
@@ -10462,35 +10462,35 @@ bot.action('del_trojan', async (ctx) => {
 //LOCK
 bot.action('lock_ssh', async (ctx) => {
   if (!ctx || !ctx.match) {
-    return ctx.reply('❌ *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
+    return ctx.reply(' *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
   }
   await startSelectServer(ctx, 'lock', 'ssh');
 });
 
 bot.action('lock_udp_http', async (ctx) => {
   if (!ctx || !ctx.match) {
-    return ctx.reply('❌ *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
+    return ctx.reply(' *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
   }
   await startSelectServer(ctx, 'lock', 'udp_http');
 });
 
 bot.action('lock_vmess', async (ctx) => {
   if (!ctx || !ctx.match) {
-    return ctx.reply('❌ *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
+    return ctx.reply(' *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
   }
   await startSelectServer(ctx, 'lock', 'vmess');
 });
 
 bot.action('lock_vless', async (ctx) => {
   if (!ctx || !ctx.match) {
-    return ctx.reply('❌ *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
+    return ctx.reply(' *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
   }
   await startSelectServer(ctx, 'lock', 'vless');
 });
 
 bot.action('lock_trojan', async (ctx) => {
   if (!ctx || !ctx.match) {
-    return ctx.reply('❌ *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
+    return ctx.reply(' *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
   }
   await startSelectServer(ctx, 'lock', 'trojan');
 });
@@ -10498,35 +10498,35 @@ bot.action('lock_trojan', async (ctx) => {
 //UNLOCK
 bot.action('unlock_ssh', async (ctx) => {
   if (!ctx || !ctx.match) {
-    return ctx.reply('❌ *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
+    return ctx.reply(' *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
   }
   await startSelectServer(ctx, 'unlock', 'ssh');
 });
 
 bot.action('unlock_udp_http', async (ctx) => {
   if (!ctx || !ctx.match) {
-    return ctx.reply('❌ *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
+    return ctx.reply(' *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
   }
   await startSelectServer(ctx, 'unlock', 'udp_http');
 });
 
 bot.action('unlock_vmess', async (ctx) => {
   if (!ctx || !ctx.match) {
-    return ctx.reply('❌ *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
+    return ctx.reply(' *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
   }
   await startSelectServer(ctx, 'unlock', 'vmess');
 });
 
 bot.action('unlock_vless', async (ctx) => {
   if (!ctx || !ctx.match) {
-    return ctx.reply('❌ *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
+    return ctx.reply(' *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
   }
   await startSelectServer(ctx, 'unlock', 'vless');
 });
 
 bot.action('unlock_trojan', async (ctx) => {
   if (!ctx || !ctx.match) {
-    return ctx.reply('❌ *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
+    return ctx.reply(' *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
   }
   await startSelectServer(ctx, 'unlock', 'trojan');
 });
@@ -10534,49 +10534,49 @@ bot.action('unlock_trojan', async (ctx) => {
 
 bot.action('renew_vmess', async (ctx) => {
   if (!ctx || !ctx.match) {
-    return ctx.reply('❌ *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
+    return ctx.reply(' *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
   }
   await startSelectServer(ctx, 'renew', 'vmess');
 });
 
 bot.action('renew_vless', async (ctx) => {
   if (!ctx || !ctx.match) {
-    return ctx.reply('❌ *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
+    return ctx.reply(' *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
   }
   await startSelectServer(ctx, 'renew', 'vless');
 });
 
 bot.action('renew_trojan', async (ctx) => {
   if (!ctx || !ctx.match) {
-    return ctx.reply('❌ *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
+    return ctx.reply(' *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
   }
   await startSelectServer(ctx, 'renew', 'trojan');
 });
 
 bot.action('renew_shadowsocks', async (ctx) => {
   if (!ctx || !ctx.match) {
-    return ctx.reply('❌ *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
+    return ctx.reply(' *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
   }
   await startSelectServer(ctx, 'renew', 'shadowsocks');
 });
 
 bot.action('renew_ssh', async (ctx) => {
   if (!ctx || !ctx.match) {
-    return ctx.reply('❌ *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
+    return ctx.reply(' *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
   }
   await startSelectServer(ctx, 'renew', 'ssh');
 });
 
 bot.action('renew_udp_http', async (ctx) => {
   if (!ctx || !ctx.match) {
-    return ctx.reply('❌ *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
+    return ctx.reply(' *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
   }
   await startSelectServer(ctx, 'renew', 'udp_http');
 });
 
 bot.action('renew_zivpn', async (ctx) => {
   if (!ctx || !ctx.match) {
-    return ctx.reply('❌ *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
+    return ctx.reply(' *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
   }
   await startSelectServer(ctx, 'renew', 'zivpn');
 });
@@ -10603,11 +10603,11 @@ try {
 
 db.all(query, params, async (err, servers) => {
   if (err) {
-    logger.error('⚠️ Error fetching servers:', err.message);
-    return ctx.reply('⚠️ Tidak ada server yang tersedia saat ini.', { parse_mode: 'HTML' });
+    logger.error(' Error fetching servers:', err.message);
+    return ctx.reply(' Tidak ada server yang tersedia saat ini.', { parse_mode: 'HTML' });
   }
     if (!servers || servers.length === 0) {
-      return ctx.reply('⚠️ Tidak ada server aktif yang tersedia saat ini.', { parse_mode: 'Markdown' });
+      return ctx.reply(' Tidak ada server aktif yang tersedia saat ini.', { parse_mode: 'Markdown' });
     }
     // ==== mulai logika pagination di bawah ini ====
     const serversPerPage = 6;
@@ -10632,14 +10632,14 @@ db.all(query, params, async (err, servers) => {
     const navButtons = [];
     if (totalPages > 1) {
       if (currentPage > 0) {
-        navButtons.push({ text: '⬅️ Back', callback_data: `navigate_${action}_${type}_${currentPage - 1}` });
+        navButtons.push({ text: '⬅ Back', callback_data: `navigate_${action}_${type}_${currentPage - 1}` });
       }
       if (currentPage < totalPages - 1) {
-        navButtons.push({ text: 'Lihat server selanjutnya ➡️ Next', callback_data: `navigate_${action}_${type}_${currentPage + 1}` });
+        navButtons.push({ text: 'Lihat server selanjutnya  Next', callback_data: `navigate_${action}_${type}_${currentPage + 1}` });
       }
     }
     if (navButtons.length > 0) keyboard.push(navButtons);
-    keyboard.push([{ text: '🔙 Kembali ke Menu Utama', callback_data: 'sendMainMenu' }]);
+    keyboard.push([{ text: ' Kembali ke Menu Utama', callback_data: 'sendMainMenu' }]);
 
 const serverBlocks = currentServers.map(server => {
   const hargaPerHari1 = getEffectiveServerPackagePrice(server, isR, 1);
@@ -10650,15 +10650,15 @@ const serverBlocks = currentServers.map(server => {
   const monthlyEnabled = isServerMonthlyPriceEnabled(server);
   const priceLines = [];
   if (dailyEnabled) {
-    priceLines.push(`💳 *Harga/Hari 1IP:* Rp${hargaPerHari1.toLocaleString('id-ID')}`);
-    priceLines.push(`💳 *Harga/Hari 2IP:* Rp${hargaPerHari2.toLocaleString('id-ID')}`);
+    priceLines.push(` *Harga/Hari 1IP:* Rp${hargaPerHari1.toLocaleString('id-ID')}`);
+    priceLines.push(` *Harga/Hari 2IP:* Rp${hargaPerHari2.toLocaleString('id-ID')}`);
   }
   if (monthlyEnabled) {
-    priceLines.push(`📆 *Harga/30 Hari 1IP:* Rp${hargaPer30Hari1.toLocaleString('id-ID')}`);
-    priceLines.push(`📆 *Harga/30 Hari 2IP:* Rp${hargaPer30Hari2.toLocaleString('id-ID')}`);
+    priceLines.push(` *Harga/30 Hari 1IP:* Rp${hargaPer30Hari1.toLocaleString('id-ID')}`);
+    priceLines.push(` *Harga/30 Hari 2IP:* Rp${hargaPer30Hari2.toLocaleString('id-ID')}`);
   }
   if (!priceLines.length) {
-    priceLines.push('💳 *Harga:* Nonaktif');
+    priceLines.push(' *Harga:* Nonaktif');
   }
   const capacity = calculateServerEffectiveCapacity({
     usedAccounts: server.total_create_akun,
@@ -10680,13 +10680,13 @@ const serverBlocks = currentServers.map(server => {
 ╔══════════════════╗
 ${priceLines.join('\n')}
 ╚══════════════════╝
-🛜 *Domain:* \`${server.domain}\`
-📡 *Quota:* ${server.quota} GB
-👥 *Akun Terpakai:* ${server.total_create_akun}/${akunLimitText}
-📌 *Status:* ${isFullByManualLimit ? "❌ Server Penuh" : "✅ Tersedia"}`
+ *Domain:* \`${server.domain}\`
+ *Quota:* ${server.quota} GB
+ *Akun Terpakai:* ${server.total_create_akun}/${akunLimitText}
+ *Status:* ${isFullByManualLimit ? " Server Penuh" : " Tersedia"}`
   );
 });
-    const title = `📋 *List Server (Halaman ${currentPage + 1} dari ${totalPages})*`;
+    const title = ` *List Server (Halaman ${currentPage + 1} dari ${totalPages})*`;
     const maxLen = 3800;
     const chunks = [];
     let chunk = `${title}\n\n`;
@@ -10722,8 +10722,8 @@ ${priceLines.join('\n')}
     userState[ctx.chat.id] = { step: `${action}_username_${type}`, page: currentPage };
   });
 } catch (error) {
-  logger.error(`❌ Error saat memulai proses ${action} untuk ${type}:`, error);
-  await ctx.reply(`❌ *GAGAL!* Terjadi kesalahan saat memproses permintaan.`, { parse_mode: 'Markdown' });
+  logger.error(` Error saat memulai proses ${action} untuk ${type}:`, error);
+  await ctx.reply(` *GAGAL!* Terjadi kesalahan saat memproses permintaan.`, { parse_mode: 'Markdown' });
 }
 }
 
@@ -10743,21 +10743,21 @@ bot.action(/(create|renew)_username_(vmess|vless|trojan|shadowsocks|ssh|zivpn|ud
 
   db.get('SELECT * FROM Server WHERE id = ?', [serverId], async (err, server) => {
     if (err) {
-      logger.error('⚠️ Error fetching server details:', err.message);
-      return ctx.reply('❌ *Terjadi kesalahan saat mengambil detail server.*', { parse_mode: 'Markdown' });
+      logger.error(' Error fetching server details:', err.message);
+      return ctx.reply(' *Terjadi kesalahan saat mengambil detail server.*', { parse_mode: 'Markdown' });
     }
 
     if (!server) {
-      return ctx.reply('❌ *Server tidak ditemukan.*', { parse_mode: 'Markdown' });
+      return ctx.reply(' *Server tidak ditemukan.*', { parse_mode: 'Markdown' });
     }
 
     if (Number(server.is_active ?? 1) !== 1) {
       delete userState[ctx.chat.id];
-      return ctx.reply('❌ *Server ini sedang nonaktif dan tidak bisa dipilih.*', { parse_mode: 'Markdown' });
+      return ctx.reply(' *Server ini sedang nonaktif dan tidak bisa dipilih.*', { parse_mode: 'Markdown' });
     }
     if (!isServerProtocolEnabled(server, type)) {
       delete userState[ctx.chat.id];
-      return ctx.reply(`❌ *Protocol ${type.toUpperCase()} sedang nonaktif untuk server ini.*`, { parse_mode: 'Markdown' });
+      return ctx.reply(` *Protocol ${type.toUpperCase()} sedang nonaktif untuk server ini.*`, { parse_mode: 'Markdown' });
     }
 
     const batasCreateAkun = Number(server.batas_create_akun || 0);
@@ -10765,7 +10765,7 @@ bot.action(/(create|renew)_username_(vmess|vless|trojan|shadowsocks|ssh|zivpn|ud
     const hasManualLimit = Number.isFinite(batasCreateAkun) && batasCreateAkun > 0;
     if (action === 'create' && hasManualLimit && totalCreateAkun >= batasCreateAkun) {
       delete userState[ctx.chat.id];
-      return ctx.reply('❌ *Server penuh. Tidak dapat membuat akun baru di server ini.*', { parse_mode: 'Markdown' });
+      return ctx.reply(' *Server penuh. Tidak dapat membuat akun baru di server ini.*', { parse_mode: 'Markdown' });
     }
 
     if (action === 'create') {
@@ -10778,7 +10778,7 @@ bot.action(/(create|renew)_username_(vmess|vless|trojan|shadowsocks|ssh|zivpn|ud
       const monthlyEnabled = isServerMonthlyPriceEnabled(server);
 
       if (!dailyEnabled && !monthlyEnabled) {
-        return ctx.reply('❌ *Harga pembuatan akun di server ini sedang nonaktif.*', { parse_mode: 'Markdown' });
+        return ctx.reply(' *Harga pembuatan akun di server ini sedang nonaktif.*', { parse_mode: 'Markdown' });
       }
 
       const packageLabel = (pkg, dailyPrice, monthlyPrice) => {
@@ -10803,7 +10803,7 @@ bot.action(/(create|renew)_username_(vmess|vless|trojan|shadowsocks|ssh|zivpn|ud
       const keyboard = [
         [{ text: packageLabel(1, harga1, harga30_1), callback_data: `create_pkg_${type}_${serverId}_1` }],
         [{ text: packageLabel(2, harga2, harga30_2), callback_data: `create_pkg_${type}_${serverId}_2` }],
-        [{ text: '⬅️ Kembali', callback_data: 'sendMainMenu' }]
+        [{ text: '⬅ Kembali', callback_data: 'sendMainMenu' }]
       ];
 
       await ctx.reply(
@@ -10816,7 +10816,7 @@ bot.action(/(create|renew)_username_(vmess|vless|trojan|shadowsocks|ssh|zivpn|ud
         { parse_mode: 'Markdown', reply_markup: { inline_keyboard: keyboard } }
       );
     } else {
-      await ctx.reply('👤 *Masukkan username:*', { parse_mode: 'Markdown' });
+      await ctx.reply(' *Masukkan username:*', { parse_mode: 'Markdown' });
     }
   });
 });
@@ -10829,13 +10829,13 @@ bot.action(/create_pkg_(vmess|vless|trojan|shadowsocks|ssh|zivpn|udp_http)_(\d+)
 
   const server = await dbGetAsync('SELECT * FROM Server WHERE id = ?', [serverId]).catch(() => null);
   if (!server) {
-    return ctx.reply('❌ *Server tidak ditemukan.*', { parse_mode: 'Markdown' });
+    return ctx.reply(' *Server tidak ditemukan.*', { parse_mode: 'Markdown' });
   }
   if (Number(server.is_active ?? 1) !== 1) {
-    return ctx.reply('❌ *Server ini sedang nonaktif dan tidak bisa dipilih.*', { parse_mode: 'Markdown' });
+    return ctx.reply(' *Server ini sedang nonaktif dan tidak bisa dipilih.*', { parse_mode: 'Markdown' });
   }
   if (!isServerProtocolEnabled(server, type)) {
-    return ctx.reply(`❌ *Protocol ${type.toUpperCase()} sedang nonaktif untuk server ini.*`, { parse_mode: 'Markdown' });
+    return ctx.reply(` *Protocol ${type.toUpperCase()} sedang nonaktif untuk server ini.*`, { parse_mode: 'Markdown' });
   }
 
   const isReseller = await isUserReseller(ctx.from.id).catch(() => false);
@@ -10843,7 +10843,7 @@ bot.action(/create_pkg_(vmess|vless|trojan|shadowsocks|ssh|zivpn|udp_http)_(\d+)
   const monthlyEnabled = isServerMonthlyPriceEnabled(server);
 
   if (!dailyEnabled && !monthlyEnabled) {
-    return ctx.reply('❌ *Harga pembuatan akun di server ini sedang nonaktif.*', { parse_mode: 'Markdown' });
+    return ctx.reply(' *Harga pembuatan akun di server ini sedang nonaktif.*', { parse_mode: 'Markdown' });
   }
 
   if (dailyEnabled && monthlyEnabled) {
@@ -10859,7 +10859,7 @@ bot.action(/create_pkg_(vmess|vless|trojan|shadowsocks|ssh|zivpn|udp_http)_(\d+)
           inline_keyboard: [
             [{ text: `Harian - Rp ${dailyPrice.toLocaleString('id-ID')}/hari`, callback_data: `create_price_mode_${type}_${serverId}_${ipPkg}_daily` }],
             [{ text: `30 Hari - Rp ${monthlyPrice.toLocaleString('id-ID')}`, callback_data: `create_price_mode_${type}_${serverId}_${ipPkg}_30hari` }],
-            [{ text: '⬅️ Kembali', callback_data: `create_${type}` }]
+            [{ text: '⬅ Kembali', callback_data: `create_${type}` }]
           ]
         }
       }
@@ -10877,7 +10877,7 @@ bot.action(/create_pkg_(vmess|vless|trojan|shadowsocks|ssh|zivpn|udp_http)_(\d+)
     priceMode
   };
 
-  await ctx.reply('👤 *Masukkan username:*', { parse_mode: 'Markdown' });
+  await ctx.reply(' *Masukkan username:*', { parse_mode: 'Markdown' });
 });
 
 bot.action(/create_price_mode_(vmess|vless|trojan|shadowsocks|ssh|zivpn|udp_http)_(\d+)_(1|2)_(daily|30hari)/, async (ctx) => {
@@ -10888,19 +10888,19 @@ bot.action(/create_price_mode_(vmess|vless|trojan|shadowsocks|ssh|zivpn|udp_http
 
   const server = await dbGetAsync('SELECT * FROM Server WHERE id = ?', [serverId]).catch(() => null);
   if (!server) {
-    return ctx.reply('❌ *Server tidak ditemukan.*', { parse_mode: 'Markdown' });
+    return ctx.reply(' *Server tidak ditemukan.*', { parse_mode: 'Markdown' });
   }
   if (Number(server.is_active ?? 1) !== 1) {
-    return ctx.reply('❌ *Server ini sedang nonaktif dan tidak bisa dipilih.*', { parse_mode: 'Markdown' });
+    return ctx.reply(' *Server ini sedang nonaktif dan tidak bisa dipilih.*', { parse_mode: 'Markdown' });
   }
   if (!isServerProtocolEnabled(server, type)) {
-    return ctx.reply(`❌ *Protocol ${type.toUpperCase()} sedang nonaktif untuk server ini.*`, { parse_mode: 'Markdown' });
+    return ctx.reply(` *Protocol ${type.toUpperCase()} sedang nonaktif untuk server ini.*`, { parse_mode: 'Markdown' });
   }
   if (priceMode === 'daily' && !isServerDailyPriceEnabled(server)) {
-    return ctx.reply('❌ *Harga harian sedang nonaktif untuk server ini.*', { parse_mode: 'Markdown' });
+    return ctx.reply(' *Harga harian sedang nonaktif untuk server ini.*', { parse_mode: 'Markdown' });
   }
   if (priceMode === '30hari' && !isServerMonthlyPriceEnabled(server)) {
-    return ctx.reply('❌ *Harga 30 hari sedang nonaktif untuk server ini.*', { parse_mode: 'Markdown' });
+    return ctx.reply(' *Harga 30 hari sedang nonaktif untuk server ini.*', { parse_mode: 'Markdown' });
   }
 
   userState[ctx.chat.id] = {
@@ -10912,29 +10912,29 @@ bot.action(/create_price_mode_(vmess|vless|trojan|shadowsocks|ssh|zivpn|udp_http
     priceMode
   };
 
-  await ctx.reply('👤 *Masukkan username:*', { parse_mode: 'Markdown' });
+  await ctx.reply(' *Masukkan username:*', { parse_mode: 'Markdown' });
 });
 
-// === ⚡️ KONFIRMASI TRIAL (semua tipe) ===
+// ===  KONFIRMASI TRIAL (semua tipe) ===
 bot.action(/(trial)_username_(vmess|vless|trojan|shadowsocks|ssh|zivpn|udp_http)_(\d+)/, async (ctx) => {
   const [action, type, serverId] = [ctx.match[1], ctx.match[2], ctx.match[3]];
 
   // Ambil nama server dari database
   db.get('SELECT * FROM Server WHERE id = ?', [serverId], async (err, server) => {
     if (err) {
-      logger.error('❌ Gagal mengambil data server:', err.message);
-      return ctx.reply('⚠️ Terjadi kesalahan saat mengambil data server.');
+      logger.error(' Gagal mengambil data server:', err.message);
+      return ctx.reply(' Terjadi kesalahan saat mengambil data server.');
     }
 
     if (!server) {
-      return ctx.reply('⚠️ Server tidak ditemukan di database.');
+      return ctx.reply(' Server tidak ditemukan di database.');
     }
 
     if (Number(server.is_active ?? 1) !== 1) {
-      return ctx.reply('⚠️ Server ini sedang nonaktif dan tidak bisa dipilih.');
+      return ctx.reply(' Server ini sedang nonaktif dan tidak bisa dipilih.');
     }
     if (!isServerProtocolEnabled(server, type)) {
-      return ctx.reply(`⚠️ Protocol ${type.toUpperCase()} sedang nonaktif untuk server ini.`);
+      return ctx.reply(` Protocol ${type.toUpperCase()} sedang nonaktif untuk server ini.`);
     }
 
     // Simpan state seperti semula
@@ -10946,7 +10946,7 @@ bot.action(/(trial)_username_(vmess|vless|trojan|shadowsocks|ssh|zivpn|udp_http)
 
     // Pesan konfirmasi seperti versi lama, tapi pakai nama server
     await ctx.reply(
-      `⚠️ *PERHATIAN*\n\n` +
+      ` *PERHATIAN*\n\n` +
       `Anda sedang membuat akun *TRIAL ${type.toUpperCase()}* di server *${server.nama_server || server.domain}*.\n\n` +
       `Layanan trial hanya berlaku *1x per hari* dan akan aktif selama *1 Jam*.\n\n` +
       `Kecuali User *RESSELLER VPN*.\n\n` +
@@ -10965,7 +10965,7 @@ bot.action(/(del)_username_(vmess|vless|trojan|ssh|udp_http|zivpn)_(.+)/, async 
     step: `username_${action}_${type}`,
     serverId, type, action
   };
-  await ctx.reply('👤 *Masukkan username yang ingin dihapus:*', { parse_mode: 'Markdown' });
+  await ctx.reply(' *Masukkan username yang ingin dihapus:*', { parse_mode: 'Markdown' });
 });
 bot.action(/(unlock)_username_(vmess|vless|trojan|shadowsocks|ssh|udp_http)_(.+)/, async (ctx) => {
   const [action, type, serverId] = [ctx.match[1], ctx.match[2], ctx.match[3]];
@@ -10974,7 +10974,7 @@ bot.action(/(unlock)_username_(vmess|vless|trojan|shadowsocks|ssh|udp_http)_(.+)
     step: `username_${action}_${type}`,
     serverId, type, action
   };
-  await ctx.reply('👤 *Masukkan username yang ingin dibuka:*', { parse_mode: 'Markdown' });
+  await ctx.reply(' *Masukkan username yang ingin dibuka:*', { parse_mode: 'Markdown' });
 });
 bot.action(/(lock)_username_(vmess|vless|trojan|shadowsocks|ssh|udp_http)_(.+)/, async (ctx) => {
   const [action, type, serverId] = [ctx.match[1], ctx.match[2], ctx.match[3]];
@@ -10983,7 +10983,7 @@ bot.action(/(lock)_username_(vmess|vless|trojan|shadowsocks|ssh|udp_http)_(.+)/,
     step: `username_${action}_${type}`,
     serverId, type, action
   };
-  await ctx.reply('👤 *Masukkan username yang ingin dikunci:*', { parse_mode: 'Markdown' });
+  await ctx.reply(' *Masukkan username yang ingin dikunci:*', { parse_mode: 'Markdown' });
 });
 
 // ══════════════════════════════════════════
@@ -10995,9 +10995,9 @@ bot.action('menu_ppob', async (ctx) => {
   const saldoAkrab = await dbH.getSaldoAkrab(db, userId).catch(() => 0);
 
   await ctx.editMessageText(
-    '📱 <b>PPOB</b> — Bayar Tagihan & Produk Digital\n' +
+    ' <b>PPOB</b> — Bayar Tagihan & Produk Digital\n' +
     '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
-    '┃ 💳 Saldo Tembak Kuota : <code>Rp ' + Number(saldoAkrab || 0).toLocaleString('id-ID') + '</code>\n' +
+    '┃  Saldo Tembak Kuota : <code>Rp ' + Number(saldoAkrab || 0).toLocaleString('id-ID') + '</code>\n' +
     '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
     '<i>Saldo ini juga dipakai untuk Akrab & Circle.</i>\n\n' +
     'Pilih menu:',
@@ -11006,17 +11006,17 @@ bot.action('menu_ppob', async (ctx) => {
       reply_markup: {
         inline_keyboard: [
           [
-            { text: '💳 Cek Saldo', callback_data: 'cek_saldo_akrab' },
-            { text: '💰 Top Up', callback_data: 'topup_akrab' },
+            { text: ' Cek Saldo', callback_data: 'cek_saldo_akrab' },
+            { text: ' Top Up', callback_data: 'topup_akrab' },
           ],
           [
-            { text: '🛒 Daftar & Beli Produk', callback_data: 'ppob_list_produk' },
+            { text: ' Daftar & Beli Produk', callback_data: 'ppob_list_produk' },
           ],
           [
-            { text: '📜 Riwayat', callback_data: 'ppob_riwayat' },
-            { text: '🔍 Cek Status', callback_data: 'ppob_cek_status' },
+            { text: ' Riwayat', callback_data: 'ppob_riwayat' },
+            { text: ' Cek Status', callback_data: 'ppob_cek_status' },
           ],
-          [{ text: '🏠 Menu Utama', callback_data: 'send_main_menu' }],
+          [{ text: ' Menu Utama', callback_data: 'send_main_menu' }],
         ],
       },
     }
@@ -11028,7 +11028,7 @@ bot.action('cek_saldo_akrab', async (ctx) => {
   const userId = ctx.from.id;
   const saldo = await dbH.getSaldoAkrab(db, userId).catch(() => 0);
   await ctx.editMessageText(
-    '💳 <b>SALDO TEMBAK KUOTA</b>\n' +
+    ' <b>SALDO TEMBAK KUOTA</b>\n' +
     '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
     '┃ Nominal : <code>Rp ' + Number(saldo || 0).toLocaleString('id-ID') + '</code>\n' +
     '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
@@ -11037,8 +11037,8 @@ bot.action('cek_saldo_akrab', async (ctx) => {
       parse_mode: 'HTML',
       reply_markup: {
         inline_keyboard: [
-          [{ text: '💰 Top Up', callback_data: 'topup_akrab' }],
-          [{ text: '🔙 Kembali', callback_data: 'menu_ppob' }],
+          [{ text: ' Top Up', callback_data: 'topup_akrab' }],
+          [{ text: ' Kembali', callback_data: 'menu_ppob' }],
         ],
       },
     }
@@ -11051,12 +11051,12 @@ bot.action('ppob_list_produk', async (ctx) => {
   try {
     if (!HIDEPULSA_API_KEY) {
       await ctx.editMessageText(
-        '⚠️ API Key HidePulsa belum diset oleh admin. Hubungi admin.',
+        ' API Key HidePulsa belum diset oleh admin. Hubungi admin.',
         {
           parse_mode: 'HTML',
           reply_markup: {
             inline_keyboard: [
-              [{ text: '🔙 Kembali', callback_data: 'menu_ppob' }],
+              [{ text: ' Kembali', callback_data: 'menu_ppob' }],
             ],
           },
         }
@@ -11077,24 +11077,24 @@ bot.action('ppob_list_produk', async (ctx) => {
     Object.entries(grouped).slice(0, 10).forEach(([cat, prods]) => {
       keyboard.push([
         {
-          text: '📂 ' + cat + ' (' + prods.length + ')',
+          text: ' ' + cat + ' (' + prods.length + ')',
           callback_data: 'ppob_kat_' + encodeURIComponent(cat).slice(0, 30),
         },
       ]);
     });
-    keyboard.push([{ text: '🔙 Kembali', callback_data: 'menu_ppob' }]);
+    keyboard.push([{ text: ' Kembali', callback_data: 'menu_ppob' }]);
 
     userState[userId] = Object.assign({}, userState[userId], { ppobProducts: items });
 
-    await ctx.editMessageText('📋 <b>Daftar Produk PPOB</b>\n\nPilih kategori:', {
+    await ctx.editMessageText(' <b>Daftar Produk PPOB</b>\n\nPilih kategori:', {
       parse_mode: 'HTML',
       reply_markup: { inline_keyboard: keyboard },
     });
   } catch (err) {
     logger.error('ppob_list_produk error: ' + (err && err.message ? err.message : err));
-    await ctx.editMessageText('❌ Gagal memuat produk. Coba lagi nanti.', {
+    await ctx.editMessageText(' Gagal memuat produk. Coba lagi nanti.', {
       parse_mode: 'HTML',
-      reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'menu_ppob' }]] },
+      reply_markup: { inline_keyboard: [[{ text: ' Kembali', callback_data: 'menu_ppob' }]] },
     });
   }
 });
@@ -11113,7 +11113,7 @@ bot.action(/^ppob_kat_(.+)$/, async (ctx) => {
   if (!products.length) {
     await ctx.editMessageText('Tidak ada produk pada kategori ini.', {
       parse_mode: 'HTML',
-      reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'ppob_list_produk' }]] },
+      reply_markup: { inline_keyboard: [[{ text: ' Kembali', callback_data: 'ppob_list_produk' }]] },
     });
     return;
   }
@@ -11127,9 +11127,9 @@ bot.action(/^ppob_kat_(.+)$/, async (ctx) => {
       callback_data: 'ppob_beli_' + code,
     }];
   });
-  keyboard.push([{ text: '🔙 Kembali', callback_data: 'ppob_list_produk' }]);
+  keyboard.push([{ text: ' Kembali', callback_data: 'ppob_list_produk' }]);
 
-  await ctx.editMessageText('🛒 <b>Produk: ' + category + '</b>\n\nPilih produk:', {
+  await ctx.editMessageText(' <b>Produk: ' + category + '</b>\n\nPilih produk:', {
     parse_mode: 'HTML',
     reply_markup: { inline_keyboard: keyboard },
   });
@@ -11155,13 +11155,13 @@ bot.action(/^ppob_beli_(.+)$/, async (ctx) => {
 
   const harga = product ? 'Rp ' + Number(product.price || product.harga || 0).toLocaleString('id-ID') : '-';
   await ctx.editMessageText(
-    '🛒 <b>Beli Produk PPOB</b>\n\n' +
+    ' <b>Beli Produk PPOB</b>\n\n' +
     'Produk: <b>' + (product ? (product.name || product.product_name || productCode) : productCode) + '</b>\n' +
     'Harga: <b>' + harga + '</b>\n\n' +
     'Masukkan nomor/ID tujuan:',
     {
       parse_mode: 'HTML',
-      reply_markup: { inline_keyboard: [[{ text: '❌ Batal', callback_data: 'menu_ppob' }]] },
+      reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'menu_ppob' }]] },
     }
   );
 });
@@ -11172,14 +11172,14 @@ bot.action('ppob_riwayat', async (ctx) => {
   const orders = await dbH.getPpobOrders(db, userId, 10);
 
   if (!orders.length) {
-    await ctx.editMessageText('📜 Belum ada riwayat transaksi PPOB.', {
+    await ctx.editMessageText(' Belum ada riwayat transaksi PPOB.', {
       parse_mode: 'HTML',
-      reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'menu_ppob' }]] },
+      reply_markup: { inline_keyboard: [[{ text: ' Kembali', callback_data: 'menu_ppob' }]] },
     });
     return;
   }
 
-  let text = '📜 <b>Riwayat Transaksi PPOB</b>\n\n';
+  let text = ' <b>Riwayat Transaksi PPOB</b>\n\n';
   orders.forEach((o, i) => {
     const tgl = new Date(o.created_at || Date.now()).toLocaleDateString('id-ID');
     text += (i + 1) + '. ' + o.product_code + ' → ' + o.target + '\n';
@@ -11188,7 +11188,7 @@ bot.action('ppob_riwayat', async (ctx) => {
 
   await ctx.editMessageText(text, {
     parse_mode: 'HTML',
-    reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'menu_ppob' }]] },
+    reply_markup: { inline_keyboard: [[{ text: ' Kembali', callback_data: 'menu_ppob' }]] },
   });
 });
 
@@ -11197,10 +11197,10 @@ bot.action('ppob_cek_status', async (ctx) => {
   const userId = ctx.from.id;
   userState[userId] = { step: 'ppob_input_order_id' };
   await ctx.editMessageText(
-    '🔍 <b>Cek Status Transaksi PPOB</b>\n\nMasukkan Order ID:',
+    ' <b>Cek Status Transaksi PPOB</b>\n\nMasukkan Order ID:',
     {
       parse_mode: 'HTML',
-      reply_markup: { inline_keyboard: [[{ text: '❌ Batal', callback_data: 'menu_ppob' }]] },
+      reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'menu_ppob' }]] },
     }
   );
 });
@@ -11215,9 +11215,9 @@ bot.action(/^ppob_konfirmasi_(.+)$/, async (ctx) => {
   const amount = Number(confirm.amount || 0);
 
   if (!productCode || !target || !amount) {
-    await ctx.editMessageText('❌ Sesi konfirmasi tidak ditemukan. Silakan ulangi dari menu.', {
+    await ctx.editMessageText(' Sesi konfirmasi tidak ditemukan. Silakan ulangi dari menu.', {
       parse_mode: 'HTML',
-      reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'menu_ppob' }]] },
+      reply_markup: { inline_keyboard: [[{ text: ' Kembali', callback_data: 'menu_ppob' }]] },
     });
     return;
   }
@@ -11226,7 +11226,7 @@ bot.action(/^ppob_konfirmasi_(.+)$/, async (ctx) => {
     const saldo = await dbH.getSaldoAkrab(db, userId);
     if (saldo < amount) {
       await ctx.editMessageText(
-        '❌ Saldo Akrab tidak cukup.\n\n' +
+        ' Saldo Akrab tidak cukup.\n\n' +
         'Saldo: Rp ' + Number(saldo).toLocaleString('id-ID') + '\n' +
         'Dibutuhkan: Rp ' + amount.toLocaleString('id-ID') + '\n' +
         'Kekurangan: Rp ' + Number(amount - saldo).toLocaleString('id-ID'),
@@ -11234,8 +11234,8 @@ bot.action(/^ppob_konfirmasi_(.+)$/, async (ctx) => {
           parse_mode: 'HTML',
           reply_markup: {
             inline_keyboard: [
-              [{ text: '💰 Top Up Akrab', callback_data: 'topup_akrab' }],
-              [{ text: '🔙 Kembali', callback_data: 'menu_ppob' }],
+              [{ text: ' Top Up Akrab', callback_data: 'topup_akrab' }],
+              [{ text: ' Kembali', callback_data: 'menu_ppob' }],
             ],
           },
         }
@@ -11251,7 +11251,7 @@ bot.action(/^ppob_konfirmasi_(.+)$/, async (ctx) => {
     delete userState[userId];
 
     await ctx.editMessageText(
-      '✅ <b>Transaksi PPOB Berhasil!</b>\n\n' +
+      ' <b>Transaksi PPOB Berhasil!</b>\n\n' +
       'Order ID: <code>' + orderId + '</code>\n' +
       'Produk: ' + productCode + '\nTujuan: ' + target + '\n' +
       'Nominal: Rp ' + amount.toLocaleString('id-ID') + '\n' +
@@ -11259,16 +11259,16 @@ bot.action(/^ppob_konfirmasi_(.+)$/, async (ctx) => {
       'Simpan Order ID untuk cek status.',
       {
         parse_mode: 'HTML',
-        reply_markup: { inline_keyboard: [[{ text: '🔙 Menu PPOB', callback_data: 'menu_ppob' }]] },
+        reply_markup: { inline_keyboard: [[{ text: ' Menu PPOB', callback_data: 'menu_ppob' }]] },
       }
     );
   } catch (err) {
     logger.error('ppob_konfirmasi error: ' + (err && err.message ? err.message : err));
     await ctx.editMessageText(
-      '❌ Transaksi gagal: ' + (err && err.message ? err.message : 'unknown') + '\n\nSaldo tidak terpotong.',
+      ' Transaksi gagal: ' + (err && err.message ? err.message : 'unknown') + '\n\nSaldo tidak terpotong.',
       {
         parse_mode: 'HTML',
-        reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'menu_ppob' }]] },
+        reply_markup: { inline_keyboard: [[{ text: ' Kembali', callback_data: 'menu_ppob' }]] },
       }
     );
   }
@@ -11285,23 +11285,23 @@ bot.action('menu_suntik', async (ctx) => {
 
   const keyboard = [
     [
-      { text: '💰 Cek Saldo VPN', callback_data: 'smm_cek_saldo' },
-      { text: '🛒 Daftar & Pesan Layanan', callback_data: 'smm_list_layanan' },
+      { text: ' Cek Saldo VPN', callback_data: 'smm_cek_saldo' },
+      { text: ' Daftar & Pesan Layanan', callback_data: 'smm_list_layanan' },
     ],
     [
-      { text: '🔍 Cek Status', callback_data: 'smm_cek_status' },
-      { text: '🔄 Refill Pesanan', callback_data: 'smm_refill' },
+      { text: ' Cek Status', callback_data: 'smm_cek_status' },
+      { text: ' Refill Pesanan', callback_data: 'smm_refill' },
     ],
   ];
   if (isAdminUser) {
-    keyboard.push([{ text: '📢 Markup Produk SMM', callback_data: 'smm_markup_menu' }]);
+    keyboard.push([{ text: ' Markup Produk SMM', callback_data: 'smm_markup_menu' }]);
   }
-  keyboard.push([{ text: '🏠 Menu Utama', callback_data: 'send_main_menu' }]);
+  keyboard.push([{ text: ' Menu Utama', callback_data: 'send_main_menu' }]);
 
   await ctx.editMessageText(
-    '💉 <b>SUNTIK FOLLOWERS</b>\n' +
+    ' <b>SUNTIK FOLLOWERS</b>\n' +
     '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
-    '┃ 💰 Saldo VPN : <code>Rp ' + Number(saldo || 0).toLocaleString('id-ID') + '</code>\n' +
+    '┃  Saldo VPN : <code>Rp ' + Number(saldo || 0).toLocaleString('id-ID') + '</code>\n' +
     '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
     '<i>Saldo VPN dipakai untuk layanan SMM.</i>',
     { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } }
@@ -11313,7 +11313,7 @@ bot.action('smm_cek_saldo', async (ctx) => {
   const userId = ctx.from.id;
   const saldo = await dbH.getSaldo(db, userId).catch(() => 0);
   await ctx.editMessageText(
-    '💰 <b>SALDO VPN</b>\n' +
+    ' <b>SALDO VPN</b>\n' +
     '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
     '┃ Nominal : <code>Rp ' + Number(saldo || 0).toLocaleString('id-ID') + '</code>\n' +
     '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
@@ -11322,8 +11322,8 @@ bot.action('smm_cek_saldo', async (ctx) => {
       parse_mode: 'HTML',
       reply_markup: {
         inline_keyboard: [
-          [{ text: '💳 Top Up Saldo VPN', callback_data: 'topup_saldo' }],
-          [{ text: '🔙 Kembali', callback_data: 'menu_suntik' }],
+          [{ text: ' Top Up Saldo VPN', callback_data: 'topup_saldo' }],
+          [{ text: ' Kembali', callback_data: 'menu_suntik' }],
         ],
       },
     }
@@ -11337,12 +11337,12 @@ bot.action('smm_list_layanan', async (ctx) => {
   // Cek kredensial dulu
   if (!FAYU_API_ID || !FAYU_API_KEY) {
     await ctx.editMessageText(
-      '⚠️ <b>Credential FayuPedia belum diset</b>\n\n' +
+      ' <b>Credential FayuPedia belum diset</b>\n\n' +
       'Admin perlu mengisi <b>FayuPedia API ID</b> dan <b>API Key</b> via:\n' +
-      'Menu Admin → 🔑 Setting API Keys → FayuPedia SMM',
+      'Menu Admin →  Setting API Keys → FayuPedia SMM',
       {
         parse_mode: 'HTML',
-        reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'menu_suntik' }]] },
+        reply_markup: { inline_keyboard: [[{ text: ' Kembali', callback_data: 'menu_suntik' }]] },
       }
     );
     return;
@@ -11354,10 +11354,10 @@ bot.action('smm_list_layanan', async (ctx) => {
 
     if (!Array.isArray(services) || services.length === 0) {
       await ctx.editMessageText(
-        '❌ <b>Layanan tidak ditemukan</b>\n\nAPI berhasil terhubung tapi mengembalikan list kosong. Coba lagi nanti.',
+        ' <b>Layanan tidak ditemukan</b>\n\nAPI berhasil terhubung tapi mengembalikan list kosong. Coba lagi nanti.',
         {
           parse_mode: 'HTML',
-          reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'menu_suntik' }]] },
+          reply_markup: { inline_keyboard: [[{ text: ' Kembali', callback_data: 'menu_suntik' }]] },
         }
       );
       return;
@@ -11369,18 +11369,18 @@ bot.action('smm_list_layanan', async (ctx) => {
     const keyboard = [];
     Object.entries(grouped).slice(0, 15).forEach(([cat, svcs]) => {
       keyboard.push([{
-        text: '📂 ' + cat + ' (' + svcs.length + ')',
+        text: ' ' + cat + ' (' + svcs.length + ')',
         callback_data: 'smm_kat_' + encodeURIComponent(cat).slice(0, 25),
       }]);
     });
-    keyboard.push([{ text: '🔙 Kembali', callback_data: 'menu_suntik' }]);
+    keyboard.push([{ text: ' Kembali', callback_data: 'menu_suntik' }]);
 
     const markupLine = markupGlobal
       ? '\nMarkup aktif: ' + (markupGlobal.type === 'pct' ? markupGlobal.value + '%' : 'Rp ' + Number(markupGlobal.value).toLocaleString('id-ID'))
       : '';
 
     await ctx.editMessageText(
-      '📋 <b>Layanan Suntik Followers</b>\n' +
+      ' <b>Layanan Suntik Followers</b>\n' +
       '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
       '┃ Total : <b>' + services.length + '</b> layanan' + markupLine + '\n' +
       '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n\n' +
@@ -11392,12 +11392,12 @@ bot.action('smm_list_layanan', async (ctx) => {
     const errText = err && err.message ? err.message : 'Unknown error';
     logger.error('smm_list_layanan: ' + errText + (apiMsg ? ' | ' + apiMsg : ''));
     await ctx.editMessageText(
-      '❌ <b>Gagal memuat layanan SMM</b>\n\n' +
+      ' <b>Gagal memuat layanan SMM</b>\n\n' +
       '<code>' + errText.replace(/[<>]/g, '') + '</code>\n\n' +
       '<i>Cek API ID dan API Key di Setting Admin.</i>',
       {
         parse_mode: 'HTML',
-        reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'menu_suntik' }]] },
+        reply_markup: { inline_keyboard: [[{ text: ' Kembali', callback_data: 'menu_suntik' }]] },
       }
     );
   }
@@ -11417,7 +11417,7 @@ bot.action(/^smm_kat_(.+)$/, async (ctx) => {
   if (!catServices.length) {
     await ctx.editMessageText('Tidak ada layanan pada kategori ini.', {
       parse_mode: 'HTML',
-      reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'smm_list_layanan' }]] },
+      reply_markup: { inline_keyboard: [[{ text: ' Kembali', callback_data: 'smm_list_layanan' }]] },
     });
     return;
   }
@@ -11432,10 +11432,10 @@ bot.action(/^smm_kat_(.+)$/, async (ctx) => {
       callback_data: 'smm_order_' + (s.service || s.id),
     }];
   });
-  keyboard.push([{ text: '🔙 Kembali', callback_data: 'smm_list_layanan' }]);
+  keyboard.push([{ text: ' Kembali', callback_data: 'smm_list_layanan' }]);
 
   await ctx.editMessageText(
-    '📂 <b>' + cat + '</b>\n\n' + catServices.length + ' layanan:',
+    ' <b>' + cat + '</b>\n\n' + catServices.length + ' layanan:',
     { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } }
   );
 });
@@ -11462,13 +11462,13 @@ bot.action(/^smm_order_(.+)$/, async (ctx) => {
   });
 
   await ctx.editMessageText(
-    '🛒 <b>' + (service ? (service.name || serviceId) : serviceId) + '</b>\n\n' +
-    '💰 Harga: Rp ' + Number(finalPricePer1000).toLocaleString('id-ID') + ' / 1000\n' +
-    '📊 Min: ' + min.toLocaleString('id-ID') + ' | Max: ' + max.toLocaleString('id-ID') + '\n\n' +
+    ' <b>' + (service ? (service.name || serviceId) : serviceId) + '</b>\n\n' +
+    ' Harga: Rp ' + Number(finalPricePer1000).toLocaleString('id-ID') + ' / 1000\n' +
+    ' Min: ' + min.toLocaleString('id-ID') + ' | Max: ' + max.toLocaleString('id-ID') + '\n\n' +
     'Masukkan target (URL/username):',
     {
       parse_mode: 'HTML',
-      reply_markup: { inline_keyboard: [[{ text: '❌ Batal', callback_data: 'menu_suntik' }]] },
+      reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'menu_suntik' }]] },
     }
   );
 });
@@ -11477,8 +11477,8 @@ bot.action('smm_cek_status', async (ctx) => {
   await ctx.answerCbQuery();
   const userId = ctx.from.id;
   userState[userId] = { step: 'smm_input_status_id' };
-  await ctx.editMessageText('🔍 Masukkan Order ID SMM:', {
-    reply_markup: { inline_keyboard: [[{ text: '❌ Batal', callback_data: 'menu_suntik' }]] },
+  await ctx.editMessageText(' Masukkan Order ID SMM:', {
+    reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'menu_suntik' }]] },
   });
 });
 
@@ -11486,8 +11486,8 @@ bot.action('smm_refill', async (ctx) => {
   await ctx.answerCbQuery();
   const userId = ctx.from.id;
   userState[userId] = { step: 'smm_input_refill_id' };
-  await ctx.editMessageText('🔄 Masukkan Order ID untuk refill:', {
-    reply_markup: { inline_keyboard: [[{ text: '❌ Batal', callback_data: 'menu_suntik' }]] },
+  await ctx.editMessageText(' Masukkan Order ID untuk refill:', {
+    reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'menu_suntik' }]] },
   });
 });
 
@@ -11502,9 +11502,9 @@ bot.action(/^smm_konfirmasi_(.+)$/, async (ctx) => {
   const amount = Number(confirm.amount || 0);
 
   if (!target || !qty || !amount) {
-    await ctx.editMessageText('❌ Sesi konfirmasi tidak ditemukan. Silakan ulangi dari menu.', {
+    await ctx.editMessageText(' Sesi konfirmasi tidak ditemukan. Silakan ulangi dari menu.', {
       parse_mode: 'HTML',
-      reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'menu_suntik' }]] },
+      reply_markup: { inline_keyboard: [[{ text: ' Kembali', callback_data: 'menu_suntik' }]] },
     });
     return;
   }
@@ -11513,15 +11513,15 @@ bot.action(/^smm_konfirmasi_(.+)$/, async (ctx) => {
     const saldo = await dbH.getSaldo(db, userId);
     if (saldo < amount) {
       await ctx.editMessageText(
-        '❌ Saldo VPN tidak cukup.\n' +
+        ' Saldo VPN tidak cukup.\n' +
         'Saldo: Rp ' + Number(saldo).toLocaleString('id-ID') + '\n' +
         'Dibutuhkan: Rp ' + amount.toLocaleString('id-ID'),
         {
           parse_mode: 'HTML',
           reply_markup: {
             inline_keyboard: [
-              [{ text: '💰 Top Up VPN', callback_data: 'topup_saldo' }],
-              [{ text: '🔙 Kembali', callback_data: 'menu_suntik' }],
+              [{ text: ' Top Up VPN', callback_data: 'topup_saldo' }],
+              [{ text: ' Kembali', callback_data: 'menu_suntik' }],
             ],
           },
         }
@@ -11537,23 +11537,23 @@ bot.action(/^smm_konfirmasi_(.+)$/, async (ctx) => {
     delete userState[userId];
 
     await ctx.editMessageText(
-      '✅ <b>Order SMM Berhasil!</b>\n\n' +
+      ' <b>Order SMM Berhasil!</b>\n\n' +
       'Order ID: <code>' + orderId + '</code>\n' +
       'Target: ' + target + '\nJumlah: ' + qty.toLocaleString('id-ID') + '\n' +
       'Total: Rp ' + amount.toLocaleString('id-ID') + '\n\n' +
       'Simpan Order ID untuk cek status.',
       {
         parse_mode: 'HTML',
-        reply_markup: { inline_keyboard: [[{ text: '🔙 Menu SMM', callback_data: 'menu_suntik' }]] },
+        reply_markup: { inline_keyboard: [[{ text: ' Menu SMM', callback_data: 'menu_suntik' }]] },
       }
     );
   } catch (err) {
     logger.error('smm_konfirmasi: ' + (err && err.message ? err.message : err));
     await ctx.editMessageText(
-      '❌ Order gagal: ' + (err && err.message ? err.message : 'unknown') + '\nSaldo tidak terpotong.',
+      ' Order gagal: ' + (err && err.message ? err.message : 'unknown') + '\nSaldo tidak terpotong.',
       {
         parse_mode: 'HTML',
-        reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'menu_suntik' }]] },
+        reply_markup: { inline_keyboard: [[{ text: ' Kembali', callback_data: 'menu_suntik' }]] },
       }
     );
   }
@@ -11572,15 +11572,15 @@ bot.action('smm_markup_menu', async (ctx) => {
     : 'Belum ada markup';
 
   await ctx.editMessageText(
-    '📢 <b>Markup Global SMM</b>\n\n' + statusText + '\n\nPilih aksi:',
+    ' <b>Markup Global SMM</b>\n\n' + statusText + '\n\nPilih aksi:',
     {
       parse_mode: 'HTML',
       reply_markup: {
         inline_keyboard: [
-          [{ text: '📊 Set Markup %', callback_data: 'smm_markup_set_pct' }],
-          [{ text: '💰 Set Markup Flat per 1000', callback_data: 'smm_markup_set_flat' }],
-          [{ text: '🗑️ Hapus Markup', callback_data: 'smm_markup_delete' }],
-          [{ text: '🔙 Kembali', callback_data: 'menu_suntik' }],
+          [{ text: ' Set Markup %', callback_data: 'smm_markup_set_pct' }],
+          [{ text: ' Set Markup Flat per 1000', callback_data: 'smm_markup_set_flat' }],
+          [{ text: ' Hapus Markup', callback_data: 'smm_markup_delete' }],
+          [{ text: ' Kembali', callback_data: 'menu_suntik' }],
         ],
       },
     }
@@ -11593,8 +11593,8 @@ bot.action('smm_markup_set_pct', async (ctx) => {
   const isAdminUser = Array.isArray(adminIds) ? adminIds.includes(userId) : Number(adminIds) === userId;
   if (!isAdminUser) return ctx.answerCbQuery('Tidak ada izin!', { show_alert: true });
   userState[userId] = { step: 'smm_markup_input_pct' };
-  await ctx.editMessageText('📊 Masukkan % markup SMM (contoh: 10):', {
-    reply_markup: { inline_keyboard: [[{ text: '❌ Batal', callback_data: 'smm_markup_menu' }]] },
+  await ctx.editMessageText(' Masukkan % markup SMM (contoh: 10):', {
+    reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'smm_markup_menu' }]] },
   });
 });
 
@@ -11604,8 +11604,8 @@ bot.action('smm_markup_set_flat', async (ctx) => {
   const isAdminUser = Array.isArray(adminIds) ? adminIds.includes(userId) : Number(adminIds) === userId;
   if (!isAdminUser) return ctx.answerCbQuery('Tidak ada izin!', { show_alert: true });
   userState[userId] = { step: 'smm_markup_input_flat' };
-  await ctx.editMessageText('💰 Masukkan Rp markup per 1000 (contoh: 500):', {
-    reply_markup: { inline_keyboard: [[{ text: '❌ Batal', callback_data: 'smm_markup_menu' }]] },
+  await ctx.editMessageText(' Masukkan Rp markup per 1000 (contoh: 500):', {
+    reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'smm_markup_menu' }]] },
   });
 });
 
@@ -11615,8 +11615,8 @@ bot.action('smm_markup_delete', async (ctx) => {
   const isAdminUser = Array.isArray(adminIds) ? adminIds.includes(userId) : Number(adminIds) === userId;
   if (!isAdminUser) return ctx.answerCbQuery('Tidak ada izin!', { show_alert: true });
   await dbH.deleteMarkup(db, 'global', 'smm', null);
-  await ctx.editMessageText('✅ Markup SMM dihapus.', {
-    reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'smm_markup_menu' }]] },
+  await ctx.editMessageText(' Markup SMM dihapus.', {
+    reply_markup: { inline_keyboard: [[{ text: ' Kembali', callback_data: 'smm_markup_menu' }]] },
   });
 });
 
@@ -11632,35 +11632,35 @@ bot.action('menu_vpn', async (ctx) => {
 
   const keyboard = [
     [
-      { text: '➕ Buat Akun', callback_data: 'service_create' },
-      { text: '⌛ Trial Akun', callback_data: 'service_trial' }
+      { text: ' Buat Akun', callback_data: 'service_create' },
+      { text: ' Trial Akun', callback_data: 'service_trial' }
     ],
     [
-      { text: '🔄 Perpanjang Akun', callback_data: 'service_renew' },
-      { text: '📂 Lihat Akun Saya', callback_data: 'view_accounts' }
+      { text: ' Perpanjang Akun', callback_data: 'service_renew' },
+      { text: ' Lihat Akun Saya', callback_data: 'view_accounts' }
     ],
     [
-      { text: '🗑️ Hapus Akun Saya', callback_data: 'delete_my_account_intro' },
-      { text: '🔍 Cek Masa Aktif', callback_data: 'check_expiry_account' }
+      { text: ' Hapus Akun Saya', callback_data: 'delete_my_account_intro' },
+      { text: ' Cek Masa Aktif', callback_data: 'check_expiry_account' }
     ],
     [
-      { text: '📥 Download Config', callback_data: 'download_config_menu' }
+      { text: ' Download Config', callback_data: 'download_config_menu' }
     ],
   ];
 
   if (isReseller) {
     keyboard.push([
-      { text: '🔐 Buka Kunci Akun', callback_data: 'service_unlock' },
-      { text: '🗝️ Kunci Akun', callback_data: 'service_lock' }
+      { text: ' Buka Kunci Akun', callback_data: 'service_unlock' },
+      { text: ' Kunci Akun', callback_data: 'service_lock' }
     ]);
   }
 
-  keyboard.push([{ text: '🏠 Menu Utama', callback_data: 'send_main_menu' }]);
+  keyboard.push([{ text: ' Menu Utama', callback_data: 'send_main_menu' }]);
 
   const msgText =
-    '🔑 <b>AKUN VPN</b>\n' +
+    ' <b>AKUN VPN</b>\n' +
     '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
-    '┃ 💰 Saldo VPN : <code>Rp ' + Number(saldo || 0).toLocaleString('id-ID') + '</code>\n' +
+    '┃  Saldo VPN : <code>Rp ' + Number(saldo || 0).toLocaleString('id-ID') + '</code>\n' +
     '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
     '<i>Saldo ini dipakai untuk Akun VPN + Suntik Followers.</i>\n\n' +
     'Pilih layanan:';
@@ -11680,30 +11680,30 @@ bot.action('menu_akrab', async (ctx) => {
 
   const keyboard = [
     [
-      { text: '💳 Cek Saldo Tembak Kuota', callback_data: 'cek_saldo_akrab' },
-      { text: '💰 Top Up', callback_data: 'topup_akrab' },
+      { text: ' Cek Saldo Tembak Kuota', callback_data: 'cek_saldo_akrab' },
+      { text: ' Top Up', callback_data: 'topup_akrab' },
     ],
     [
-      { text: '📦 Akrab V1', callback_data: 'akrab_grup_v1' },
-      { text: '📦 Akrab V2', callback_data: 'akrab_grup_v2' },
+      { text: ' Akrab V1', callback_data: 'akrab_grup_v1' },
+      { text: ' Akrab V2', callback_data: 'akrab_grup_v2' },
     ],
     [
       { text: '⭕ Circle', callback_data: 'akrab_grup_circle' },
     ],
     [
-      { text: '🔍 Cek Status', callback_data: 'akrab_cek_status' },
-      { text: '📊 Cek Stok XL/Axis', callback_data: 'akrab_cek_stock' },
+      { text: ' Cek Status', callback_data: 'akrab_cek_status' },
+      { text: ' Cek Stok XL/Axis', callback_data: 'akrab_cek_stock' },
     ],
   ];
   if (isAdminUser) {
-    keyboard.push([{ text: '📢 Markup Produk Akrab', callback_data: 'akrab_markup_menu' }]);
+    keyboard.push([{ text: ' Markup Produk Akrab', callback_data: 'akrab_markup_menu' }]);
   }
-  keyboard.push([{ text: '🏠 Menu Utama', callback_data: 'send_main_menu' }]);
+  keyboard.push([{ text: ' Menu Utama', callback_data: 'send_main_menu' }]);
 
   await ctx.editMessageText(
-    '🤝 <b>AKRAB & CIRCLE</b>\n' +
+    ' <b>AKRAB & CIRCLE</b>\n' +
     '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
-    '┃ 💳 Saldo Tembak Kuota : <code>Rp ' + Number(saldoAkrab || 0).toLocaleString('id-ID') + '</code>\n' +
+    '┃  Saldo Tembak Kuota : <code>Rp ' + Number(saldoAkrab || 0).toLocaleString('id-ID') + '</code>\n' +
     '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
     '<i>Pilih kategori layanan:</i>' +
     (isAdminUser
@@ -11745,8 +11745,8 @@ bot.action(/^akrab_grup_(v1|v2|circle)$/, async (ctx) => {
 
     if (!filtered.length) {
       await ctx.editMessageText(
-        '📦 <b>' + grupLabel + '</b>\n\nBelum ada produk pada kategori ini.',
-        { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'menu_akrab' }]] } }
+        ' <b>' + grupLabel + '</b>\n\nBelum ada produk pada kategori ini.',
+        { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: ' Kembali', callback_data: 'menu_akrab' }]] } }
       );
       return;
     }
@@ -11762,21 +11762,21 @@ bot.action(/^akrab_grup_(v1|v2|circle)$/, async (ctx) => {
       const finalPrice = wallet.getEffectivePrice(base, markupGlobal, markupReseller);
       const labelHarga = base > 0 ? ' — Rp ' + finalPrice.toLocaleString('id-ID') : '';
       return [{
-        text: (habis ? '🔴 ' : '') + name + labelHarga,
+        text: (habis ? ' ' : '') + name + labelHarga,
         callback_data: 'akrab_beli_' + code,
       }];
     });
-    keyboard.push([{ text: '🔙 Kembali', callback_data: 'menu_akrab' }]);
+    keyboard.push([{ text: ' Kembali', callback_data: 'menu_akrab' }]);
 
     await ctx.editMessageText(
-      '📦 <b>' + grupLabel + '</b>\n\nPilih produk (🔴 = kosong):',
+      ' <b>' + grupLabel + '</b>\n\nPilih produk ( = kosong):',
       { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } }
     );
   } catch (err) {
     logger.error('akrab_grup_' + grup + ': ' + (err && err.message ? err.message : err));
-    await ctx.editMessageText('❌ Gagal memuat produk ' + grupLabel + '.', {
+    await ctx.editMessageText(' Gagal memuat produk ' + grupLabel + '.', {
       parse_mode: 'HTML',
-      reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'menu_akrab' }]] },
+      reply_markup: { inline_keyboard: [[{ text: ' Kembali', callback_data: 'menu_akrab' }]] },
     });
   }
 });
@@ -11801,21 +11801,21 @@ bot.action('akrab_list_produk', async (ctx) => {
     const keyboard = [];
     Object.entries(grouped).slice(0, 12).forEach(([cat, prods]) => {
       keyboard.push([{
-        text: '📂 ' + cat + ' (' + prods.length + ')',
+        text: ' ' + cat + ' (' + prods.length + ')',
         callback_data: 'akrab_kat_' + encodeURIComponent(cat).slice(0, 30),
       }]);
     });
-    keyboard.push([{ text: '🔙 Kembali', callback_data: 'menu_akrab' }]);
+    keyboard.push([{ text: ' Kembali', callback_data: 'menu_akrab' }]);
 
-    await ctx.editMessageText('📋 <b>Produk Akrab & Circle</b>\n\nPilih kategori:', {
+    await ctx.editMessageText(' <b>Produk Akrab & Circle</b>\n\nPilih kategori:', {
       parse_mode: 'HTML',
       reply_markup: { inline_keyboard: keyboard },
     });
   } catch (err) {
     logger.error('akrab_list_produk: ' + (err && err.message ? err.message : err));
-    await ctx.editMessageText('❌ Gagal memuat produk Akrab.', {
+    await ctx.editMessageText(' Gagal memuat produk Akrab.', {
       parse_mode: 'HTML',
-      reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'menu_akrab' }]] },
+      reply_markup: { inline_keyboard: [[{ text: ' Kembali', callback_data: 'menu_akrab' }]] },
     });
   }
 });
@@ -11834,7 +11834,7 @@ bot.action(/^akrab_kat_(.+)$/, async (ctx) => {
   if (!products.length) {
     await ctx.editMessageText('Tidak ada produk pada kategori ini.', {
       parse_mode: 'HTML',
-      reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'akrab_list_produk' }]] },
+      reply_markup: { inline_keyboard: [[{ text: ' Kembali', callback_data: 'akrab_list_produk' }]] },
     });
     return;
   }
@@ -11850,13 +11850,13 @@ bot.action(/^akrab_kat_(.+)$/, async (ctx) => {
     const finalPrice = wallet.getEffectivePrice(base, markupGlobal, markupReseller);
     const labelHarga = base > 0 ? ' — Rp ' + finalPrice.toLocaleString('id-ID') : '';
     return [{
-      text: (habis ? '🔴 ' : '') + name + labelHarga,
+      text: (habis ? ' ' : '') + name + labelHarga,
       callback_data: 'akrab_beli_' + code,
     }];
   });
-  keyboard.push([{ text: '🔙 Kembali', callback_data: 'akrab_list_produk' }]);
+  keyboard.push([{ text: ' Kembali', callback_data: 'akrab_list_produk' }]);
 
-  await ctx.editMessageText('🛒 <b>Produk: ' + category + '</b>\n\nPilih produk:', {
+  await ctx.editMessageText(' <b>Produk: ' + category + '</b>\n\nPilih produk:', {
     parse_mode: 'HTML',
     reply_markup: { inline_keyboard: keyboard },
   });
@@ -11875,10 +11875,10 @@ bot.action(/^akrab_beli_(.+)$/, async (ctx) => {
   // Cek stok produk
   if (product && Number(product.kosong || 0) === 1) {
     await ctx.editMessageText(
-      '🔴 <b>Produk Kosong</b>\n\nProduk ini sedang habis/tidak tersedia. Silakan pilih produk lain.',
+      ' <b>Produk Kosong</b>\n\nProduk ini sedang habis/tidak tersedia. Silakan pilih produk lain.',
       {
         parse_mode: 'HTML',
-        reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'akrab_list_produk' }]] },
+        reply_markup: { inline_keyboard: [[{ text: ' Kembali', callback_data: 'akrab_list_produk' }]] },
       }
     );
     return;
@@ -11899,14 +11899,14 @@ bot.action(/^akrab_beli_(.+)$/, async (ctx) => {
   const deskripsi = product && product.deskripsi ? ('\n\n<i>' + String(product.deskripsi).slice(0, 300) + '</i>') : '';
 
   await ctx.editMessageText(
-    '🛒 <b>Beli Produk Akrab</b>\n\n' +
+    ' <b>Beli Produk Akrab</b>\n\n' +
     'Produk: <b>' + namaProduk + '</b>\n' +
     'Harga: <b>Rp ' + Number(finalPrice).toLocaleString('id-ID') + '</b>' +
     deskripsi + '\n\n' +
     'Masukkan nomor tujuan:',
     {
       parse_mode: 'HTML',
-      reply_markup: { inline_keyboard: [[{ text: '❌ Batal', callback_data: 'menu_akrab' }]] },
+      reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'menu_akrab' }]] },
     }
   );
 });
@@ -11916,10 +11916,10 @@ bot.action('akrab_cek_status', async (ctx) => {
   const userId = ctx.from.id;
   userState[userId] = { step: 'akrab_input_reffid' };
   await ctx.editMessageText(
-    '🔍 <b>Cek Status Akrab</b>\n\nMasukkan Reff ID transaksi:',
+    ' <b>Cek Status Akrab</b>\n\nMasukkan Reff ID transaksi:',
     {
       parse_mode: 'HTML',
-      reply_markup: { inline_keyboard: [[{ text: '❌ Batal', callback_data: 'menu_akrab' }]] },
+      reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'menu_akrab' }]] },
     }
   );
 });
@@ -11942,7 +11942,7 @@ bot.action('akrab_cek_stock', async (ctx) => {
         const nama = it.nama || it.name || it.type || '-';
         const tipe = it.type || it.kode || '';
         const slot = Number(it.sisa_slot ?? it.stok ?? it.stock ?? 0);
-        const status = slot > 0 ? '🟢' : '🔴';
+        const status = slot > 0 ? '' : '';
         const tipeText = tipe ? ` <code>${tipe}</code>` : '';
         return `${status} <b>${nama}</b>${tipeText} — sisa slot: <b>${slot}</b>`;
       }).join('\n');
@@ -11952,17 +11952,17 @@ bot.action('akrab_cek_stock', async (ctx) => {
     }
 
     await ctx.editMessageText(
-      '📊 <b>Stok Akrab XL/Axis</b>\n\n' + body + '\n\n🟢 = tersedia · 🔴 = habis',
+      ' <b>Stok Akrab XL/Axis</b>\n\n' + body + '\n\n = tersedia ·  = habis',
       {
         parse_mode: 'HTML',
-        reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'menu_akrab' }]] },
+        reply_markup: { inline_keyboard: [[{ text: ' Kembali', callback_data: 'menu_akrab' }]] },
       }
     );
   } catch (err) {
     logger.error('akrab_cek_stock: ' + (err && err.message ? err.message : err));
-    await ctx.editMessageText('❌ Gagal cek stok. Coba lagi nanti.', {
+    await ctx.editMessageText(' Gagal cek stok. Coba lagi nanti.', {
       parse_mode: 'HTML',
-      reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'menu_akrab' }]] },
+      reply_markup: { inline_keyboard: [[{ text: ' Kembali', callback_data: 'menu_akrab' }]] },
     });
   }
 });
@@ -11977,9 +11977,9 @@ bot.action(/^akrab_konfirmasi_(.+)$/, async (ctx) => {
   const amount = Number(confirm.amount || 0);
 
   if (!produkCode || !tujuan || !amount) {
-    await ctx.editMessageText('❌ Sesi konfirmasi tidak ditemukan. Silakan ulangi dari menu.', {
+    await ctx.editMessageText(' Sesi konfirmasi tidak ditemukan. Silakan ulangi dari menu.', {
       parse_mode: 'HTML',
-      reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'menu_akrab' }]] },
+      reply_markup: { inline_keyboard: [[{ text: ' Kembali', callback_data: 'menu_akrab' }]] },
     });
     return;
   }
@@ -11988,15 +11988,15 @@ bot.action(/^akrab_konfirmasi_(.+)$/, async (ctx) => {
     const saldo = await dbH.getSaldoAkrab(db, userId);
     if (saldo < amount) {
       await ctx.editMessageText(
-        '❌ Saldo Akrab tidak cukup.\n' +
+        ' Saldo Akrab tidak cukup.\n' +
         'Saldo: Rp ' + Number(saldo).toLocaleString('id-ID') + '\n' +
         'Dibutuhkan: Rp ' + amount.toLocaleString('id-ID'),
         {
           parse_mode: 'HTML',
           reply_markup: {
             inline_keyboard: [
-              [{ text: '💰 Top Up Akrab', callback_data: 'topup_akrab' }],
-              [{ text: '🔙 Kembali', callback_data: 'menu_akrab' }],
+              [{ text: ' Top Up Akrab', callback_data: 'topup_akrab' }],
+              [{ text: ' Kembali', callback_data: 'menu_akrab' }],
             ],
           },
         }
@@ -12012,7 +12012,7 @@ bot.action(/^akrab_konfirmasi_(.+)$/, async (ctx) => {
     delete userState[userId];
 
     await ctx.editMessageText(
-      '✅ <b>Transaksi Akrab Berhasil!</b>\n\n' +
+      ' <b>Transaksi Akrab Berhasil!</b>\n\n' +
       'Reff ID: <code>' + reffId + '</code>\n' +
       'Produk: ' + produkCode + ' → ' + tujuan + '\n' +
       'Nominal: Rp ' + amount.toLocaleString('id-ID') + '\n' +
@@ -12020,16 +12020,16 @@ bot.action(/^akrab_konfirmasi_(.+)$/, async (ctx) => {
       'Simpan Reff ID untuk cek status.',
       {
         parse_mode: 'HTML',
-        reply_markup: { inline_keyboard: [[{ text: '🔙 Menu Akrab', callback_data: 'menu_akrab' }]] },
+        reply_markup: { inline_keyboard: [[{ text: ' Menu Akrab', callback_data: 'menu_akrab' }]] },
       }
     );
   } catch (err) {
     logger.error('akrab_konfirmasi: ' + (err && err.message ? err.message : err));
     await ctx.editMessageText(
-      '❌ Transaksi gagal: ' + (err && err.message ? err.message : 'unknown') + '\nSaldo tidak terpotong.',
+      ' Transaksi gagal: ' + (err && err.message ? err.message : 'unknown') + '\nSaldo tidak terpotong.',
       {
         parse_mode: 'HTML',
-        reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'menu_akrab' }]] },
+        reply_markup: { inline_keyboard: [[{ text: ' Kembali', callback_data: 'menu_akrab' }]] },
       }
     );
   }
@@ -12048,15 +12048,15 @@ bot.action('akrab_markup_menu', async (ctx) => {
     : 'Belum ada markup';
 
   await ctx.editMessageText(
-    '📢 <b>Markup Global Produk Akrab</b>\n\n' + statusText + '\n\nPilih aksi:',
+    ' <b>Markup Global Produk Akrab</b>\n\n' + statusText + '\n\nPilih aksi:',
     {
       parse_mode: 'HTML',
       reply_markup: {
         inline_keyboard: [
-          [{ text: '📊 Set Markup %', callback_data: 'akrab_markup_set_pct' }],
-          [{ text: '💰 Set Markup Flat (Rp)', callback_data: 'akrab_markup_set_flat' }],
-          [{ text: '🗑️ Hapus Markup', callback_data: 'akrab_markup_delete' }],
-          [{ text: '🔙 Kembali', callback_data: 'menu_akrab' }],
+          [{ text: ' Set Markup %', callback_data: 'akrab_markup_set_pct' }],
+          [{ text: ' Set Markup Flat (Rp)', callback_data: 'akrab_markup_set_flat' }],
+          [{ text: ' Hapus Markup', callback_data: 'akrab_markup_delete' }],
+          [{ text: ' Kembali', callback_data: 'menu_akrab' }],
         ],
       },
     }
@@ -12069,8 +12069,8 @@ bot.action('akrab_markup_set_pct', async (ctx) => {
   const isAdminUser = Array.isArray(adminIds) ? adminIds.includes(userId) : Number(adminIds) === userId;
   if (!isAdminUser) return ctx.answerCbQuery('Tidak ada izin!', { show_alert: true });
   userState[userId] = { step: 'akrab_markup_input_pct' };
-  await ctx.editMessageText('📊 Masukkan nilai markup persen (contoh: 10 untuk 10%):', {
-    reply_markup: { inline_keyboard: [[{ text: '❌ Batal', callback_data: 'akrab_markup_menu' }]] },
+  await ctx.editMessageText(' Masukkan nilai markup persen (contoh: 10 untuk 10%):', {
+    reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'akrab_markup_menu' }]] },
   });
 });
 
@@ -12080,8 +12080,8 @@ bot.action('akrab_markup_set_flat', async (ctx) => {
   const isAdminUser = Array.isArray(adminIds) ? adminIds.includes(userId) : Number(adminIds) === userId;
   if (!isAdminUser) return ctx.answerCbQuery('Tidak ada izin!', { show_alert: true });
   userState[userId] = { step: 'akrab_markup_input_flat' };
-  await ctx.editMessageText('💰 Masukkan nilai markup flat dalam Rupiah (contoh: 500):', {
-    reply_markup: { inline_keyboard: [[{ text: '❌ Batal', callback_data: 'akrab_markup_menu' }]] },
+  await ctx.editMessageText(' Masukkan nilai markup flat dalam Rupiah (contoh: 500):', {
+    reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'akrab_markup_menu' }]] },
   });
 });
 
@@ -12091,8 +12091,8 @@ bot.action('akrab_markup_delete', async (ctx) => {
   const isAdminUser = Array.isArray(adminIds) ? adminIds.includes(userId) : Number(adminIds) === userId;
   if (!isAdminUser) return ctx.answerCbQuery('Tidak ada izin!', { show_alert: true });
   await dbH.deleteMarkup(db, 'global', 'akrab', null);
-  await ctx.editMessageText('✅ Markup Akrab berhasil dihapus.', {
-    reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'akrab_markup_menu' }]] },
+  await ctx.editMessageText(' Markup Akrab berhasil dihapus.', {
+    reply_markup: { inline_keyboard: [[{ text: ' Kembali', callback_data: 'akrab_markup_menu' }]] },
   });
 });
 
@@ -12103,8 +12103,8 @@ bot.action('topup_akrab', async (ctx) => {
 
   if (!loadTopupAutoSetting()) {
     return ctx.editMessageText(
-      '⚠️ Top up otomatis sedang nonaktif. Silakan hubungi admin.',
-      { reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'menu_akrab' }]] } }
+      ' Top up otomatis sedang nonaktif. Silakan hubungi admin.',
+      { reply_markup: { inline_keyboard: [[{ text: ' Kembali', callback_data: 'menu_akrab' }]] } }
     ).catch(() => {});
   }
 
@@ -12119,7 +12119,7 @@ bot.action('topup_akrab', async (ctx) => {
   };
 
   await ctx.editMessageText(
-    '💳 <b>Top Up Saldo Tembak Kuota</b>\n\n' +
+    ' <b>Top Up Saldo Tembak Kuota</b>\n\n' +
     'Saldo ini dipakai untuk: PPOB + Akrab & Circle.\n\n' +
     `Masukkan jumlah top up (minimal Rp ${minTopupForMode.toLocaleString('id-ID')}):`,
     {
@@ -12128,7 +12128,7 @@ bot.action('topup_akrab', async (ctx) => {
     }
   ).catch(async () => {
     await ctx.reply(
-      '💳 <b>Top Up Saldo Tembak Kuota</b>\n\n' +
+      ' <b>Top Up Saldo Tembak Kuota</b>\n\n' +
       'Saldo ini dipakai untuk: PPOB + Akrab & Circle.\n\n' +
       `Masukkan jumlah top up (minimal Rp ${minTopupForMode.toLocaleString('id-ID')}):`,
       { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard_nomor() } }
@@ -12141,7 +12141,7 @@ bot.on('text', async (ctx) => {
   if (textRaw === ORDERKUOTA_CHECK_REPLY_TEXT) {
     const uniqueCode = findLatestPendingOrderKuotaCodeByUserId(ctx.from?.id);
     if (!uniqueCode) {
-      return ctx.reply('⚠️ Tidak ada transaksi QRIS OrderKuota yang pending untuk dicek.');
+      return ctx.reply(' Tidak ada transaksi QRIS OrderKuota yang pending untuk dicek.');
     }
     await handleOrderKuotaPaymentCheck(ctx, uniqueCode);
     return;
@@ -12175,7 +12175,7 @@ bot.on('text', async (ctx) => {
         });
 
         await ctx.reply(
-          '🛒 <b>Konfirmasi Pembelian PPOB</b>\n\n' +
+          ' <b>Konfirmasi Pembelian PPOB</b>\n\n' +
           'Produk: <b>' + (product ? (product.name || product.product_name || productCode) : productCode) + '</b>\n' +
           'Tujuan: <code>' + target + '</code>\n' +
           'Total : <b>Rp ' + Number(finalAmount).toLocaleString('id-ID') + '</b>\n\n' +
@@ -12184,8 +12184,8 @@ bot.on('text', async (ctx) => {
             parse_mode: 'HTML',
             reply_markup: {
               inline_keyboard: [
-                [{ text: '✅ Konfirmasi', callback_data: 'ppob_konfirmasi_' + productCode }],
-                [{ text: '❌ Batal', callback_data: 'menu_ppob' }],
+                [{ text: ' Konfirmasi', callback_data: 'ppob_konfirmasi_' + productCode }],
+                [{ text: ' Batal', callback_data: 'menu_ppob' }],
               ],
             },
           }
@@ -12206,13 +12206,13 @@ bot.on('text', async (ctx) => {
           await dbH.updatePpobOrderStatus(db, orderId, st).catch(() => {});
           delete userState[ctx.chat.id];
           await ctx.reply(
-            '🔍 <b>Status Transaksi</b>\n\nOrder ID: <code>' + orderId + '</code>\nStatus: <b>' + st + '</b>',
+            ' <b>Status Transaksi</b>\n\nOrder ID: <code>' + orderId + '</code>\nStatus: <b>' + st + '</b>',
             { parse_mode: 'HTML' }
           );
         } catch (err) {
           logger.error('ppob_input_order_id error: ' + (err && err.message ? err.message : err));
           delete userState[ctx.chat.id];
-          await ctx.reply('❌ Gagal cek status: ' + (err && err.message ? err.message : 'unknown'));
+          await ctx.reply(' Gagal cek status: ' + (err && err.message ? err.message : 'unknown'));
         }
         return;
       }
@@ -12242,7 +12242,7 @@ bot.on('text', async (ctx) => {
         });
 
         await ctx.reply(
-          '🛒 <b>Konfirmasi Beli Akrab</b>\n\n' +
+          ' <b>Konfirmasi Beli Akrab</b>\n\n' +
           'Produk : <b>' + (product ? (product.name || product.nama || produkCode) : produkCode) + '</b>\n' +
           'Tujuan : <code>' + tujuan + '</code>\n' +
           'Total  : <b>Rp ' + finalPrice.toLocaleString('id-ID') + '</b>\n\n' +
@@ -12251,8 +12251,8 @@ bot.on('text', async (ctx) => {
             parse_mode: 'HTML',
             reply_markup: {
               inline_keyboard: [
-                [{ text: '✅ Konfirmasi', callback_data: 'akrab_konfirmasi_' + produkCode }],
-                [{ text: '❌ Batal', callback_data: 'menu_akrab' }],
+                [{ text: ' Konfirmasi', callback_data: 'akrab_konfirmasi_' + produkCode }],
+                [{ text: ' Batal', callback_data: 'menu_akrab' }],
               ],
             },
           }
@@ -12267,14 +12267,14 @@ bot.on('text', async (ctx) => {
         try {
           const result = await akrabModule.getTransactionStatus(KHFY_ENDPOINT, KHFY_API_KEY, reffId);
           await ctx.reply(
-            '🔍 <b>Status Transaksi Akrab</b>\n\n<pre>' + JSON.stringify(result, null, 2).slice(0, 2000) + '</pre>',
+            ' <b>Status Transaksi Akrab</b>\n\n<pre>' + JSON.stringify(result, null, 2).slice(0, 2000) + '</pre>',
             {
               parse_mode: 'HTML',
-              reply_markup: { inline_keyboard: [[{ text: '🔙 Menu Akrab', callback_data: 'menu_akrab' }]] },
+              reply_markup: { inline_keyboard: [[{ text: ' Menu Akrab', callback_data: 'menu_akrab' }]] },
             }
           );
         } catch (err) {
-          await ctx.reply('❌ Tidak ditemukan atau error: ' + (err && err.message ? err.message : err));
+          await ctx.reply(' Tidak ditemukan atau error: ' + (err && err.message ? err.message : err));
         }
         return;
       }
@@ -12287,7 +12287,7 @@ bot.on('text', async (ctx) => {
         if (isNaN(val) || val < 0 || val > 1000) { await ctx.reply('Nilai tidak valid (0-1000%).'); return; }
         await dbH.setMarkup(db, 'global', 'akrab', null, 'pct', val);
         delete userState[ctx.chat.id];
-        await ctx.reply('✅ Markup Akrab diset ke ' + val + '%. Semua harga produk Akrab naik ' + val + '%.');
+        await ctx.reply(' Markup Akrab diset ke ' + val + '%. Semua harga produk Akrab naik ' + val + '%.');
         return;
       }
 
@@ -12299,7 +12299,7 @@ bot.on('text', async (ctx) => {
         if (!val || val < 0) { await ctx.reply('Nilai tidak valid.'); return; }
         await dbH.setMarkup(db, 'global', 'akrab', null, 'flat', val);
         delete userState[ctx.chat.id];
-        await ctx.reply('✅ Markup Akrab diset ke +Rp ' + val.toLocaleString('id-ID') + ' per produk.');
+        await ctx.reply(' Markup Akrab diset ke +Rp ' + val.toLocaleString('id-ID') + ' per produk.');
         return;
       }
     }
@@ -12332,7 +12332,7 @@ bot.on('text', async (ctx) => {
           'Masukkan jumlah:',
           {
             parse_mode: 'HTML',
-            reply_markup: { inline_keyboard: [[{ text: '❌ Batal', callback_data: 'menu_suntik' }]] },
+            reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'menu_suntik' }]] },
           }
         );
         return;
@@ -12346,7 +12346,7 @@ bot.on('text', async (ctx) => {
         const min = parseInt(service ? (service.min || 100) : 100);
         const max = parseInt(service ? (service.max || 100000) : 100000);
         if (!qty || qty < min || qty > max) {
-          await ctx.reply('❌ Jumlah tidak valid. Min: ' + min.toLocaleString('id-ID') + ', Max: ' + max.toLocaleString('id-ID'));
+          await ctx.reply(' Jumlah tidak valid. Min: ' + min.toLocaleString('id-ID') + ', Max: ' + max.toLocaleString('id-ID'));
           return;
         }
         const pricePer1000 = Number(smmState.smmFinalPrice || 0);
@@ -12358,7 +12358,7 @@ bot.on('text', async (ctx) => {
           smmConfirm: { serviceId, target, qty, amount: totalAmount },
         });
         await ctx.reply(
-          '🛒 <b>Konfirmasi Order SMM</b>\n\n' +
+          ' <b>Konfirmasi Order SMM</b>\n\n' +
           'Layanan: <b>' + (service ? (service.name || serviceId) : serviceId) + '</b>\n' +
           'Target  : <code>' + target + '</code>\n' +
           'Jumlah  : <b>' + qty.toLocaleString('id-ID') + '</b>\n' +
@@ -12368,8 +12368,8 @@ bot.on('text', async (ctx) => {
             parse_mode: 'HTML',
             reply_markup: {
               inline_keyboard: [
-                [{ text: '✅ Konfirmasi', callback_data: 'smm_konfirmasi_' + serviceId }],
-                [{ text: '❌ Batal', callback_data: 'menu_suntik' }],
+                [{ text: ' Konfirmasi', callback_data: 'smm_konfirmasi_' + serviceId }],
+                [{ text: ' Batal', callback_data: 'menu_suntik' }],
               ],
             },
           }
@@ -12384,14 +12384,14 @@ bot.on('text', async (ctx) => {
         try {
           const result = await smmModule.getOrderStatus(FAYU_ENDPOINT, FAYU_API_ID, FAYU_API_KEY, orderId);
           await ctx.reply(
-            '🔍 <b>Status Order SMM</b>\n\n<pre>' + JSON.stringify(result, null, 2).slice(0, 2000) + '</pre>',
+            ' <b>Status Order SMM</b>\n\n<pre>' + JSON.stringify(result, null, 2).slice(0, 2000) + '</pre>',
             {
               parse_mode: 'HTML',
-              reply_markup: { inline_keyboard: [[{ text: '🔙 Menu SMM', callback_data: 'menu_suntik' }]] },
+              reply_markup: { inline_keyboard: [[{ text: ' Menu SMM', callback_data: 'menu_suntik' }]] },
             }
           );
         } catch (err) {
-          await ctx.reply('❌ Gagal cek status: ' + (err && err.message ? err.message : err));
+          await ctx.reply(' Gagal cek status: ' + (err && err.message ? err.message : err));
         }
         return;
       }
@@ -12402,9 +12402,9 @@ bot.on('text', async (ctx) => {
         delete userState[ctx.chat.id];
         try {
           const result = await smmModule.createRefill(FAYU_ENDPOINT, FAYU_API_ID, FAYU_API_KEY, orderId);
-          await ctx.reply('✅ Refill diajukan!\n' + JSON.stringify(result));
+          await ctx.reply(' Refill diajukan!\n' + JSON.stringify(result));
         } catch (err) {
-          await ctx.reply('❌ Gagal refill: ' + (err && err.message ? err.message : err));
+          await ctx.reply(' Gagal refill: ' + (err && err.message ? err.message : err));
         }
         return;
       }
@@ -12417,7 +12417,7 @@ bot.on('text', async (ctx) => {
         if (isNaN(val) || val < 0 || val > 1000) { await ctx.reply('Nilai tidak valid (0-1000%).'); return; }
         await dbH.setMarkup(db, 'global', 'smm', null, 'pct', val);
         delete userState[ctx.chat.id];
-        await ctx.reply('✅ Markup SMM ' + val + '% aktif.');
+        await ctx.reply(' Markup SMM ' + val + '% aktif.');
         return;
       }
 
@@ -12429,7 +12429,7 @@ bot.on('text', async (ctx) => {
         if (!val || val < 0) { await ctx.reply('Nilai tidak valid.'); return; }
         await dbH.setMarkup(db, 'global', 'smm', null, 'flat', val);
         delete userState[ctx.chat.id];
-        await ctx.reply('✅ Markup SMM +Rp ' + val.toLocaleString('id-ID') + '/1000 aktif.');
+        await ctx.reply(' Markup SMM +Rp ' + val.toLocaleString('id-ID') + '/1000 aktif.');
         return;
       }
     }
@@ -12449,16 +12449,16 @@ bot.on('text', async (ctx) => {
         const type = resellerMarkupMatch[2];
         const val = type === 'pct' ? parseFloat(text) : parseInt(String(text).replace(/\D/g, ''), 10);
         if (isNaN(val) || val < 0 || (type === 'pct' && val > 1000)) {
-          await ctx.reply('❌ Nilai tidak valid.' + (type === 'pct' ? ' Masukkan angka 0–1000.' : ' Masukkan angka positif.'));
+          await ctx.reply(' Nilai tidak valid.' + (type === 'pct' ? ' Masukkan angka 0–1000.' : ' Masukkan angka positif.'));
           return;
         }
         await dbH.setMarkup(db, 'reseller', service, userId, type, val);
         delete userState[ctx.chat.id];
         const label = type === 'pct' ? `${val}%` : `Rp ${val.toLocaleString('id-ID')}`;
         await ctx.reply(
-          `✅ Markup ${service.toUpperCase()} diset ke +${label}.\n` +
+          ` Markup ${service.toUpperCase()} diset ke +${label}.\n` +
           `Pembeli kamu akan lihat harga lebih tinggi ${label}.`,
-          { reply_markup: { inline_keyboard: [[{ text: '🔙 Menu Reseller', callback_data: 'menu_join_reseller' }]] }}
+          { reply_markup: { inline_keyboard: [[{ text: ' Menu Reseller', callback_data: 'menu_join_reseller' }]] }}
         );
         return;
       }
@@ -12488,13 +12488,13 @@ bot.on('text', async (ctx) => {
 
       if (settingMap[settingState.step]) {
         if (!isAdminUser) { delete userState[ctx.chat.id]; return; }
-        if (!text) { await ctx.reply('❌ Nilai tidak boleh kosong.'); return; }
+        if (!text) { await ctx.reply(' Nilai tidak boleh kosong.'); return; }
 
         // Validasi khusus untuk webhook URL
         if (settingState.step === 'setting_input_webhook_url') {
           const normalized = text.replace(/\/$/, '');
           if (!/^https?:\/\/.+/.test(normalized)) {
-            await ctx.reply('❌ URL tidak valid. Harus diawali http:// atau https://\nContoh: https://bot.domain.com');
+            await ctx.reply(' URL tidak valid. Harus diawali http:// atau https://\nContoh: https://bot.domain.com');
             return;
           }
           // Update dan simpan
@@ -12504,12 +12504,12 @@ bot.on('text', async (ctx) => {
           saveVars(currentVars);
           delete userState[ctx.chat.id];
           await ctx.reply(
-            `✅ <b>Webhook URL</b> berhasil diset.\n\n` +
+            ` <b>Webhook URL</b> berhasil diset.\n\n` +
             `URL: <code>${normalized}</code>\n\n` +
             `Endpoint aktif:\n` +
             `• HidePulsa: <code>${normalized}/webhook/hidepulsa</code>\n` +
             `• Akrab    : <code>${normalized}/webhook/akrab</code>`,
-            { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'admin_setting_api' }]] }}
+            { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: ' Kembali', callback_data: 'admin_setting_api' }]] }}
           );
           return;
         }
@@ -12526,8 +12526,8 @@ bot.on('text', async (ctx) => {
 
         delete userState[ctx.chat.id];
         await ctx.reply(
-          `✅ <b>${label}</b> berhasil diupdate.\n\nNilai baru: <code>${maskSecret(text)}</code>`,
-          { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: backCb }]] }}
+          ` <b>${label}</b> berhasil diupdate.\n\nNilai baru: <code>${maskSecret(text)}</code>`,
+          { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: ' Kembali', callback_data: backCb }]] }}
         );
         return;
       }
@@ -12618,7 +12618,7 @@ bot.on('text', async (ctx) => {
       estimate: text
     });
     delete userState[ctx.chat.id];
-    await ctx.reply(`✅ Estimasi maintenance disimpan: ${text}`);
+    await ctx.reply(` Estimasi maintenance disimpan: ${text}`);
     return ctx.reply('Buka kembali menu maintenance untuk cek status terbaru.', {
       reply_markup: { inline_keyboard: [[{ text: 'Buka Menu Maintenance', callback_data: 'maintenance_menu' }]] }
     });
@@ -12673,7 +12673,7 @@ bot.on('text', async (ctx) => {
       delete userState[ctx.chat.id];
 
       await ctx.reply(
-        `✅ Limit IP paket tersimpan.\n` +
+        ` Limit IP paket tersimpan.\n` +
         `Server: *${state.serverName || `ID ${serverId}`}*\n` +
         `Protocol: *${protocol.toUpperCase()}*\n` +
         `1IP -> ${rule1}\n` +
@@ -12963,7 +12963,7 @@ bot.on('text', async (ctx) => {
     nextVars.NOTIF_BOT_TOKEN = NOTIF_BOT_TOKEN;
     saveVars(nextVars);
     delete userState[ctx.chat.id];
-    await ctx.reply('✅ Token notifikasi tersimpan.');
+    await ctx.reply(' Token notifikasi tersimpan.');
     return sendAdminMenu(ctx);
   }
 
@@ -12978,7 +12978,7 @@ bot.on('text', async (ctx) => {
     nextVars.NOTIF_CHAT_ID = NOTIF_CHAT_ID;
     saveVars(nextVars);
     delete userState[ctx.chat.id];
-    await ctx.reply('✅ Chat ID notifikasi tersimpan.');
+    await ctx.reply(' Chat ID notifikasi tersimpan.');
     return sendAdminMenu(ctx);
   }
 
@@ -12996,7 +12996,7 @@ bot.on('text', async (ctx) => {
     nextVars.GLOBAL_CREATE_NOTIF_GROUP_ID = GLOBAL_CREATE_NOTIF_GROUP_ID;
     saveVars(nextVars);
     delete userState[ctx.chat.id];
-    await ctx.reply(`✅ Group global notif create tersimpan: ${GLOBAL_CREATE_NOTIF_GROUP_ID}`);
+    await ctx.reply(` Group global notif create tersimpan: ${GLOBAL_CREATE_NOTIF_GROUP_ID}`);
     return sendAdminMenu(ctx);
   }
 
@@ -13011,7 +13011,7 @@ bot.on('text', async (ctx) => {
     nextVars.BOT_ACCOUNT_EVENT_WEBHOOK_TOKEN = BOT_ACCOUNT_EVENT_WEBHOOK_TOKEN;
     saveVars(nextVars);
     delete userState[ctx.chat.id];
-    await ctx.reply('✅ Token webhook SC tersimpan.');
+    await ctx.reply(' Token webhook SC tersimpan.');
     return sendAdminToolsMenu(ctx);
   }
 
@@ -13030,7 +13030,7 @@ bot.on('text', async (ctx) => {
     nextVars.SC_MULTI_LOGIN_WEBHOOK_URL = SC_MULTI_LOGIN_WEBHOOK_URL;
     saveVars(nextVars);
     delete userState[ctx.chat.id];
-    await ctx.reply(`✅ URL webhook SC tersimpan:\n${SC_MULTI_LOGIN_WEBHOOK_URL}`);
+    await ctx.reply(` URL webhook SC tersimpan:\n${SC_MULTI_LOGIN_WEBHOOK_URL}`);
     return sendAdminToolsMenu(ctx);
   }
 
@@ -13076,11 +13076,11 @@ bot.on('text', async (ctx) => {
       return ctx.reply('Domain/IP tidak valid. Contoh: 47.236.58.59 atau bot.domain.com');
     }
 
-    await ctx.reply('⏳ Menjalankan auto setup Nginx + SSL... mohon tunggu.');
+    await ctx.reply(' Menjalankan auto setup Nginx + SSL... mohon tunggu.');
     const result = setupNginxWebhookAuto(host, port);
     if (!result.ok) {
       delete userState[ctx.chat.id];
-      await ctx.reply(`❌ Auto setup gagal: ${result.message}`);
+      await ctx.reply(` Auto setup gagal: ${result.message}`);
       return sendNginxWebhookMenu(ctx);
     }
 
@@ -13091,7 +13091,7 @@ bot.on('text', async (ctx) => {
 
     delete userState[ctx.chat.id];
     await ctx.reply(
-      `✅ Auto setup selesai.\n` +
+      ` Auto setup selesai.\n` +
       `Status: ${result.ssl ? 'HTTPS aktif' : 'HTTP aktif'}\n` +
       `Webhook URL: ${SC_MULTI_LOGIN_WEBHOOK_URL}\n\n` +
       `Webhook Token: ${BOT_ACCOUNT_EVENT_WEBHOOK_TOKEN || '(belum diisi)'}`
@@ -13117,7 +13117,7 @@ bot.on('text', async (ctx) => {
     saveVars(nextVars);
 
     delete userState[ctx.chat.id];
-    await ctx.reply(`✅ URL webhook SC diset otomatis:\n${SC_MULTI_LOGIN_WEBHOOK_URL}`);
+    await ctx.reply(` URL webhook SC diset otomatis:\n${SC_MULTI_LOGIN_WEBHOOK_URL}`);
     return sendNginxWebhookMenu(ctx);
   }
 
@@ -13137,7 +13137,7 @@ bot.on('text', async (ctx) => {
     saveVars(nextVars);
 
     delete userState[ctx.chat.id];
-    await ctx.reply(`✅ Group ID notif bandwidth tersimpan: ${BW_NOTIF_GROUP_ID_NUM}`);
+    await ctx.reply(` Group ID notif bandwidth tersimpan: ${BW_NOTIF_GROUP_ID_NUM}`);
     return sendAdminToolsMenu(ctx);
   }
 
@@ -13164,7 +13164,7 @@ bot.on('text', async (ctx) => {
     restartBandwidthReportScheduler();
 
     delete userState[ctx.chat.id];
-    await ctx.reply(`✅ Interval notif bandwidth disimpan: ${formatBandwidthReportInterval(BW_REPORT_INTERVAL_MINUTES)}`);
+    await ctx.reply(` Interval notif bandwidth disimpan: ${formatBandwidthReportInterval(BW_REPORT_INTERVAL_MINUTES)}`);
     return sendAdminToolsMenu(ctx);
   }
 
@@ -13183,7 +13183,7 @@ bot.on('text', async (ctx) => {
     saveVars(nextVars);
     reloadRuntimePaymentConfig();
     delete userState[ctx.chat.id];
-    await ctx.reply(`✅ Gateway URL disimpan:\n\`${PAYMENT_GATEWAY_BASE_URL}\``, { parse_mode: 'Markdown' });
+    await ctx.reply(` Gateway URL disimpan:\n\`${PAYMENT_GATEWAY_BASE_URL}\``, { parse_mode: 'Markdown' });
     return sendAdminToolsMenu(ctx);
   }
 
@@ -13199,7 +13199,7 @@ bot.on('text', async (ctx) => {
     saveVars(nextVars);
     reloadRuntimePaymentConfig();
     delete userState[ctx.chat.id];
-    await ctx.reply('✅ RajaServer API Key berhasil disimpan.');
+    await ctx.reply(' RajaServer API Key berhasil disimpan.');
     return sendAdminToolsMenu(ctx);
   }
 
@@ -13215,7 +13215,7 @@ bot.on('text', async (ctx) => {
     saveVars(nextVars);
     reloadRuntimePaymentConfig();
     delete userState[ctx.chat.id];
-    await ctx.reply('✅ DATA_QRIS berhasil disimpan.');
+    await ctx.reply(' DATA_QRIS berhasil disimpan.');
     return sendAdminToolsMenu(ctx);
   }
 
@@ -13230,7 +13230,7 @@ bot.on('text', async (ctx) => {
     nextVars.ORKUT_USERNAME = text;
     saveVars(nextVars);
     delete userState[ctx.chat.id];
-    await ctx.reply('✅ ORKUT username berhasil disimpan.');
+    await ctx.reply(' ORKUT username berhasil disimpan.');
     return sendAdminToolsMenu(ctx);
   }
 
@@ -13245,7 +13245,7 @@ bot.on('text', async (ctx) => {
     nextVars.ORKUT_TOKEN = text;
     saveVars(nextVars);
     delete userState[ctx.chat.id];
-    await ctx.reply('✅ ORKUT token berhasil disimpan.');
+    await ctx.reply(' ORKUT token berhasil disimpan.');
     return sendAdminToolsMenu(ctx);
   }
 
@@ -13260,7 +13260,7 @@ bot.on('text', async (ctx) => {
     saveVars(nextVars);
     reloadRuntimePaymentConfig();
     delete userState[ctx.chat.id];
-    await ctx.reply('✅ Merchant ID berhasil disimpan.');
+    await ctx.reply(' Merchant ID berhasil disimpan.');
     return sendAdminToolsMenu(ctx);
   }
 
@@ -13275,7 +13275,7 @@ bot.on('text', async (ctx) => {
     saveVars(nextVars);
     reloadRuntimePaymentConfig();
     delete userState[ctx.chat.id];
-    await ctx.reply('✅ API Key legacy berhasil disimpan.');
+    await ctx.reply(' API Key legacy berhasil disimpan.');
     return sendAdminToolsMenu(ctx);
   }
 
@@ -13330,7 +13330,7 @@ bot.on('text', async (ctx) => {
     saveVars(nextVars);
     reloadRuntimePaymentConfig();
     delete userState[ctx.chat.id];
-    await ctx.reply(`✅ Expired QRIS OrderKuota disimpan: ${minutes} menit.`);
+    await ctx.reply(` Expired QRIS OrderKuota disimpan: ${minutes} menit.`);
     return sendAdminToolsMenu(ctx);
   }
 
@@ -13349,7 +13349,7 @@ bot.on('text', async (ctx) => {
     saveVars(nextVars);
     reloadRuntimePaymentConfig();
     delete userState[ctx.chat.id];
-    await ctx.reply(`✅ Minimal topup OrderKuota disimpan: Rp ${amount.toLocaleString('id-ID')}.`);
+    await ctx.reply(` Minimal topup OrderKuota disimpan: Rp ${amount.toLocaleString('id-ID')}.`);
     return sendAdminToolsMenu(ctx);
   }
 
@@ -13368,7 +13368,7 @@ bot.on('text', async (ctx) => {
     saveVars(nextVars);
     reloadRuntimePaymentConfig();
     delete userState[ctx.chat.id];
-    await ctx.reply(`✅ Expired QRIS GoPay disimpan: ${minutes} menit.`);
+    await ctx.reply(` Expired QRIS GoPay disimpan: ${minutes} menit.`);
     return sendAdminToolsMenu(ctx);
   }
 
@@ -13388,7 +13388,7 @@ bot.on('text', async (ctx) => {
     saveVars(nextVars);
     reloadRuntimePaymentConfig();
     delete userState[ctx.chat.id];
-    await ctx.reply(`✅ Masa aktif QRIS semua gateway disimpan: ${minutes} menit.`);
+    await ctx.reply(` Masa aktif QRIS semua gateway disimpan: ${minutes} menit.`);
     return sendAdminToolsMenu(ctx);
   }
 
@@ -13407,7 +13407,7 @@ bot.on('text', async (ctx) => {
     saveVars(nextVars);
     reloadRuntimePaymentConfig();
     delete userState[ctx.chat.id];
-    await ctx.reply(`✅ Minimal topup GoPay disimpan: Rp ${amount.toLocaleString('id-ID')}.`);
+    await ctx.reply(` Minimal topup GoPay disimpan: Rp ${amount.toLocaleString('id-ID')}.`);
     return sendAdminToolsMenu(ctx);
   }
 
@@ -13426,7 +13426,7 @@ bot.on('text', async (ctx) => {
     saveVars(nextVars);
     reloadRuntimePaymentConfig();
     delete userState[ctx.chat.id];
-    await ctx.reply(`✅ Interval polling OrderKuota disimpan: ${seconds} detik.`);
+    await ctx.reply(` Interval polling OrderKuota disimpan: ${seconds} detik.`);
     return sendAdminToolsMenu(ctx);
   }
 
@@ -13445,7 +13445,7 @@ bot.on('text', async (ctx) => {
     saveVars(nextVars);
     reloadRuntimePaymentConfig();
     delete userState[ctx.chat.id];
-    await ctx.reply(`✅ Cooldown tombol cek disimpan: ${seconds} detik.`);
+    await ctx.reply(` Cooldown tombol cek disimpan: ${seconds} detik.`);
     return sendAdminToolsMenu(ctx);
   }
 
@@ -13464,7 +13464,7 @@ bot.on('text', async (ctx) => {
     saveVars(nextVars);
     reloadRuntimePaymentConfig();
     delete userState[ctx.chat.id];
-    await ctx.reply(`✅ Maksimal tekan tombol disimpan: ${maxTaps}x per transaksi.`);
+    await ctx.reply(` Maksimal tekan tombol disimpan: ${maxTaps}x per transaksi.`);
     return sendAdminToolsMenu(ctx);
   }
 
@@ -13483,7 +13483,7 @@ bot.on('text', async (ctx) => {
     saveVars(nextVars);
     reloadRuntimePaymentConfig();
     delete userState[ctx.chat.id];
-    await ctx.reply(`✅ Durasi auto-stop polling disimpan: ${minutes} menit.`);
+    await ctx.reply(` Durasi auto-stop polling disimpan: ${minutes} menit.`);
     return sendAdminToolsMenu(ctx);
   }
 
@@ -13775,7 +13775,7 @@ bot.on('text', async (ctx) => {
     saveVars(nextVars);
 
     delete userState[ctx.chat.id];
-    await ctx.reply('✅ Nomor WhatsApp admin tersimpan: ' + ADMIN_WHATSAPP);
+    await ctx.reply(' Nomor WhatsApp admin tersimpan: ' + ADMIN_WHATSAPP);
     return sendAdminToolsMenu(ctx);
   }
 
@@ -13797,7 +13797,7 @@ bot.on('text', async (ctx) => {
     saveVars(nextVars);
 
     delete userState[ctx.chat.id];
-    await ctx.reply('✅ Username Telegram admin tersimpan: @' + ADMIN_TELEGRAM);
+    await ctx.reply(' Username Telegram admin tersimpan: @' + ADMIN_TELEGRAM);
     return sendAdminToolsMenu(ctx);
   }
   if (state.step === 'reseller_terms_input') {
@@ -13831,9 +13831,9 @@ bot.on('text', async (ctx) => {
     try {
       const resellers = listResellersSync();
       const notice =
-        `📢 *INFO SYARAT RESELLER DIUBAH*\n\n` +
+        ` *INFO SYARAT RESELLER DIUBAH*\n\n` +
         `Minimal top up per bulan sekarang: ${formatRupiah(saved.min_topup)}\n\n` +
-        `Cek total top up bulan ini via menu *📊 Statistik Saya* atau command /resellerstats.\n` +
+        `Cek total top up bulan ini via menu * Statistik Saya* atau command /resellerstats.\n` +
         `Harap penuhi syarat agar status reseller tetap aktif.`;
       for (const resellerId of resellers) {
         await bot.telegram.sendMessage(resellerId, notice, { parse_mode: 'Markdown' });
@@ -13934,11 +13934,11 @@ bot.on('text', async (ctx) => {
       [total, batas, serverId],
       function (err) {
         if (err) {
-          logger.error('❌ Gagal update total+batas:', err.message);
-          return ctx.reply('❌ Gagal mengupdate total+batas.');
+          logger.error(' Gagal update total+batas:', err.message);
+          return ctx.reply(' Gagal mengupdate total+batas.');
         }
         delete userState[ctx.chat.id];
-        ctx.reply(`✅ Total & batas berhasil diupdate.\nTotal: ${total}\nBatas: ${batas}`);
+        ctx.reply(` Total & batas berhasil diupdate.\nTotal: ${total}\nBatas: ${batas}`);
       }
     );
     return;
@@ -13971,8 +13971,8 @@ bot.on('text', async (ctx) => {
       [limitTb, avgGb, serverId],
       async function (err) {
         if (err) {
-          logger.error('❌ Gagal update limit bandwidth:', err.message);
-          return ctx.reply('❌ Gagal update limit bandwidth server.');
+          logger.error(' Gagal update limit bandwidth:', err.message);
+          return ctx.reply(' Gagal update limit bandwidth server.');
         }
         if (this.changes === 0) {
           delete userState[ctx.chat.id];
@@ -13987,7 +13987,7 @@ bot.on('text', async (ctx) => {
 
         delete userState[ctx.chat.id];
         return ctx.reply(
-          `✅ Limit bandwidth server berhasil diupdate.\n` +
+          ` Limit bandwidth server berhasil diupdate.\n` +
           `- Limit bulanan: ${limitTb.toFixed(2)} TB\n` +
           `- Estimasi/user/hari: ${avgGb.toFixed(2)} GB`
         );
@@ -14016,7 +14016,7 @@ bot.on('text', async (ctx) => {
 
     fs.appendFileSync(resselFilePath, `${targetId}\n`);
     delete userState[ctx.chat.id];
-    await ctx.reply(`✅ User dengan ID ${targetId} berhasil dijadikan reseller.`);
+    await ctx.reply(` User dengan ID ${targetId} berhasil dijadikan reseller.`);
     return sendAdminResellerMenu(ctx);
   }
 
@@ -14028,7 +14028,7 @@ bot.on('text', async (ctx) => {
 
     if (!fs.existsSync(resselFilePath)) {
       delete userState[ctx.chat.id];
-      await ctx.reply('📁 File reseller belum dibuat.');
+      await ctx.reply(' File reseller belum dibuat.');
       return sendAdminResellerMenu(ctx);
     }
 
@@ -14037,24 +14037,24 @@ bot.on('text', async (ctx) => {
     fs.writeFileSync(resselFilePath, resellerList.join('\n') + (resellerList.length ? '\n' : ''));
 
     delete userState[ctx.chat.id];
-    await ctx.reply(`✅ User dengan ID ${targetId} berhasil dihapus dari daftar reseller.`);
+    await ctx.reply(` User dengan ID ${targetId} berhasil dihapus dari daftar reseller.`);
     return sendAdminResellerMenu(ctx);
   }
 
   if (state.step === 'reseller_restore_input') {
     const targetId = ctx.message.text.trim();
     if (!/^\d+$/.test(targetId)) {
-      return ctx.reply('❌ ID Telegram harus angka. Coba lagi.');
+      return ctx.reply(' ID Telegram harus angka. Coba lagi.');
     }
 
     addReseller(targetId);
     delete userState[ctx.chat.id];
-    await ctx.reply(`✅ Reseller ${targetId} berhasil diaktifkan kembali.`);
+    await ctx.reply(` Reseller ${targetId} berhasil diaktifkan kembali.`);
 
     try {
       await bot.telegram.sendMessage(
         targetId,
-        '✅ Status reseller Anda telah diaktifkan kembali oleh admin.'
+        ' Status reseller Anda telah diaktifkan kembali oleh admin.'
       );
     } catch (e) {
       logger.warn(`Gagal kirim notif restore reseller ke ${targetId}:`, e.message);
@@ -14066,55 +14066,55 @@ bot.on('text', async (ctx) => {
   if (state.step === 'add_server_domain') {
   state.data.domain = ctx.message.text.trim();
   state.step = 'add_server_auth';
-  return ctx.reply('🔑 Masukkan auth server:', { parse_mode: 'Markdown' });
+  return ctx.reply(' Masukkan auth server:', { parse_mode: 'Markdown' });
 }
 
 if (state.step === 'add_server_auth') {
   state.data.auth = ctx.message.text.trim();
   state.step = 'add_server_harga';
-  return ctx.reply('💰 Masukkan harga server (angka):', { parse_mode: 'Markdown' });
+  return ctx.reply(' Masukkan harga server (angka):', { parse_mode: 'Markdown' });
 }
 
 if (state.step === 'add_server_harga') {
   if (!/^\d+$/.test(ctx.message.text)) {
-    return ctx.reply('⚠️ Harga harus angka. Masukkan ulang:');
+    return ctx.reply(' Harga harus angka. Masukkan ulang:');
   }
   state.data.harga = parseInt(ctx.message.text);
   state.step = 'add_server_nama';
-  return ctx.reply('📝 Masukkan nama server:', { parse_mode: 'Markdown' });
+  return ctx.reply(' Masukkan nama server:', { parse_mode: 'Markdown' });
 }
 
 if (state.step === 'add_server_nama') {
   state.data.nama_server = ctx.message.text.trim();
   state.step = 'add_server_quota';
-  return ctx.reply('📊 Masukkan quota (GB):', { parse_mode: 'Markdown' });
+  return ctx.reply(' Masukkan quota (GB):', { parse_mode: 'Markdown' });
 }
 
 if (state.step === 'add_server_quota') {
   if (!/^\d+$/.test(ctx.message.text)) {
-    return ctx.reply('⚠️ Quota harus angka. Masukkan ulang:');
+    return ctx.reply(' Quota harus angka. Masukkan ulang:');
   }
   state.data.quota = parseInt(ctx.message.text);
   state.step = 'add_server_iplimit';
-  return ctx.reply('📶 Masukkan IP limit:', { parse_mode: 'Markdown' });
+  return ctx.reply(' Masukkan IP limit:', { parse_mode: 'Markdown' });
 }
 
 if (state.step === 'add_server_iplimit') {
   if (!/^\d+$/.test(ctx.message.text)) {
-    return ctx.reply('⚠️ IP limit harus angka. Masukkan ulang:');
+    return ctx.reply(' IP limit harus angka. Masukkan ulang:');
   }
   state.data.iplimit = parseInt(ctx.message.text);
   state.step = 'add_server_batas';
-  return ctx.reply('🔢 Masukkan batas create akun:', { parse_mode: 'Markdown' });
+  return ctx.reply(' Masukkan batas create akun:', { parse_mode: 'Markdown' });
 }
 
 if (state.step === 'add_server_batas') {
   if (!/^\d+$/.test(ctx.message.text)) {
-    return ctx.reply('⚠️ Batas create akun harus angka. Masukkan ulang:');
+    return ctx.reply(' Batas create akun harus angka. Masukkan ulang:');
   }
   state.data.batas_create_akun = parseInt(ctx.message.text);
 
-  // 🔥 INSERT DB (SATU-SATUNYA TEMPAT SIMPAN)
+  //  INSERT DB (SATU-SATUNYA TEMPAT SIMPAN)
   const d = state.data;
   const service = state.service || 'ssh';
 
@@ -14133,9 +14133,9 @@ if (state.step === 'add_server_batas') {
     ],
     (err) => {
       if (err) {
-        ctx.reply('❌ Gagal menyimpan server.');
+        ctx.reply(' Gagal menyimpan server.');
       } else {
-        ctx.reply(`✅ Server *${d.nama_server}* berhasil ditambahkan.`, {
+        ctx.reply(` Server *${d.nama_server}* berhasil ditambahkan.`, {
           parse_mode: 'Markdown'
         });
       }
@@ -14155,18 +14155,18 @@ if (state.step === 'add_server_batas') {
     
     // Validasi input
     if (!/^\d+$/.test(targetUserId)) {
-      return ctx.reply('❌ *ID Telegram harus angka!*\n\nMasukkan ulang ID user:', { parse_mode: 'Markdown' });
+      return ctx.reply(' *ID Telegram harus angka!*\n\nMasukkan ulang ID user:', { parse_mode: 'Markdown' });
     }
     
     // Cek apakah user ada
     db.get('SELECT user_id, saldo FROM users WHERE user_id = ?', [targetUserId], (err, user) => {
       if (err) {
-        logger.error('❌ Error cek user untuk hapus saldo:', err.message);
-        return ctx.reply('❌ Terjadi kesalahan saat memeriksa user.');
+        logger.error(' Error cek user untuk hapus saldo:', err.message);
+        return ctx.reply(' Terjadi kesalahan saat memeriksa user.');
       }
       
       if (!user) {
-        return ctx.reply(`❌ *User dengan ID ${targetUserId} tidak ditemukan!*\n\nMasukkan ID user lain atau ketik "batal" untuk membatalkan.`, { 
+        return ctx.reply(` *User dengan ID ${targetUserId} tidak ditemukan!*\n\nMasukkan ID user lain atau ketik "batal" untuk membatalkan.`, { 
           parse_mode: 'Markdown' 
         });
       }
@@ -14177,10 +14177,10 @@ if (state.step === 'add_server_batas') {
       state.step = 'hapus_saldo_amount';
       
       ctx.reply(
-        `👤 *User ditemukan:*\n` +
+        ` *User ditemukan:*\n` +
         `• ID: \`${targetUserId}\`\n` +
         `• Saldo saat ini: *Rp ${user.saldo.toLocaleString('id-ID')}*\n\n` +
-        `💰 *Masukkan jumlah saldo yang akan dihapus:*\n` +
+        ` *Masukkan jumlah saldo yang akan dihapus:*\n` +
         `(atau ketik "semua" untuk hapus semua saldo)`,
         { parse_mode: 'Markdown' }
       );
@@ -14201,13 +14201,13 @@ if (state.step === 'add_server_batas') {
       // Validasi angka
       amount = parseInt(text, 10);
       if (isNaN(amount) || amount <= 0) {
-        return ctx.reply('❌ *Jumlah harus angka positif lebih dari 0!*\n\nMasukkan ulang jumlah:');
+        return ctx.reply(' *Jumlah harus angka positif lebih dari 0!*\n\nMasukkan ulang jumlah:');
       }
       
       // Cek apakah saldo mencukupi
       if (amount > currentSaldo) {
         return ctx.reply(
-          `❌ *Jumlah melebihi saldo user!*\n\n` +
+          ` *Jumlah melebihi saldo user!*\n\n` +
           `Saldo user: Rp ${currentSaldo.toLocaleString('id-ID')}\n` +
           `Jumlah hapus: Rp ${amount.toLocaleString('id-ID')}\n` +
           `Kekurangan: Rp ${(amount - currentSaldo).toLocaleString('id-ID')}\n\n` +
@@ -14222,18 +14222,18 @@ if (state.step === 'add_server_batas') {
     state.step = 'hapus_saldo_confirm';
     
     await ctx.reply(
-      `⚠️ *KONFIRMASI HAPUS SALDO*\n\n` +
-      `👤 User ID: \`${targetUserId}\`\n` +
-      `💰 Saldo saat ini: Rp ${currentSaldo.toLocaleString('id-ID')}\n` +
-      `🗑️ Jumlah hapus: Rp ${amount.toLocaleString('id-ID')}\n` +
-      `📉 Saldo setelahnya: Rp ${(currentSaldo - amount).toLocaleString('id-ID')}\n\n` +
+      ` *KONFIRMASI HAPUS SALDO*\n\n` +
+      ` User ID: \`${targetUserId}\`\n` +
+      ` Saldo saat ini: Rp ${currentSaldo.toLocaleString('id-ID')}\n` +
+      ` Jumlah hapus: Rp ${amount.toLocaleString('id-ID')}\n` +
+      ` Saldo setelahnya: Rp ${(currentSaldo - amount).toLocaleString('id-ID')}\n\n` +
       `Apakah Anda yakin ingin menghapus saldo ini?`,
       {
         parse_mode: 'Markdown',
         reply_markup: {
           inline_keyboard: [
-            [{ text: '✅ Ya, Hapus Saldo', callback_data: 'confirm_hapus_saldo' }],
-            [{ text: '❌ Batal', callback_data: 'cancel_hapus_saldo' }]
+            [{ text: ' Ya, Hapus Saldo', callback_data: 'confirm_hapus_saldo' }],
+            [{ text: ' Batal', callback_data: 'cancel_hapus_saldo' }]
           ]
         }
       }
@@ -14250,14 +14250,14 @@ if (state.step === 'add_server_batas') {
       [namaBaru, serverId],
       (err) => {
         if (err) {
-          logger.error("❌ Gagal update nama server:", err.message);
-          return ctx.reply("⚠️ Gagal mengupdate nama server.");
+          logger.error(" Gagal update nama server:", err.message);
+          return ctx.reply(" Gagal mengupdate nama server.");
         }
 
         ctx.reply(
-          `✅ *Nama server berhasil diperbarui!*\n\n` +
+          ` *Nama server berhasil diperbarui!*\n\n` +
           `🆔 ID Server: ${serverId}\n` +
-          `🏷️ Nama Baru: *${namaBaru}*`,
+          ` Nama Baru: *${namaBaru}*`,
           { parse_mode: "Markdown" }
         );
 
@@ -14274,15 +14274,15 @@ if (state.step === 'add_server_batas') {
     const targetId = ctx.message.text.trim();
     db.get('SELECT saldo FROM users WHERE user_id = ?', [targetId], (err, row) => {
       if (err) {
-        logger.error('❌ Gagal mengambil saldo:', err.message);
-        return ctx.reply('❌ Terjadi kesalahan saat mengambil data saldo.');
+        logger.error(' Gagal mengambil saldo:', err.message);
+        return ctx.reply(' Terjadi kesalahan saat mengambil data saldo.');
       }
 
       if (!row) {
-        return ctx.reply(`⚠️ User dengan ID ${targetId} belum terdaftar di database.`);
+        return ctx.reply(` User dengan ID ${targetId} belum terdaftar di database.`);
       }
 
-      ctx.reply(`💰 Saldo user ${targetId}: Rp${row.saldo.toLocaleString()}`);
+      ctx.reply(` Saldo user ${targetId}: Rp${row.saldo.toLocaleString()}`);
       logger.info(`Admin ${ctx.from.id} mengecek saldo user ${targetId}: Rp${row.saldo}`);
       delete userState[ctx.from.id];
     });
@@ -14293,7 +14293,7 @@ if (state.step === 'add_server_batas') {
 
   // Validasi username
   if (!/^[a-z0-9]{3,20}$/.test(username)) {
-    return ctx.reply('❌ *Username tidak valid. Gunakan huruf kecil dan angka (3–20 karakter).*', { parse_mode: 'Markdown' });
+    return ctx.reply(' *Username tidak valid. Gunakan huruf kecil dan angka (3–20 karakter).*', { parse_mode: 'Markdown' });
   }
 /////////
 
@@ -14303,8 +14303,8 @@ const idUser = ctx.from.id.toString().trim();
 // Baca file reseller
 fs.readFile(resselDbPath, 'utf8', async (err, data) => {
   if (err) {
-    logger.error('❌ Gagal membaca file ressel.db:', err.message);
-    return ctx.reply('❌ *Terjadi kesalahan saat membaca data reseller.*', { parse_mode: 'Markdown' });
+    logger.error(' Gagal membaca file ressel.db:', err.message);
+    return ctx.reply(' *Terjadi kesalahan saat membaca data reseller.*', { parse_mode: 'Markdown' });
   }
 
   const resselList = data.split('\n').map(line => line.trim()).filter(Boolean);
@@ -14314,7 +14314,7 @@ fs.readFile(resselDbPath, 'utf8', async (err, data) => {
   if (!isRessel) {
     const sudahPakai = await checkTrialAccess(ctx.from.id);
     if (sudahPakai) {
-      return ctx.reply('❌ *Anda sudah menggunakan fitur trial hari ini. Silakan coba lagi besok.*', { parse_mode: 'Markdown' });
+      return ctx.reply(' *Anda sudah menggunakan fitur trial hari ini. Silakan coba lagi besok.*', { parse_mode: 'Markdown' });
     }
   }
 
@@ -14328,7 +14328,7 @@ let msg;
 // ===== TRIAL AKUN =====
 if (action === 'trial') {
 
-  // 🔹 generate data trial
+  //  generate data trial
   const username = `trial${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`;
   const exp = '1';       // 1 hari
   const quota = '500';    // 1 GB (sesuaikan)
@@ -14371,26 +14371,26 @@ if (action === 'trial') {
     const username = text;
     // Validasi username (hanya huruf kecil dan angka, 3-20 karakter)
     if (!/^[a-z0-9]{3,20}$/.test(username)) {
-      return ctx.reply('❌ *Username tidak valid. Gunakan huruf kecil dan angka (3–20 karakter).*', { parse_mode: 'Markdown' });
+      return ctx.reply(' *Username tidak valid. Gunakan huruf kecil dan angka (3–20 karakter).*', { parse_mode: 'Markdown' });
     }
        //izin ressel saja
     const resselDbPath = './ressel.db';
     fs.readFile(resselDbPath, 'utf8', async (err, data) => {
       if (err) {
-        logger.error('❌ Gagal membaca file ressel.db:', err.message);
-        return ctx.reply('❌ *Terjadi kesalahan saat membaca data reseller.*', { parse_mode: 'Markdown' });
+        logger.error(' Gagal membaca file ressel.db:', err.message);
+        return ctx.reply(' *Terjadi kesalahan saat membaca data reseller.*', { parse_mode: 'Markdown' });
       }
 
       const idUser = ctx.from.id.toString().trim();
       const resselList = data.split('\n').map(line => line.trim()).filter(Boolean);
 
-      console.log('🧪 ID Pengguna:', idUser);
-      console.log('📂 Daftar Ressel:', resselList);
+      console.log(' ID Pengguna:', idUser);
+      console.log(' Daftar Ressel:', resselList);
 
       const isRessel = resselList.includes(idUser);
 
       if (!isRessel) {
-        return ctx.reply('❌ *Fitur ini hanya untuk Ressel VPN.*', { parse_mode: 'Markdown' });
+        return ctx.reply(' *Fitur ini hanya untuk Ressel VPN.*', { parse_mode: 'Markdown' });
       }
   //izin ressel saja
     const { type, serverId } = state;
@@ -14414,10 +14414,10 @@ if (action === 'trial') {
       }
 
       await ctx.reply(msg, { parse_mode: 'Markdown' });
-      logger.info(`✅ Akun ${type} berhasil unlock oleh ${ctx.from.id}`);
+      logger.info(` Akun ${type} berhasil unlock oleh ${ctx.from.id}`);
     } catch (err) {
-      logger.error('❌ Gagal hapus akun:', err.message);
-      await ctx.reply('❌ *Terjadi kesalahan saat menghapus akun.*', { parse_mode: 'Markdown' });
+      logger.error(' Gagal hapus akun:', err.message);
+      await ctx.reply(' *Terjadi kesalahan saat menghapus akun.*', { parse_mode: 'Markdown' });
     }});
     return; // Penting! Jangan lanjut ke case lain
   }
@@ -14425,26 +14425,26 @@ if (action === 'trial') {
     const username = text;
     // Validasi username (hanya huruf kecil dan angka, 3-20 karakter)
     if (!/^[a-z0-9]{3,20}$/.test(username)) {
-      return ctx.reply('❌ *Username tidak valid. Gunakan huruf kecil dan angka (3–20 karakter).*', { parse_mode: 'Markdown' });
+      return ctx.reply(' *Username tidak valid. Gunakan huruf kecil dan angka (3–20 karakter).*', { parse_mode: 'Markdown' });
     }
        //izin ressel saja
     const resselDbPath = './ressel.db';
     fs.readFile(resselDbPath, 'utf8', async (err, data) => {
       if (err) {
-        logger.error('❌ Gagal membaca file ressel.db:', err.message);
-        return ctx.reply('❌ *Terjadi kesalahan saat membaca data reseller.*', { parse_mode: 'Markdown' });
+        logger.error(' Gagal membaca file ressel.db:', err.message);
+        return ctx.reply(' *Terjadi kesalahan saat membaca data reseller.*', { parse_mode: 'Markdown' });
       }
 
       const idUser = ctx.from.id.toString().trim();
       const resselList = data.split('\n').map(line => line.trim()).filter(Boolean);
 
-      console.log('🧪 ID Pengguna:', idUser);
-      console.log('📂 Daftar Ressel:', resselList);
+      console.log(' ID Pengguna:', idUser);
+      console.log(' Daftar Ressel:', resselList);
 
       const isRessel = resselList.includes(idUser);
 
       if (!isRessel) {
-        return ctx.reply('❌ *Fitur ini hanya untuk Ressel VPN.*', { parse_mode: 'Markdown' });
+        return ctx.reply(' *Fitur ini hanya untuk Ressel VPN.*', { parse_mode: 'Markdown' });
       }
   //izin ressel saja
     const { type, serverId } = state;
@@ -14468,10 +14468,10 @@ if (action === 'trial') {
       }
 
       await ctx.reply(msg, { parse_mode: 'Markdown' });
-      logger.info(`✅ Akun ${type} berhasil di kunci oleh ${ctx.from.id}`);
+      logger.info(` Akun ${type} berhasil di kunci oleh ${ctx.from.id}`);
     } catch (err) {
-      logger.error('❌ Gagal hapus akun:', err.message);
-      await ctx.reply('❌ *Terjadi kesalahan saat menghapus akun.*', { parse_mode: 'Markdown' });
+      logger.error(' Gagal hapus akun:', err.message);
+      await ctx.reply(' *Terjadi kesalahan saat menghapus akun.*', { parse_mode: 'Markdown' });
     }});
     return; // Penting! Jangan lanjut ke case lain
   }
@@ -14479,26 +14479,26 @@ if (action === 'trial') {
     const username = text;
     // Validasi username (hanya huruf kecil dan angka, 3-20 karakter)
     if (!/^[a-z0-9]{3,20}$/.test(username)) {
-      return ctx.reply('❌ *Username tidak valid. Gunakan huruf kecil dan angka (3–20 karakter).*', { parse_mode: 'Markdown' });
+      return ctx.reply(' *Username tidak valid. Gunakan huruf kecil dan angka (3–20 karakter).*', { parse_mode: 'Markdown' });
     }
        //izin ressel saja
     const resselDbPath = './ressel.db';
     fs.readFile(resselDbPath, 'utf8', async (err, data) => {
       if (err) {
-        logger.error('❌ Gagal membaca file ressel.db:', err.message);
-        return ctx.reply('❌ *Terjadi kesalahan saat membaca data reseller.*', { parse_mode: 'Markdown' });
+        logger.error(' Gagal membaca file ressel.db:', err.message);
+        return ctx.reply(' *Terjadi kesalahan saat membaca data reseller.*', { parse_mode: 'Markdown' });
       }
 
       const idUser = ctx.from.id.toString().trim();
       const resselList = data.split('\n').map(line => line.trim()).filter(Boolean);
 
-      console.log('🧪 ID Pengguna:', idUser);
-      console.log('📂 Daftar Ressel:', resselList);
+      console.log(' ID Pengguna:', idUser);
+      console.log(' Daftar Ressel:', resselList);
 
       const isRessel = resselList.includes(idUser);
 
       if (!isRessel) {
-        return ctx.reply('❌ *Fitur ini hanya untuk Ressel VPN.*', { parse_mode: 'Markdown' });
+        return ctx.reply(' *Fitur ini hanya untuk Ressel VPN.*', { parse_mode: 'Markdown' });
       }
   //izin ressel saja
     const { type, serverId } = state;
@@ -14549,8 +14549,8 @@ if (action === 'trial') {
 
       logger.info(`? Akun ${type} berhasil dihapus oleh ${ctx.from.id}`);
     } catch (err) {
-      logger.error('❌ Gagal hapus akun:', err.message);
-      await ctx.reply('❌ *Terjadi kesalahan saat menghapus akun.*', { parse_mode: 'Markdown' });
+      logger.error(' Gagal hapus akun:', err.message);
+      await ctx.reply(' *Terjadi kesalahan saat menghapus akun.*', { parse_mode: 'Markdown' });
     }});
     return; // Penting! Jangan lanjut ke case lain
   }
@@ -14561,7 +14561,7 @@ if (action === 'trial') {
       return ctx.reply('Perpanjang akun dibatalkan.');
     }
     if (!/^[a-z0-9]{3,20}$/.test(input)) {
-      return ctx.reply('❌ Username tidak valid. Gunakan huruf kecil dan angka (3-20 karakter).');
+      return ctx.reply(' Username tidak valid. Gunakan huruf kecil dan angka (3-20 karakter).');
     }
 
     const candidates = await findRenewCandidatesByUsername(ctx, input);
@@ -14589,16 +14589,16 @@ if (action === 'trial') {
     state.username = text;
 
     if (!state.username) {
-      return ctx.reply('❌ *Username tidak valid. Masukkan username yang valid| Masukan Ulang Username: *', { parse_mode: 'Markdown' });
+      return ctx.reply(' *Username tidak valid. Masukkan username yang valid| Masukan Ulang Username: *', { parse_mode: 'Markdown' });
     }
     if (state.username.length < 4 || state.username.length > 20) {
-      return ctx.reply('❌ *Username harus terdiri dari 4 hingga 20 karakter| Masukan Ulang Username: *', { parse_mode: 'Markdown' });
+      return ctx.reply(' *Username harus terdiri dari 4 hingga 20 karakter| Masukan Ulang Username: *', { parse_mode: 'Markdown' });
     }
     if (/[A-Z]/.test(state.username)) {
-      return ctx.reply('❌ *Username tidak boleh menggunakan huruf kapital. Gunakan huruf kecil saja| Masukan Ulang Username: *', { parse_mode: 'Markdown' });
+      return ctx.reply(' *Username tidak boleh menggunakan huruf kapital. Gunakan huruf kecil saja| Masukan Ulang Username: *', { parse_mode: 'Markdown' });
     }
     if (/[^a-z0-9]/.test(state.username)) {
-      return ctx.reply('❌ *Username tidak boleh mengandung karakter khusus atau spasi. Gunakan huruf kecil dan angka saja| Masukan Ulang Username: *', { parse_mode: 'Markdown' });
+      return ctx.reply(' *Username tidak boleh mengandung karakter khusus atau spasi. Gunakan huruf kecil dan angka saja| Masukan Ulang Username: *', { parse_mode: 'Markdown' });
     }
     const { type, action } = state;
     if (action === 'create') {
@@ -14607,66 +14607,66 @@ if (action === 'trial') {
       }
       if (type === 'ssh' || type === 'udp_http') {
         state.step = `password_${state.action}_${state.type}`;
-        await ctx.reply('🔑 *Masukkan password:*', { parse_mode: 'Markdown' });
+        await ctx.reply(' *Masukkan password:*', { parse_mode: 'Markdown' });
       } else {
         state.step = `exp_${state.action}_${state.type}`;
         const expPrompt = normalizeCreatePriceMode(state.priceMode) === '30hari'
-          ? '📆 *Paket 30 hari dipilih. Ketik 30 untuk melanjutkan:*'
-          : '⏳ *Masukkan masa aktif (hari):*';
+          ? ' *Paket 30 hari dipilih. Ketik 30 untuk melanjutkan:*'
+          : ' *Masukkan masa aktif (hari):*';
         await ctx.reply(expPrompt, { parse_mode: 'Markdown' });
       }
     } else if (action === 'renew') {
       state.step = `exp_${state.action}_${state.type}`;
-      await ctx.reply('⏳ *Masukkan masa aktif (hari):*', { parse_mode: 'Markdown' });
+      await ctx.reply(' *Masukkan masa aktif (hari):*', { parse_mode: 'Markdown' });
     }
   } else if (state.step.startsWith('password_')) {
     state.password = ctx.message.text.trim();
     if (!state.password) {
-      return ctx.reply('❌ *Password tidak valid. Masukkan password yang valid| Masukan Ulang Password: *', { parse_mode: 'Markdown' });
+      return ctx.reply(' *Password tidak valid. Masukkan password yang valid| Masukan Ulang Password: *', { parse_mode: 'Markdown' });
     }
     if (state.password.length < 3) {
-      return ctx.reply('❌ *Password harus terdiri dari minimal 3 karakter| Masukan Ulang Password: *', { parse_mode: 'Markdown' });
+      return ctx.reply(' *Password harus terdiri dari minimal 3 karakter| Masukan Ulang Password: *', { parse_mode: 'Markdown' });
     }
     if (/[^a-zA-Z0-9]/.test(state.password)) {
-      return ctx.reply('❌ *Password tidak boleh mengandung karakter khusus atau spasi| Masukan Ulang Password: *', { parse_mode: 'Markdown' });
+      return ctx.reply(' *Password tidak boleh mengandung karakter khusus atau spasi| Masukan Ulang Password: *', { parse_mode: 'Markdown' });
     }
     state.step = `exp_${state.action}_${state.type}`;
     const expPrompt = state.action === 'create' && normalizeCreatePriceMode(state.priceMode) === '30hari'
-      ? '📆 *Paket 30 hari dipilih. Ketik 30 untuk melanjutkan:*'
-      : '⏳ *Masukkan masa aktif (hari):*';
+      ? ' *Paket 30 hari dipilih. Ketik 30 untuk melanjutkan:*'
+      : ' *Masukkan masa aktif (hari):*';
     await ctx.reply(expPrompt, { parse_mode: 'Markdown' });
   } else if (state.step.startsWith('exp_')) {
     const expInput = ctx.message.text.trim();
     if (!/^\d+$/.test(expInput)) {
-      return ctx.reply('❌ *Masa aktif tidak valid. Masukkan angka yang valid.*', { parse_mode: 'Markdown' });
+      return ctx.reply(' *Masa aktif tidak valid. Masukkan angka yang valid.*', { parse_mode: 'Markdown' });
     }
 // Cek hanya angka
 if (!/^\d+$/.test(expInput)) {
-  return ctx.reply('❌ *Masa aktif hanya boleh angka, contoh: 30*', { parse_mode: 'Markdown' });
+  return ctx.reply(' *Masa aktif hanya boleh angka, contoh: 30*', { parse_mode: 'Markdown' });
 }
 
 const exp = parseInt(expInput, 10);
 
 if (isNaN(exp) || exp <= 0) {
-  return ctx.reply('❌ *Masa aktif tidak valid. Masukkan angka yang valid.*', { parse_mode: 'Markdown' });
+  return ctx.reply(' *Masa aktif tidak valid. Masukkan angka yang valid.*', { parse_mode: 'Markdown' });
 }
 
 if (exp > 365) {
-  return ctx.reply('❌ *Masa aktif tidak boleh lebih dari 365 hari.*', { parse_mode: 'Markdown' });
+  return ctx.reply(' *Masa aktif tidak boleh lebih dari 365 hari.*', { parse_mode: 'Markdown' });
 }
 if (state.action === 'create' && normalizeCreatePriceMode(state.priceMode) === '30hari' && exp !== 30) {
-  return ctx.reply('❌ *Paket 30 hari hanya bisa memakai masa aktif 30 hari.* Ketik 30 untuk melanjutkan.', { parse_mode: 'Markdown' });
+  return ctx.reply(' *Paket 30 hari hanya bisa memakai masa aktif 30 hari.* Ketik 30 untuk melanjutkan.', { parse_mode: 'Markdown' });
 }
     state.exp = exp;
 
     db.get('SELECT id, quota, iplimit, domain, nama_server FROM Server WHERE id = ?', [state.serverId], async (err, server) => {
       if (err) {
-        logger.error('⚠️ Error fetching server details:', err.message);
-        return ctx.reply('❌ *Terjadi kesalahan saat mengambil detail server.*', { parse_mode: 'Markdown' });
+        logger.error(' Error fetching server details:', err.message);
+        return ctx.reply(' *Terjadi kesalahan saat mengambil detail server.*', { parse_mode: 'Markdown' });
       }
 
       if (!server) {
-        return ctx.reply('❌ *Server tidak ditemukan.*', { parse_mode: 'Markdown' });
+        return ctx.reply(' *Server tidak ditemukan.*', { parse_mode: 'Markdown' });
       }
 
       state.quota = Number(state.accountQuota || 0) > 0 ? Number(state.accountQuota) : server.quota;
@@ -14692,18 +14692,18 @@ if (state.action === 'create' && normalizeCreatePriceMode(state.priceMode) === '
 
       db.get('SELECT * FROM Server WHERE id = ?', [serverId], async (err, server) => {
         if (err) {
-          logger.error('⚠️ Error fetching server price:', err.message);
-          return ctx.reply('❌ *Terjadi kesalahan saat mengambil harga server.*', { parse_mode: 'Markdown' });
+          logger.error(' Error fetching server price:', err.message);
+          return ctx.reply(' *Terjadi kesalahan saat mengambil harga server.*', { parse_mode: 'Markdown' });
         }
 
         if (!server) {
-          return ctx.reply('❌ *Server tidak ditemukan.*', { parse_mode: 'Markdown' });
+          return ctx.reply(' *Server tidak ditemukan.*', { parse_mode: 'Markdown' });
         }
         if (Number(server.is_active ?? 1) !== 1) {
-          return ctx.reply('❌ *Server ini sedang nonaktif dan tidak bisa dipilih.*', { parse_mode: 'Markdown' });
+          return ctx.reply(' *Server ini sedang nonaktif dan tidak bisa dipilih.*', { parse_mode: 'Markdown' });
         }
         if (!isServerProtocolEnabled(server, type)) {
-          return ctx.reply(`❌ *Protocol ${type.toUpperCase()} sedang nonaktif untuk server ini.*`, { parse_mode: 'Markdown' });
+          return ctx.reply(` *Protocol ${type.toUpperCase()} sedang nonaktif untuk server ini.*`, { parse_mode: 'Markdown' });
         }
 
         const isResellerUser = await isUserReseller(ctx.from.id).catch(() => false);
@@ -14723,13 +14723,13 @@ if (state.action === 'create' && normalizeCreatePriceMode(state.priceMode) === '
         })();
         const createPriceMode = state.action === 'create' ? normalizeCreatePriceMode(state.priceMode) : 'daily';
         if (state.action === 'create' && createPriceMode === 'daily' && !isServerDailyPriceEnabled(server)) {
-          return ctx.reply('❌ *Harga harian sedang nonaktif untuk server ini.*', { parse_mode: 'Markdown' });
+          return ctx.reply(' *Harga harian sedang nonaktif untuk server ini.*', { parse_mode: 'Markdown' });
         }
         if (state.action === 'create' && createPriceMode === '30hari' && !isServerMonthlyPriceEnabled(server)) {
-          return ctx.reply('❌ *Harga 30 hari sedang nonaktif untuk server ini.*', { parse_mode: 'Markdown' });
+          return ctx.reply(' *Harga 30 hari sedang nonaktif untuk server ini.*', { parse_mode: 'Markdown' });
         }
         if (state.action === 'create' && createPriceMode === '30hari' && Number(state.exp || 0) !== 30) {
-          return ctx.reply('❌ *Paket 30 hari hanya bisa memakai masa aktif 30 hari.*', { parse_mode: 'Markdown' });
+          return ctx.reply(' *Paket 30 hari hanya bisa memakai masa aktif 30 hari.*', { parse_mode: 'Markdown' });
         }
 
         const hargaPerHari = getEffectiveServerPackagePrice(server, isResellerUser, selectedPackage);
@@ -14739,26 +14739,26 @@ if (state.action === 'create' && normalizeCreatePriceMode(state.priceMode) === '
         const harga = getStoredAccountPricePerDay(totalHarga, state.exp, hargaPerHari);
         db.get('SELECT saldo FROM users WHERE user_id = ?', [ctx.from.id], async (err, user) => {
           if (err) {
-            logger.error('⚠️ Kesalahan saat mengambil saldo pengguna:', err.message);
-            return ctx.reply('❌ *Terjadi kesalahan saat mengambil saldo pengguna.*', { parse_mode: 'Markdown' });
+            logger.error(' Kesalahan saat mengambil saldo pengguna:', err.message);
+            return ctx.reply(' *Terjadi kesalahan saat mengambil saldo pengguna.*', { parse_mode: 'Markdown' });
           }
 
           if (!user) {
-            return ctx.reply('❌ *Pengguna tidak ditemukan.*', { parse_mode: 'Markdown' });
+            return ctx.reply(' *Pengguna tidak ditemukan.*', { parse_mode: 'Markdown' });
           }
 
           const saldo = user.saldo;
           if (saldo < totalHarga) {
-            return ctx.reply('❌ *Saldo Anda tidak mencukupi untuk melakukan transaksi ini.*', { parse_mode: 'Markdown' });
+            return ctx.reply(' *Saldo Anda tidak mencukupi untuk melakukan transaksi ini.*', { parse_mode: 'Markdown' });
           }
 
           const reserveResult = await reserveAccountChargeAtomic(ctx.from.id, totalHarga, type, action);
           if (!reserveResult.ok) {
             logger.error(`Gagal reserve saldo user ${ctx.from.id}, type: ${type}, server: ${serverId}, err: ${reserveResult.error}`);
             if (reserveResult.error === 'SALDO_NOT_ENOUGH_OR_USER_NOT_FOUND') {
-              return ctx.reply('❌ *Saldo tidak cukup (kemungkinan sudah terpakai transaksi lain).* Silakan cek saldo Anda lalu coba lagi.', { parse_mode: 'Markdown' });
+              return ctx.reply(' *Saldo tidak cukup (kemungkinan sudah terpakai transaksi lain).* Silakan cek saldo Anda lalu coba lagi.', { parse_mode: 'Markdown' });
             }
-            return ctx.reply('❌ *Terjadi kesalahan saat memproses saldo. Silakan coba lagi.*', { parse_mode: 'Markdown' });
+            return ctx.reply(' *Terjadi kesalahan saat memproses saldo. Silakan coba lagi.*', { parse_mode: 'Markdown' });
           }
 
           if (action === 'create') {
@@ -14870,7 +14870,7 @@ const finalizeResult = await finalizeReservedAccountCharge(reserveResult.referen
 if (!finalizeResult.ok) {
   logger.error(`Finalisasi transaksi gagal untuk user ${ctx.from.id}, type: ${type}, server: ${serverId}, ref: ${reserveResult.referenceId}, err: ${finalizeResult.error}`);
   await ctx.reply(
-    '⚠️ *Akun berhasil dibuat, tapi finalisasi transaksi gagal tercatat.*\nSilakan hubungi admin agar dicek manual (log transaksi pending).',
+    ' *Akun berhasil dibuat, tapi finalisasi transaksi gagal tercatat.*\nSilakan hubungi admin agar dicek manual (log transaksi pending).',
     { parse_mode: 'Markdown' }
   );
 }
@@ -14946,7 +14946,7 @@ if (action === 'create') {
       });
     }
   } catch (e) {
-    logger.error('❌ Gagal kirim notif create non-reseller:', e.message);
+    logger.error(' Gagal kirim notif create non-reseller:', e.message);
   }
 }
 
@@ -14963,53 +14963,53 @@ delete userState[ctx.chat.id];
   else if (state.step === 'addserver') {
     const domain = ctx.message.text.trim();
     if (!domain) {
-      await ctx.reply('⚠️ *Domain tidak boleh kosong.* Silakan masukkan domain server yang valid.', { parse_mode: 'Markdown' });
+      await ctx.reply(' *Domain tidak boleh kosong.* Silakan masukkan domain server yang valid.', { parse_mode: 'Markdown' });
       return;
     }
 
     state.step = 'addserver_auth';
     state.domain = domain;
-    await ctx.reply('🔑 *Silakan masukkan auth server:*', { parse_mode: 'Markdown' });
+    await ctx.reply(' *Silakan masukkan auth server:*', { parse_mode: 'Markdown' });
   } else if (state.step === 'addserver_auth') {
     const auth = ctx.message.text.trim();
     if (!auth) {
-      await ctx.reply('⚠️ *Auth tidak boleh kosong.* Silakan masukkan auth server yang valid.', { parse_mode: 'Markdown' });
+      await ctx.reply(' *Auth tidak boleh kosong.* Silakan masukkan auth server yang valid.', { parse_mode: 'Markdown' });
       return;
     }
 
     state.step = 'addserver_nama_server';
     state.auth = auth;
-    await ctx.reply('🏷️ *Silakan masukkan nama server:*', { parse_mode: 'Markdown' });
+    await ctx.reply(' *Silakan masukkan nama server:*', { parse_mode: 'Markdown' });
   } else if (state.step === 'addserver_nama_server') {
     const nama_server = ctx.message.text.trim();
     if (!nama_server) {
-      await ctx.reply('⚠️ *Nama server tidak boleh kosong.* Silakan masukkan nama server yang valid.', { parse_mode: 'Markdown' });
+      await ctx.reply(' *Nama server tidak boleh kosong.* Silakan masukkan nama server yang valid.', { parse_mode: 'Markdown' });
       return;
     }
 
     state.step = 'addserver_quota';
     state.nama_server = nama_server;
-    await ctx.reply('📊 *Silakan masukkan quota server:*', { parse_mode: 'Markdown' });
+    await ctx.reply(' *Silakan masukkan quota server:*', { parse_mode: 'Markdown' });
   } else if (state.step === 'addserver_quota') {
     const quota = parseInt(ctx.message.text.trim(), 10);
     if (isNaN(quota)) {
-      await ctx.reply('⚠️ *Quota tidak valid.* Silakan masukkan quota server yang valid.', { parse_mode: 'Markdown' });
+      await ctx.reply(' *Quota tidak valid.* Silakan masukkan quota server yang valid.', { parse_mode: 'Markdown' });
       return;
     }
 
     state.step = 'addserver_batas_create_akun';
     state.quota = quota;
-    await ctx.reply('🔢 *Silakan masukkan batas create akun server:*', { parse_mode: 'Markdown' });
+    await ctx.reply(' *Silakan masukkan batas create akun server:*', { parse_mode: 'Markdown' });
   } else if (state.step === 'addserver_batas_create_akun') {
     const batas_create_akun = parseInt(ctx.message.text.trim(), 10);
     if (isNaN(batas_create_akun)) {
-      await ctx.reply('⚠️ *Batas create akun tidak valid.* Silakan masukkan batas create akun server yang valid.', { parse_mode: 'Markdown' });
+      await ctx.reply(' *Batas create akun tidak valid.* Silakan masukkan batas create akun server yang valid.', { parse_mode: 'Markdown' });
       return;
     }
 
     state.step = 'addserver_harga_1ip';
     state.batas_create_akun = batas_create_akun;
-    await ctx.reply('💳 Masukkan harga *User Paket 1IP*:', { parse_mode: 'Markdown' });
+    await ctx.reply(' Masukkan harga *User Paket 1IP*:', { parse_mode: 'Markdown' });
   } else if (state.step === 'addserver_harga_1ip') {
     const harga_1ip = parseFloat(ctx.message.text.trim());
     if (isNaN(harga_1ip) || harga_1ip <= 0) {
@@ -15018,7 +15018,7 @@ delete userState[ctx.chat.id];
     }
     state.harga_1ip = harga_1ip;
     state.step = 'addserver_harga_2ip';
-    await ctx.reply('💳 Masukkan harga *User Paket 2IP*:', { parse_mode: 'Markdown' });
+    await ctx.reply(' Masukkan harga *User Paket 2IP*:', { parse_mode: 'Markdown' });
   } else if (state.step === 'addserver_harga_2ip') {
     const harga_2ip = parseFloat(ctx.message.text.trim());
     if (isNaN(harga_2ip) || harga_2ip <= 0) {
@@ -15027,7 +15027,7 @@ delete userState[ctx.chat.id];
     }
     state.harga_2ip = harga_2ip;
     state.step = 'addserver_harga_reseller_1ip';
-    await ctx.reply('💳 Masukkan harga *Reseller Paket 1IP*:', { parse_mode: 'Markdown' });
+    await ctx.reply(' Masukkan harga *Reseller Paket 1IP*:', { parse_mode: 'Markdown' });
   } else if (state.step === 'addserver_harga_reseller_1ip') {
     const harga_reseller_1ip = parseFloat(ctx.message.text.trim());
     if (isNaN(harga_reseller_1ip) || harga_reseller_1ip <= 0) {
@@ -15036,7 +15036,7 @@ delete userState[ctx.chat.id];
     }
     state.harga_reseller_1ip = harga_reseller_1ip;
     state.step = 'addserver_harga_reseller_2ip';
-    await ctx.reply('💳 Masukkan harga *Reseller Paket 2IP*:', { parse_mode: 'Markdown' });
+    await ctx.reply(' Masukkan harga *Reseller Paket 2IP*:', { parse_mode: 'Markdown' });
   } else if (state.step === 'addserver_harga_reseller_2ip') {
     const harga_reseller_2ip = parseFloat(ctx.message.text.trim());
     if (isNaN(harga_reseller_2ip) || harga_reseller_2ip <= 0) {
@@ -15108,41 +15108,41 @@ delete userState[ctx.chat.id];
     }
     delete userState[ctx.chat.id];
   }
-// === 🏷️ TAMBAH SERVER UNTUK RESELLER ===
+// ===  TAMBAH SERVER UNTUK RESELLER ===
 if (state && state.step === 'reseller_domain') {
   state.domain = text;
   state.step = 'reseller_auth';
-  return ctx.reply('🔑 Masukkan auth server:');
+  return ctx.reply(' Masukkan auth server:');
 }
 
 if (state && state.step === 'reseller_auth') {
   state.auth = text;
   state.step = 'reseller_harga';
-  return ctx.reply('💰 Masukkan harga server (angka):');
+  return ctx.reply(' Masukkan harga server (angka):');
 }
 
 if (state && state.step === 'reseller_harga') {
   state.harga = text;
   state.step = 'reseller_nama';
-  return ctx.reply('📝 Masukkan nama server:');
+  return ctx.reply(' Masukkan nama server:');
 }
 
 if (state && state.step === 'reseller_nama') {
   state.nama_server = text;
   state.step = 'reseller_quota';
-  return ctx.reply('📊 Masukkan quota (GB):');
+  return ctx.reply(' Masukkan quota (GB):');
 }
 
 if (state && state.step === 'reseller_quota') {
   state.quota = text;
   state.step = 'reseller_iplimit';
-  return ctx.reply('📶 Masukkan IP limit:');
+  return ctx.reply(' Masukkan IP limit:');
 }
 
 if (state && state.step === 'reseller_iplimit') {
   state.iplimit = text;
   state.step = 'reseller_batas';
-  return ctx.reply('🔢 Masukkan batas create akun:');
+  return ctx.reply(' Masukkan batas create akun:');
 }
 
 if (state && state.step === 'reseller_batas') {
@@ -15167,11 +15167,11 @@ if (state && state.step === 'reseller_batas') {
     ],
     (err) => {
       if (err) {
-        logger.error('❌ Gagal menambah server reseller:', err.message);
-        ctx.reply('❌ Gagal menambah server reseller.');
+        logger.error(' Gagal menambah server reseller:', err.message);
+        ctx.reply(' Gagal menambah server reseller.');
       } else {
         ctx.reply(
-          `✅ Server reseller *${state.nama_server}* berhasil ditambahkan!`,
+          ` Server reseller *${state.nama_server}* berhasil ditambahkan!`,
           { parse_mode: 'Markdown' }
         );
       }
@@ -15180,25 +15180,25 @@ if (state && state.step === 'reseller_batas') {
   );
   return;
 }
-// === 💰 TAMBAH SALDO (LANGKAH 1: INPUT USER ID) ===
+// ===  TAMBAH SALDO (LANGKAH 1: INPUT USER ID) ===
 if (state && state.step === 'addsaldo_userid') {
   state.targetId = text.trim();
   state.step = 'addsaldo_amount';
-  return ctx.reply('💰 Masukkan jumlah saldo yang ingin ditambahkan:');
+  return ctx.reply(' Masukkan jumlah saldo yang ingin ditambahkan:');
 }
 
-// === 💰 TAMBAH SALDO (LANGKAH 1: INPUT USER ID) ===
+// ===  TAMBAH SALDO (LANGKAH 1: INPUT USER ID) ===
 if (state && state.step === 'addsaldo_userid') {
   state.targetId = text.trim();
   state.step = 'addsaldo_amount';
-  return ctx.reply('💰 Masukkan jumlah saldo yang ingin ditambahkan:');
+  return ctx.reply(' Masukkan jumlah saldo yang ingin ditambahkan:');
 }
 
-// === 💰 TAMBAH SALDO (LANGKAH 2: INPUT JUMLAH SALDO) ===
+// ===  TAMBAH SALDO (LANGKAH 2: INPUT JUMLAH SALDO) ===
 if (state && state.step === 'addsaldo_amount') {
   const amount = parseInt(text.trim());
   if (isNaN(amount) || amount <= 0) {
-    return ctx.reply('⚠️ Jumlah saldo harus berupa angka dan lebih dari 0.');
+    return ctx.reply(' Jumlah saldo harus berupa angka dan lebih dari 0.');
   }
 
   const targetId = state.targetId;
@@ -15206,29 +15206,29 @@ if (state && state.step === 'addsaldo_amount') {
 // Tambahkan saldo
 db.run('UPDATE users SET saldo = saldo + ? WHERE user_id = ?', [amount, targetId], (err) => {
   if (err) {
-    logger.error('❌ Gagal menambah saldo:', err.message);
-    return ctx.reply('❌ Gagal menambah saldo ke user.');
+    logger.error(' Gagal menambah saldo:', err.message);
+    return ctx.reply(' Gagal menambah saldo ke user.');
   }
 
   // Ambil saldo terbaru
   db.get('SELECT saldo FROM users WHERE user_id = ?', [targetId], async (err2, updated) => {
     if (err2 || !updated) {
-      await ctx.reply(`✅ Saldo sebesar Rp${amount} berhasil ditambahkan ke user ${targetId}.`);
+      await ctx.reply(` Saldo sebesar Rp${amount} berhasil ditambahkan ke user ${targetId}.`);
       await bot.telegram.sendMessage(
         targetId,
-        `✅ Saldo Anda berhasil ditambahkan admin.\n` +
-        `💰 Nominal: Rp${amount.toLocaleString('id-ID')}`
+        ` Saldo Anda berhasil ditambahkan admin.\n` +
+        ` Nominal: Rp${amount.toLocaleString('id-ID')}`
       ).catch((notifyErr) => {
         logger.error(`Gagal kirim notifikasi tambah saldo ke ${targetId}: ${notifyErr.message}`);
       });
       logger.info(`Admin ${ctx.from.id} menambah saldo Rp${amount} ke user ${targetId}.`);
     } else {
-      await ctx.reply(`✅ Saldo sebesar Rp${amount} berhasil ditambahkan ke user ${targetId}.\n💳 Saldo sekarang: Rp${updated.saldo}`);
+      await ctx.reply(` Saldo sebesar Rp${amount} berhasil ditambahkan ke user ${targetId}.\n Saldo sekarang: Rp${updated.saldo}`);
       await bot.telegram.sendMessage(
         targetId,
-        `✅ Saldo Anda berhasil ditambahkan admin.\n` +
-        `💰 Nominal: Rp${amount.toLocaleString('id-ID')}\n` +
-        `🏦 Saldo sekarang: Rp${updated.saldo.toLocaleString('id-ID')}`
+        ` Saldo Anda berhasil ditambahkan admin.\n` +
+        ` Nominal: Rp${amount.toLocaleString('id-ID')}\n` +
+        ` Saldo sekarang: Rp${updated.saldo.toLocaleString('id-ID')}`
       ).catch((notifyErr) => {
         logger.error(`Gagal kirim notifikasi tambah saldo ke ${targetId}: ${notifyErr.message}`);
       });
@@ -15311,7 +15311,7 @@ bot.action('addserver_support_zivpn', async (ctx) => {
   state.support_udp_http = 0;
   state.step = 'addserver';
   userState[ctx.chat.id] = state;
-  await ctx.reply('🌐 *Silakan masukkan domain/ip server:*', { parse_mode: 'Markdown' });
+  await ctx.reply(' *Silakan masukkan domain/ip server:*', { parse_mode: 'Markdown' });
 });
 
 bot.action('addserver_support_udp_http', async (ctx) => {
@@ -15321,7 +15321,7 @@ bot.action('addserver_support_udp_http', async (ctx) => {
   state.support_udp_http = 1;
   state.step = 'addserver';
   userState[ctx.chat.id] = state;
-  await ctx.reply('🌐 *Silakan masukkan domain/ip server:*', { parse_mode: 'Markdown' });
+  await ctx.reply(' *Silakan masukkan domain/ip server:*', { parse_mode: 'Markdown' });
 });
 
 bot.action('addserver_support_none', async (ctx) => {
@@ -15331,26 +15331,26 @@ bot.action('addserver_support_none', async (ctx) => {
   state.support_udp_http = 0;
   state.step = 'addserver';
   userState[ctx.chat.id] = state;
-  await ctx.reply('🌐 *Silakan masukkan domain/ip server:*', { parse_mode: 'Markdown' });
+  await ctx.reply(' *Silakan masukkan domain/ip server:*', { parse_mode: 'Markdown' });
 });
 bot.action('detailserver', async (ctx) => {
   try {
-    logger.info('📋 Proses detail server dimulai');
+    logger.info(' Proses detail server dimulai');
     await ctx.answerCbQuery();
     
     const servers = await new Promise((resolve, reject) => {
       db.all('SELECT * FROM Server ORDER BY nama_server COLLATE NOCASE ASC', [], (err, servers) => {
         if (err) {
-          logger.error('⚠️ Kesalahan saat mengambil detail server:', err.message);
-          return reject('⚠️ *PERHATIAN! Terjadi kesalahan saat mengambil detail server.*');
+          logger.error(' Kesalahan saat mengambil detail server:', err.message);
+          return reject(' *PERHATIAN! Terjadi kesalahan saat mengambil detail server.*');
         }
         resolve(servers);
       });
     });
 
     if (servers.length === 0) {
-      logger.info('⚠️ Tidak ada server yang tersedia');
-      return ctx.reply('⚠️ *PERHATIAN! Tidak ada server yang tersedia saat ini.*', { parse_mode: 'Markdown' });
+      logger.info(' Tidak ada server yang tersedia');
+      return ctx.reply(' *PERHATIAN! Tidak ada server yang tersedia saat ini.*', { parse_mode: 'Markdown' });
     }
 
     const buttons = [];
@@ -15371,65 +15371,65 @@ bot.action('detailserver', async (ctx) => {
       buttons.push(row);
     }
 
-    await ctx.reply('📋 *Silakan pilih server untuk melihat detail:*', {
+    await ctx.reply(' *Silakan pilih server untuk melihat detail:*', {
       reply_markup: { inline_keyboard: buttons },
       parse_mode: 'Markdown'
     });
   } catch (error) {
-    logger.error('⚠️ Kesalahan saat mengambil detail server:', error);
-    await ctx.reply('⚠️ *Terjadi kesalahan saat mengambil detail server.*', { parse_mode: 'Markdown' });
+    logger.error(' Kesalahan saat mengambil detail server:', error);
+    await ctx.reply(' *Terjadi kesalahan saat mengambil detail server.*', { parse_mode: 'Markdown' });
   }
 });
 
 bot.action('listserver', async (ctx) => {
   try {
-    logger.info('📜 Proses daftar server dimulai');
+    logger.info(' Proses daftar server dimulai');
     await ctx.answerCbQuery();
     
     const servers = await new Promise((resolve, reject) => {
       db.all('SELECT * FROM Server ORDER BY nama_server COLLATE NOCASE ASC', [], (err, servers) => {
         if (err) {
-          logger.error('⚠️ Kesalahan saat mengambil daftar server:', err.message);
-          return reject('⚠️ *PERHATIAN! Terjadi kesalahan saat mengambil daftar server.*');
+          logger.error(' Kesalahan saat mengambil daftar server:', err.message);
+          return reject(' *PERHATIAN! Terjadi kesalahan saat mengambil daftar server.*');
         }
         resolve(servers);
       });
     });
 
     if (servers.length === 0) {
-      logger.info('⚠️ Tidak ada server yang tersedia');
-      return ctx.reply('⚠️ *PERHATIAN! Tidak ada server yang tersedia saat ini.*', { parse_mode: 'Markdown' });
+      logger.info(' Tidak ada server yang tersedia');
+      return ctx.reply(' *PERHATIAN! Tidak ada server yang tersedia saat ini.*', { parse_mode: 'Markdown' });
     }
 
-    let serverList = '📜 *Daftar Server* 📜\n\n';
+    let serverList = ' *Daftar Server* \n\n';
     servers.forEach((server, index) => {
       const status = Number(server.is_active ?? 1) === 1 ? 'AKTIF' : 'NONAKTIF';
-      serverList += `🔹 ${index + 1}. ${server.domain} - ${status}\n`;
+      serverList += ` ${index + 1}. ${server.domain} - ${status}\n`;
     });
 
     serverList += `\nTotal Jumlah Server: ${servers.length}`;
 
     await ctx.reply(serverList, { parse_mode: 'Markdown' });
   } catch (error) {
-    logger.error('⚠️ Kesalahan saat mengambil daftar server:', error);
-    await ctx.reply('⚠️ *Terjadi kesalahan saat mengambil daftar server.*', { parse_mode: 'Markdown' });
+    logger.error(' Kesalahan saat mengambil daftar server:', error);
+    await ctx.reply(' *Terjadi kesalahan saat mengambil daftar server.*', { parse_mode: 'Markdown' });
   }
 });
 bot.action('resetdb', async (ctx) => {
   try {
     await ctx.answerCbQuery();
-    await ctx.reply('🚨 *PERHATIAN! Anda akan menghapus semua server yang tersedia. Apakah Anda yakin?*', {
+    await ctx.reply(' *PERHATIAN! Anda akan menghapus semua server yang tersedia. Apakah Anda yakin?*', {
       reply_markup: {
         inline_keyboard: [
-          [{ text: '✅ Ya', callback_data: 'confirm_resetdb' }],
-          [{ text: '❌ Tidak', callback_data: 'cancel_resetdb' }]
+          [{ text: ' Ya', callback_data: 'confirm_resetdb' }],
+          [{ text: ' Tidak', callback_data: 'cancel_resetdb' }]
         ]
       },
       parse_mode: 'Markdown'
     });
   } catch (error) {
-    logger.error('❌ Error saat memulai proses reset database:', error);
-    await ctx.reply(`❌ *${error}*`, { parse_mode: 'Markdown' });
+    logger.error(' Error saat memulai proses reset database:', error);
+    await ctx.reply(` *${error}*`, { parse_mode: 'Markdown' });
   }
 });
 
@@ -15439,50 +15439,50 @@ bot.action('confirm_resetdb', async (ctx) => {
     await new Promise((resolve, reject) => {
       db.run('DELETE FROM Server', (err) => {
         if (err) {
-          logger.error('❌ Error saat mereset tabel Server:', err.message);
-          return reject('❗️ *PERHATIAN! Terjadi KESALAHAN SERIUS saat mereset database. Harap segera hubungi administrator!*');
+          logger.error(' Error saat mereset tabel Server:', err.message);
+          return reject(' *PERHATIAN! Terjadi KESALAHAN SERIUS saat mereset database. Harap segera hubungi administrator!*');
         }
         resolve();
       });
     });
-    await ctx.reply('🚨 *PERHATIAN! Database telah DIRESET SEPENUHNYA. Semua server telah DIHAPUS TOTAL.*', { parse_mode: 'Markdown' });
+    await ctx.reply(' *PERHATIAN! Database telah DIRESET SEPENUHNYA. Semua server telah DIHAPUS TOTAL.*', { parse_mode: 'Markdown' });
   } catch (error) {
-    logger.error('❌ Error saat mereset database:', error);
-    await ctx.reply(`❌ *${error}*`, { parse_mode: 'Markdown' });
+    logger.error(' Error saat mereset database:', error);
+    await ctx.reply(` *${error}*`, { parse_mode: 'Markdown' });
   }
 });
 
 bot.action('cancel_resetdb', async (ctx) => {
   try {
     await ctx.answerCbQuery();
-    await ctx.reply('❌ *Proses reset database dibatalkan.*', { parse_mode: 'Markdown' });
+    await ctx.reply(' *Proses reset database dibatalkan.*', { parse_mode: 'Markdown' });
   } catch (error) {
-    logger.error('❌ Error saat membatalkan reset database:', error);
-    await ctx.reply(`❌ *${error}*`, { parse_mode: 'Markdown' });
+    logger.error(' Error saat membatalkan reset database:', error);
+    await ctx.reply(` *${error}*`, { parse_mode: 'Markdown' });
   }
 });
 bot.action('deleteserver', async (ctx) => {
   try {
-    logger.info('🗑️ Proses hapus server dimulai');
+    logger.info(' Proses hapus server dimulai');
     await ctx.answerCbQuery();
     
     db.all('SELECT * FROM Server ORDER BY nama_server COLLATE NOCASE ASC', [], (err, servers) => {
       if (err) {
-        logger.error('⚠️ Kesalahan saat mengambil daftar server:', err.message);
-        return ctx.reply('⚠️ *PERHATIAN! Terjadi kesalahan saat mengambil daftar server.*', { parse_mode: 'Markdown' });
+        logger.error(' Kesalahan saat mengambil daftar server:', err.message);
+        return ctx.reply(' *PERHATIAN! Terjadi kesalahan saat mengambil daftar server.*', { parse_mode: 'Markdown' });
       }
 
       if (servers.length === 0) {
-        logger.info('⚠️ Tidak ada server yang tersedia');
-        return ctx.reply('⚠️ *PERHATIAN! Tidak ada server yang tersedia saat ini.*', { parse_mode: 'Markdown' });
+        logger.info(' Tidak ada server yang tersedia');
+        return ctx.reply(' *PERHATIAN! Tidak ada server yang tersedia saat ini.*', { parse_mode: 'Markdown' });
       }
 
       const keyboard = servers.map(server => {
         return [{ text: server.nama_server, callback_data: `confirm_delete_server_${server.id}` }];
       });
-      keyboard.push([{ text: '🔙 Kembali ke Menu Utama', callback_data: 'kembali_ke_menu' }]);
+      keyboard.push([{ text: ' Kembali ke Menu Utama', callback_data: 'kembali_ke_menu' }]);
 
-      ctx.reply('🗑️ *Pilih server yang ingin dihapus:*', {
+      ctx.reply(' *Pilih server yang ingin dihapus:*', {
         reply_markup: {
           inline_keyboard: keyboard
         },
@@ -15490,8 +15490,8 @@ bot.action('deleteserver', async (ctx) => {
       });
     });
   } catch (error) {
-    logger.error('❌ Kesalahan saat memulai proses hapus server:', error);
-    await ctx.reply('❌ *GAGAL! Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.*', { parse_mode: 'Markdown' });
+    logger.error(' Kesalahan saat memulai proses hapus server:', error);
+    await ctx.reply(' *GAGAL! Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.*', { parse_mode: 'Markdown' });
   }
 });
 
@@ -15501,8 +15501,8 @@ const getUsernameById = async (userId) => {
     const telegramUser = await bot.telegram.getChat(userId);
     return telegramUser.username || telegramUser.first_name;
   } catch (err) {
-    logger.error('❌ Kesalahan saat mengambil username dari Telegram:', err.message);
-    throw new Error('⚠️ *PERHATIAN! Terjadi kesalahan saat mengambil username dari Telegram.*');
+    logger.error(' Kesalahan saat mengambil username dari Telegram:', err.message);
+    throw new Error(' *PERHATIAN! Terjadi kesalahan saat mengambil username dari Telegram.*');
   }
 };
 /////////////
@@ -15510,7 +15510,7 @@ bot.action('tambah_saldo', async (ctx) => {
   await ctx.answerCbQuery();
   const adminId = ctx.from.id;
   userState[adminId] = { step: 'addsaldo_userid' };
-  await ctx.reply('🔢 Masukkan ID Telegram user yang ingin ditambahkan saldo:');
+  await ctx.reply(' Masukkan ID Telegram user yang ingin ditambahkan saldo:');
 });
 //////
 bot.action(/next_users_(\d+)/, async (ctx) => {
@@ -15524,8 +15524,8 @@ bot.action(/next_users_(\d+)/, async (ctx) => {
     const users = await new Promise((resolve, reject) => {
       db.all(`SELECT user_id FROM users LIMIT 20 OFFSET ${offset}`, [], (err, users) => {
         if (err) {
-          logger.error('❌ Kesalahan saat mengambil daftar user:', err.message);
-          return reject('⚠️ *PERHATIAN! Terjadi kesalahan saat mengambil daftar user.*');
+          logger.error(' Kesalahan saat mengambil daftar user:', err.message);
+          return reject(' *PERHATIAN! Terjadi kesalahan saat mengambil daftar user.*');
         }
         resolve(users);
       });
@@ -15534,8 +15534,8 @@ bot.action(/next_users_(\d+)/, async (ctx) => {
     const totalUsers = await new Promise((resolve, reject) => {
       db.get('SELECT COUNT(*) as count FROM users', [], (err, row) => {
         if (err) {
-          logger.error('❌ Kesalahan saat menghitung total user:', err.message);
-          return reject('⚠️ *PERHATIAN! Terjadi kesalahan saat menghitung total user.*');
+          logger.error(' Kesalahan saat menghitung total user:', err.message);
+          return reject(' *PERHATIAN! Terjadi kesalahan saat menghitung total user.*');
         }
         resolve(row.count);
       });
@@ -15566,13 +15566,13 @@ bot.action(/next_users_(\d+)/, async (ctx) => {
     const navigationButtons = [];
     if (currentPage > 0) {
       navigationButtons.push([{
-        text: '⬅️ Back',
+        text: '⬅ Back',
         callback_data: `prev_users_${currentPage - 1}`
       }]);
     }
     if (offset + 20 < totalUsers) {
       navigationButtons.push([{
-        text: '➡️ Next',
+        text: ' Next',
         callback_data: `next_users_${currentPage + 1}`
       }]);
     }
@@ -15581,8 +15581,8 @@ bot.action(/next_users_(\d+)/, async (ctx) => {
 
     await ctx.editMessageReplyMarkup(replyMarkup);
   } catch (error) {
-    logger.error('❌ Kesalahan saat memproses next users:', error);
-    await ctx.reply(`❌ *${error}*`, { parse_mode: 'Markdown' });
+    logger.error(' Kesalahan saat memproses next users:', error);
+    await ctx.reply(` *${error}*`, { parse_mode: 'Markdown' });
   }
 });
 
@@ -15597,8 +15597,8 @@ bot.action(/prev_users_(\d+)/, async (ctx) => {
     const users = await new Promise((resolve, reject) => {
       db.all(`SELECT user_id FROM users LIMIT 20 OFFSET ${offset}`, [], (err, users) => {
         if (err) {
-          logger.error('❌ Kesalahan saat mengambil daftar user:', err.message);
-          return reject('⚠️ *PERHATIAN! Terjadi kesalahan saat mengambil daftar user.*');
+          logger.error(' Kesalahan saat mengambil daftar user:', err.message);
+          return reject(' *PERHATIAN! Terjadi kesalahan saat mengambil daftar user.*');
         }
         resolve(users);
       });
@@ -15607,8 +15607,8 @@ bot.action(/prev_users_(\d+)/, async (ctx) => {
     const totalUsers = await new Promise((resolve, reject) => {
       db.get('SELECT COUNT(*) as count FROM users', [], (err, row) => {
         if (err) {
-          logger.error('❌ Kesalahan saat menghitung total user:', err.message);
-          return reject('⚠️ *PERHATIAN! Terjadi kesalahan saat menghitung total user.*');
+          logger.error(' Kesalahan saat menghitung total user:', err.message);
+          return reject(' *PERHATIAN! Terjadi kesalahan saat menghitung total user.*');
         }
         resolve(row.count);
       });
@@ -15639,13 +15639,13 @@ bot.action(/prev_users_(\d+)/, async (ctx) => {
     const navigationButtons = [];
     if (currentPage > 0) {
       navigationButtons.push([{
-        text: '⬅️ Back',
+        text: '⬅ Back',
         callback_data: `prev_users_${currentPage - 1}`
       }]);
     }
     if (offset + 20 < totalUsers) {
       navigationButtons.push([{
-        text: '➡️ Next',
+        text: ' Next',
         callback_data: `next_users_${currentPage}`
       }]);
     }
@@ -15654,8 +15654,8 @@ bot.action(/prev_users_(\d+)/, async (ctx) => {
 
     await ctx.editMessageReplyMarkup(replyMarkup);
   } catch (error) {
-    logger.error('❌ Kesalahan saat memproses previous users:', error);
-    await ctx.reply(`❌ *${error}*`, { parse_mode: 'Markdown' });
+    logger.error(' Kesalahan saat memproses previous users:', error);
+    await ctx.reply(` *${error}*`, { parse_mode: 'Markdown' });
   }
 });
 
@@ -15795,7 +15795,7 @@ async function handleGlobalPriceDurationInput(ctx, state, text) {
     delete userState[ctx.chat.id];
     const label = mode === '30hari' ? '30 Hari' : 'Harian';
     await ctx.reply(
-      `✅ Harga global ${label} berhasil diupdate untuk ${Number(result?.changes || 0)} server.\n\n` +
+      ` Harga global ${label} berhasil diupdate untuk ${Number(result?.changes || 0)} server.\n\n` +
       `- User 1IP: ${formatRupiah(prices.user1)}\n` +
       `- User 2IP: ${formatRupiah(prices.user2)}\n` +
       `- Reseller 1IP: ${formatRupiah(prices.reseller1)}\n` +
@@ -15921,15 +15921,15 @@ bot.action('editserver_limit_ip', async (ctx) => {
     const servers = await new Promise((resolve, reject) => {
       db.all('SELECT id, nama_server FROM Server ORDER BY nama_server COLLATE NOCASE ASC', [], (err, servers) => {
         if (err) {
-          logger.error('❌ Kesalahan saat mengambil daftar server:', err.message);
-          return reject('⚠️ *PERHATIAN! Terjadi kesalahan saat mengambil daftar server.*');
+          logger.error(' Kesalahan saat mengambil daftar server:', err.message);
+          return reject(' *PERHATIAN! Terjadi kesalahan saat mengambil daftar server.*');
         }
         resolve(servers);
       });
     });
 
     if (servers.length === 0) {
-      return ctx.reply('⚠️ *PERHATIAN! Tidak ada server yang tersedia untuk diedit.*', { parse_mode: 'Markdown' });
+      return ctx.reply(' *PERHATIAN! Tidak ada server yang tersedia untuk diedit.*', { parse_mode: 'Markdown' });
     }
 
     const buttons = servers.map(server => ({
@@ -15942,13 +15942,13 @@ bot.action('editserver_limit_ip', async (ctx) => {
       inlineKeyboard.push(buttons.slice(i, i + 2));
     }
 
-    await ctx.reply('📊 *Silakan pilih server untuk mengedit limit IP:*', {
+    await ctx.reply(' *Silakan pilih server untuk mengedit limit IP:*', {
       reply_markup: { inline_keyboard: inlineKeyboard },
       parse_mode: 'Markdown'
     });
   } catch (error) {
-    logger.error('❌ Kesalahan saat memulai proses edit limit IP server:', error);
-    await ctx.reply(`❌ *${error}*`, { parse_mode: 'Markdown' });
+    logger.error(' Kesalahan saat memulai proses edit limit IP server:', error);
+    await ctx.reply(` *${error}*`, { parse_mode: 'Markdown' });
   }
 });
 bot.action('editserver_iplimit_rules', async (ctx) => {
@@ -15967,7 +15967,7 @@ bot.action('editserver_iplimit_rules', async (ctx) => {
       text: server.nama_server || server.domain || `ID ${server.id}`,
       callback_data: `edit_server_iplimit_rules_server_${server.id}`
     }]);
-    buttons.push([{ text: '🔙 Kembali', callback_data: 'admin_menu_server' }]);
+    buttons.push([{ text: ' Kembali', callback_data: 'admin_menu_server' }]);
 
     await ctx.reply('Pilih server untuk mengatur limit IP per protocol:', {
       reply_markup: { inline_keyboard: buttons }
@@ -16032,15 +16032,15 @@ bot.action('editserver_batas_create_akun', async (ctx) => {
     const servers = await new Promise((resolve, reject) => {
       db.all('SELECT id, nama_server FROM Server ORDER BY nama_server COLLATE NOCASE ASC', [], (err, servers) => {
         if (err) {
-          logger.error('❌ Kesalahan saat mengambil daftar server:', err.message);
-          return reject('⚠️ *PERHATIAN! Terjadi kesalahan saat mengambil daftar server.*');
+          logger.error(' Kesalahan saat mengambil daftar server:', err.message);
+          return reject(' *PERHATIAN! Terjadi kesalahan saat mengambil daftar server.*');
         }
         resolve(servers);
       });
     });
 
     if (servers.length === 0) {
-      return ctx.reply('⚠️ *PERHATIAN! Tidak ada server yang tersedia untuk diedit.*', { parse_mode: 'Markdown' });
+      return ctx.reply(' *PERHATIAN! Tidak ada server yang tersedia untuk diedit.*', { parse_mode: 'Markdown' });
     }
 
     const buttons = servers.map(server => ({
@@ -16053,13 +16053,13 @@ bot.action('editserver_batas_create_akun', async (ctx) => {
       inlineKeyboard.push(buttons.slice(i, i + 2));
     }
 
-    await ctx.reply('📊 *Silakan pilih server untuk mengedit batas create akun:*', {
+    await ctx.reply(' *Silakan pilih server untuk mengedit batas create akun:*', {
       reply_markup: { inline_keyboard: inlineKeyboard },
       parse_mode: 'Markdown'
     });
   } catch (error) {
-    logger.error('❌ Kesalahan saat memulai proses edit batas create akun server:', error);
-    await ctx.reply(`❌ *${error}*`, { parse_mode: 'Markdown' });
+    logger.error(' Kesalahan saat memulai proses edit batas create akun server:', error);
+    await ctx.reply(` *${error}*`, { parse_mode: 'Markdown' });
   }
 });
 bot.action('editserver_total_create_akun', async (ctx) => {
@@ -16070,15 +16070,15 @@ bot.action('editserver_total_create_akun', async (ctx) => {
     const servers = await new Promise((resolve, reject) => {
       db.all('SELECT id, nama_server FROM Server ORDER BY nama_server COLLATE NOCASE ASC', [], (err, servers) => {
         if (err) {
-          logger.error('❌ Kesalahan saat mengambil daftar server:', err.message);
-          return reject('⚠️ *PERHATIAN! Terjadi kesalahan saat mengambil daftar server.*');
+          logger.error(' Kesalahan saat mengambil daftar server:', err.message);
+          return reject(' *PERHATIAN! Terjadi kesalahan saat mengambil daftar server.*');
         }
         resolve(servers);
       });
     });
 
     if (servers.length === 0) {
-      return ctx.reply('⚠️ *PERHATIAN! Tidak ada server yang tersedia untuk diedit.*', { parse_mode: 'Markdown' });
+      return ctx.reply(' *PERHATIAN! Tidak ada server yang tersedia untuk diedit.*', { parse_mode: 'Markdown' });
     }
 
     const buttons = servers.map(server => ({
@@ -16091,13 +16091,13 @@ bot.action('editserver_total_create_akun', async (ctx) => {
       inlineKeyboard.push(buttons.slice(i, i + 2));
     }
 
-    await ctx.reply('📊 *Silakan pilih server untuk mengedit total create akun:*', {
+    await ctx.reply(' *Silakan pilih server untuk mengedit total create akun:*', {
       reply_markup: { inline_keyboard: inlineKeyboard },
       parse_mode: 'Markdown'
     });
   } catch (error) {
-    logger.error('❌ Kesalahan saat memulai proses edit total create akun server:', error);
-    await ctx.reply(`❌ *${error}*`, { parse_mode: 'Markdown' });
+    logger.error(' Kesalahan saat memulai proses edit total create akun server:', error);
+    await ctx.reply(` *${error}*`, { parse_mode: 'Markdown' });
   }
 });
 bot.action('editserver_quota', async (ctx) => {
@@ -16108,15 +16108,15 @@ bot.action('editserver_quota', async (ctx) => {
     const servers = await new Promise((resolve, reject) => {
       db.all('SELECT id, nama_server FROM Server ORDER BY nama_server COLLATE NOCASE ASC', [], (err, servers) => {
         if (err) {
-          logger.error('❌ Kesalahan saat mengambil daftar server:', err.message);
-          return reject('⚠️ *PERHATIAN! Terjadi kesalahan saat mengambil daftar server.*');
+          logger.error(' Kesalahan saat mengambil daftar server:', err.message);
+          return reject(' *PERHATIAN! Terjadi kesalahan saat mengambil daftar server.*');
         }
         resolve(servers);
       });
     });
 
     if (servers.length === 0) {
-      return ctx.reply('⚠️ *PERHATIAN! Tidak ada server yang tersedia untuk diedit.*', { parse_mode: 'Markdown' });
+      return ctx.reply(' *PERHATIAN! Tidak ada server yang tersedia untuk diedit.*', { parse_mode: 'Markdown' });
     }
 
     const buttons = servers.map(server => ({
@@ -16129,13 +16129,13 @@ bot.action('editserver_quota', async (ctx) => {
       inlineKeyboard.push(buttons.slice(i, i + 2));
     }
 
-    await ctx.reply('📊 *Silakan pilih server untuk mengedit quota:*', {
+    await ctx.reply(' *Silakan pilih server untuk mengedit quota:*', {
       reply_markup: { inline_keyboard: inlineKeyboard },
       parse_mode: 'Markdown'
     });
   } catch (error) {
-    logger.error('❌ Kesalahan saat memulai proses edit quota server:', error);
-    await ctx.reply(`❌ *${error}*`, { parse_mode: 'Markdown' });
+    logger.error(' Kesalahan saat memulai proses edit quota server:', error);
+    await ctx.reply(` *${error}*`, { parse_mode: 'Markdown' });
   }
 });
 bot.action('editserver_auth', async (ctx) => {
@@ -16318,15 +16318,15 @@ bot.action('nama_server_edit', async (ctx) => {
     const servers = await new Promise((resolve, reject) => {
       db.all('SELECT id, nama_server FROM Server ORDER BY nama_server COLLATE NOCASE ASC', [], (err, servers) => {
         if (err) {
-          logger.error('❌ Kesalahan saat mengambil daftar server:', err.message);
-          return reject('⚠️ *PERHATIAN! Terjadi kesalahan saat mengambil daftar server.*');
+          logger.error(' Kesalahan saat mengambil daftar server:', err.message);
+          return reject(' *PERHATIAN! Terjadi kesalahan saat mengambil daftar server.*');
         }
         resolve(servers);
       });
     });
 
     if (servers.length === 0) {
-      return ctx.reply('⚠️ *PERHATIAN! Tidak ada server yang tersedia untuk diedit.*', { parse_mode: 'Markdown' });
+      return ctx.reply(' *PERHATIAN! Tidak ada server yang tersedia untuk diedit.*', { parse_mode: 'Markdown' });
     }
 
     const buttons = servers.map(server => ({
@@ -16339,13 +16339,13 @@ bot.action('nama_server_edit', async (ctx) => {
       inlineKeyboard.push(buttons.slice(i, i + 2));
     }
 
-    await ctx.reply('🏷️ *Silakan pilih server untuk mengedit nama:*', {
+    await ctx.reply(' *Silakan pilih server untuk mengedit nama:*', {
       reply_markup: { inline_keyboard: inlineKeyboard },
       parse_mode: 'Markdown'
     });
   } catch (error) {
-    logger.error('❌ Kesalahan saat memulai proses edit nama server:', error);
-    await ctx.reply(`❌ *${error}*`, { parse_mode: 'Markdown' });
+    logger.error(' Kesalahan saat memulai proses edit nama server:', error);
+    await ctx.reply(` *${error}*`, { parse_mode: 'Markdown' });
   }
 });
 
@@ -16430,7 +16430,7 @@ bot.action(/add_saldo_(\d+)/, async (ctx) => {
   logger.info(`User ${ctx.from.id} memilih untuk menambahkan saldo user dengan ID: ${userId}`);
   userState[ctx.chat.id] = { step: 'add_saldo', userId: userId };
 
-  await ctx.reply('📊 *Silakan masukkan jumlah saldo yang ingin ditambahkan:*', {
+  await ctx.reply(' *Silakan masukkan jumlah saldo yang ingin ditambahkan:*', {
     reply_markup: { inline_keyboard: keyboard_nomor_simple() },
     parse_mode: 'Markdown'
   });
@@ -16440,7 +16440,7 @@ bot.action(/edit_batas_create_akun_(\d+)/, async (ctx) => {
   logger.info(`User ${ctx.from.id} memilih untuk mengedit batas create akun server dengan ID: ${serverId}`);
   userState[ctx.chat.id] = { step: 'edit_batas_create_akun', serverId: serverId };
 
-  await ctx.reply('📊 *Silakan masukkan batas create akun server baru:*', {
+  await ctx.reply(' *Silakan masukkan batas create akun server baru:*', {
     reply_markup: { inline_keyboard: keyboard_nomor_simple() },
     parse_mode: 'Markdown'
   });
@@ -16450,7 +16450,7 @@ bot.action(/edit_total_create_akun_(\d+)/, async (ctx) => {
   logger.info(`User ${ctx.from.id} memilih untuk mengedit total create akun server dengan ID: ${serverId}`);
   userState[ctx.chat.id] = { step: 'edit_total_create_akun', serverId: serverId };
 
-  await ctx.reply('📊 *Silakan masukkan total create akun server baru:*', {
+  await ctx.reply(' *Silakan masukkan total create akun server baru:*', {
     reply_markup: { inline_keyboard: keyboard_nomor_simple() },
     parse_mode: 'Markdown'
   });
@@ -16471,17 +16471,17 @@ bot.action(/set_server_full_(\d+)/, async (ctx) => {
   const serverId = ctx.match[1];
   db.get('SELECT batas_create_akun FROM Server WHERE id = ?', [serverId], (err, row) => {
     if (err || !row) {
-      return ctx.reply('❌ Gagal mengambil data server.');
+      return ctx.reply(' Gagal mengambil data server.');
     }
     db.run(
       'UPDATE Server SET total_create_akun = ? WHERE id = ?',
       [row.batas_create_akun, serverId],
       function (err2) {
         if (err2) {
-          logger.error('❌ Gagal set server penuh:', err2.message);
-          return ctx.reply('❌ Gagal menjadikan server penuh.');
+          logger.error(' Gagal set server penuh:', err2.message);
+          return ctx.reply(' Gagal menjadikan server penuh.');
         }
-        ctx.reply(`✅ Server berhasil dijadikan penuh (total = ${row.batas_create_akun}).`);
+        ctx.reply(` Server berhasil dijadikan penuh (total = ${row.batas_create_akun}).`);
       }
     );
   });
@@ -16501,7 +16501,7 @@ bot.action(/edit_limit_ip_(\d+)/, async (ctx) => {
   logger.info(`User ${ctx.from.id} memilih untuk mengedit limit IP server dengan ID: ${serverId}`);
   userState[ctx.chat.id] = { step: 'edit_limit_ip', serverId: serverId };
 
-  await ctx.reply('📊 *Silakan masukkan limit IP server baru:*', {
+  await ctx.reply(' *Silakan masukkan limit IP server baru:*', {
     reply_markup: { inline_keyboard: keyboard_nomor_simple() },
     parse_mode: 'Markdown'
   });
@@ -16511,7 +16511,7 @@ bot.action(/edit_quota_(\d+)/, async (ctx) => {
   logger.info(`User ${ctx.from.id} memilih untuk mengedit quota server dengan ID: ${serverId}`);
   userState[ctx.chat.id] = { step: 'edit_quota', serverId: serverId };
 
-  await ctx.reply('📊 *Silakan masukkan quota server baru:*', {
+  await ctx.reply(' *Silakan masukkan quota server baru:*', {
     reply_markup: { inline_keyboard: keyboard_nomor_simple() },
     parse_mode: 'Markdown'
   });
@@ -16521,7 +16521,7 @@ bot.action(/edit_auth_(\d+)/, async (ctx) => {
   logger.info(`User ${ctx.from.id} memilih untuk mengedit auth server dengan ID: ${serverId}`);
   userState[ctx.chat.id] = { step: 'edit_auth', serverId: serverId };
 
-  await ctx.reply('🌐 *Silakan masukkan auth server baru:*', {
+  await ctx.reply(' *Silakan masukkan auth server baru:*', {
     reply_markup: { inline_keyboard: keyboard_full() },
     parse_mode: 'Markdown'
   });
@@ -16531,7 +16531,7 @@ bot.action(/edit_domain_(\d+)/, async (ctx) => {
   logger.info(`User ${ctx.from.id} memilih untuk mengedit domain server dengan ID: ${serverId}`);
   userState[ctx.chat.id] = { step: 'edit_domain', serverId: serverId };
 
-  await ctx.reply('🌐 *Silakan masukkan domain server baru:*', {
+  await ctx.reply(' *Silakan masukkan domain server baru:*', {
     reply_markup: { inline_keyboard: keyboard_full() },
     parse_mode: 'Markdown'
   });
@@ -16551,12 +16551,12 @@ bot.action(/edit_nama_(\d+)/, async (ctx) => {
     logger.info(`Admin ${ctx.chat.id} memilih server ID ${serverId} untuk edit nama`);
 
     await ctx.reply(
-      `✏️ *Silakan ketik nama baru untuk server ID ${serverId}:*`,
+      ` *Silakan ketik nama baru untuk server ID ${serverId}:*`,
       { parse_mode: "Markdown" }
     );
   } catch (err) {
-    logger.error("❌ Error edit nama:", err);
-    ctx.reply("⚠️ Terjadi kesalahan saat memproses permintaan.");
+    logger.error(" Error edit nama:", err);
+    ctx.reply(" Terjadi kesalahan saat memproses permintaan.");
   }
 });
 
@@ -16565,20 +16565,20 @@ bot.action(/confirm_delete_server_(\d+)/, async (ctx) => {
     db.run('DELETE FROM Server WHERE id = ?', [ctx.match[1]], function(err) {
       if (err) {
         logger.error('Error deleting server:', err.message);
-        return ctx.reply('⚠️ *PERHATIAN! Terjadi kesalahan saat menghapus server.*', { parse_mode: 'Markdown' });
+        return ctx.reply(' *PERHATIAN! Terjadi kesalahan saat menghapus server.*', { parse_mode: 'Markdown' });
       }
 
       if (this.changes === 0) {
         logger.info('Server tidak ditemukan');
-        return ctx.reply('⚠️ *PERHATIAN! Server tidak ditemukan.*', { parse_mode: 'Markdown' });
+        return ctx.reply(' *PERHATIAN! Server tidak ditemukan.*', { parse_mode: 'Markdown' });
       }
 
       logger.info(`Server dengan ID ${ctx.match[1]} berhasil dihapus`);
-      ctx.reply('✅ *Server berhasil dihapus.*', { parse_mode: 'Markdown' });
+      ctx.reply(' *Server berhasil dihapus.*', { parse_mode: 'Markdown' });
     });
   } catch (error) {
     logger.error('Kesalahan saat menghapus server:', error);
-    await ctx.reply('❌ *GAGAL! Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.*', { parse_mode: 'Markdown' });
+    await ctx.reply(' *GAGAL! Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.*', { parse_mode: 'Markdown' });
   }
 });
 
@@ -16588,39 +16588,39 @@ bot.action(/server_detail_(\d+)/, async (ctx) => {
     const server = await new Promise((resolve, reject) => {
       db.get('SELECT * FROM Server WHERE id = ?', [serverId], (err, server) => {
         if (err) {
-          logger.error('⚠️ Kesalahan saat mengambil detail server:', err.message);
-          return reject('⚠️ *PERHATIAN! Terjadi kesalahan saat mengambil detail server.*');
+          logger.error(' Kesalahan saat mengambil detail server:', err.message);
+          return reject(' *PERHATIAN! Terjadi kesalahan saat mengambil detail server.*');
         }
         resolve(server);
       });
     });
 
     if (!server) {
-      logger.info('⚠️ Server tidak ditemukan');
-      return ctx.reply('⚠️ *PERHATIAN! Server tidak ditemukan.*', { parse_mode: 'Markdown' });
+      logger.info(' Server tidak ditemukan');
+      return ctx.reply(' *PERHATIAN! Server tidak ditemukan.*', { parse_mode: 'Markdown' });
     }
 
-    const serverDetails = `📋 *Detail Server* 📋\n\n` +
-      `🌐 *Domain:* \`${server.domain}\`\n` +
-      `🔑 *Auth:* \`${server.auth}\`\n` +
-      `🏷️ *Nama Server:* \`${server.nama_server}\`\n` +
-      `📊 *Quota:* \`${server.quota}\`\n` +
-      `📶 *Limit IP:* \`${server.iplimit}\`\n` +
-      `🔢 *Batas Create Akun:* \`${server.batas_create_akun}\`\n` +
-      `📋 *Total Create Akun:* \`${server.total_create_akun}\`\n` +
-      `🕹️ *Status List User:* \`${Number(server.is_active ?? 1) === 1 ? 'Aktif' : 'Nonaktif'}\`\n` +
-      `🔌 *Support Protocol:* \`${formatServerProtocolStatusLine(server)}\`\n` +
-      `💵 *Harga Harian User 1IP:* \`${formatRupiah(getEffectiveServerPackagePrice(server, false, 1))}\`\n` +
-      `💵 *Harga Harian User 2IP:* \`${formatRupiah(getEffectiveServerPackagePrice(server, false, 2))}\`\n` +
-      `📆 *Harga 30 Hari User 1IP:* \`${formatRupiah(getEffectiveServerMonthlyPackagePrice(server, false, 1))}\`\n` +
-      `📆 *Harga 30 Hari User 2IP:* \`${formatRupiah(getEffectiveServerMonthlyPackagePrice(server, false, 2))}\`\n` +
-      `⏱️ *Mode Harian:* \`${isServerDailyPriceEnabled(server) ? 'Aktif' : 'Nonaktif'}\`\n` +
-      `📆 *Mode 30 Hari:* \`${isServerMonthlyPriceEnabled(server) ? 'Aktif' : 'Nonaktif'}\`\n\n`;
+    const serverDetails = ` *Detail Server* \n\n` +
+      ` *Domain:* \`${server.domain}\`\n` +
+      ` *Auth:* \`${server.auth}\`\n` +
+      ` *Nama Server:* \`${server.nama_server}\`\n` +
+      ` *Quota:* \`${server.quota}\`\n` +
+      ` *Limit IP:* \`${server.iplimit}\`\n` +
+      ` *Batas Create Akun:* \`${server.batas_create_akun}\`\n` +
+      ` *Total Create Akun:* \`${server.total_create_akun}\`\n` +
+      ` *Status List User:* \`${Number(server.is_active ?? 1) === 1 ? 'Aktif' : 'Nonaktif'}\`\n` +
+      ` *Support Protocol:* \`${formatServerProtocolStatusLine(server)}\`\n` +
+      ` *Harga Harian User 1IP:* \`${formatRupiah(getEffectiveServerPackagePrice(server, false, 1))}\`\n` +
+      ` *Harga Harian User 2IP:* \`${formatRupiah(getEffectiveServerPackagePrice(server, false, 2))}\`\n` +
+      ` *Harga 30 Hari User 1IP:* \`${formatRupiah(getEffectiveServerMonthlyPackagePrice(server, false, 1))}\`\n` +
+      ` *Harga 30 Hari User 2IP:* \`${formatRupiah(getEffectiveServerMonthlyPackagePrice(server, false, 2))}\`\n` +
+      ` *Mode Harian:* \`${isServerDailyPriceEnabled(server) ? 'Aktif' : 'Nonaktif'}\`\n` +
+      ` *Mode 30 Hari:* \`${isServerMonthlyPriceEnabled(server) ? 'Aktif' : 'Nonaktif'}\`\n\n`;
 
     await ctx.reply(serverDetails, { parse_mode: 'Markdown' });
   } catch (error) {
-    logger.error('⚠️ Kesalahan saat mengambil detail server:', error);
-    await ctx.reply('⚠️ *Terjadi kesalahan saat mengambil detail server.*', { parse_mode: 'Markdown' });
+    logger.error(' Kesalahan saat mengambil detail server:', error);
+    await ctx.reply(' *Terjadi kesalahan saat mengambil detail server.*', { parse_mode: 'Markdown' });
   }
 });
 
@@ -16638,7 +16638,7 @@ bot.on('callback_query', async (ctx) => {
   if (global.depositState && global.depositState[userId] && global.depositState[userId].action === 'request_amount') {
     await handleDepositState(ctx, userId, data);
   } 
-  // ✅ TAMBAHKAN HANDLER UNTUK confirm_final
+  //  TAMBAHKAN HANDLER UNTUK confirm_final
   else if (data === 'confirm_final') {
     try {
       await ctx.answerCbQuery();
@@ -16647,20 +16647,20 @@ bot.on('callback_query', async (ctx) => {
         const amount = global.depositState[userId].amount;
         await processDeposit(ctx, amount, global.depositState[userId]);
       } else {
-        await ctx.reply('❌ Sesi top-up sudah expired. Silakan mulai lagi.');
+        await ctx.reply(' Sesi top-up sudah expired. Silakan mulai lagi.');
       }
     } catch (error) {
       logger.error('Error confirm_final:', error);
-      await ctx.reply('❌ Terjadi kesalahan. Silakan coba lagi.');
+      await ctx.reply(' Terjadi kesalahan. Silakan coba lagi.');
     }
     return;
   }
   else if (userStateData) {
     switch (userStateData.step) {
-      // ❌ HAPUS/MODIFIKASI bagian addsaldo_userid dan addsaldo_amount 
+      //  HAPUS/MODIFIKASI bagian addsaldo_userid dan addsaldo_amount 
       // karena itu seharusnya di text handler, tapi kalau sudah berjalan biarin saja
       
-      // ✅ TAMBAHKAN CASE UNTUK CONFIRM FINAL DI STATE LAINNYA
+      //  TAMBAHKAN CASE UNTUK CONFIRM FINAL DI STATE LAINNYA
       case 'confirm_final_topup':
         if (global.depositState && global.depositState[userId]) {
           const amount = global.depositState[userId].amount;
@@ -16818,30 +16818,30 @@ async function handleAddSaldo(ctx, userStateData, data) {
     currentSaldo = currentSaldo.slice(0, -1);
   } else if (data === 'confirm') {
     if (currentSaldo.length === 0) {
-      return await ctx.answerCbQuery('⚠️ *Jumlah saldo tidak boleh kosong!*', { show_alert: true });
+      return await ctx.answerCbQuery(' *Jumlah saldo tidak boleh kosong!*', { show_alert: true });
     }
 
     try {
       await updateUserBalance(userStateData.userId, currentSaldo);
-      ctx.reply(`✅ *Saldo user berhasil ditambahkan.*\n\n📄 *Detail Saldo:*\n- Jumlah Saldo: *Rp ${currentSaldo}*`, { parse_mode: 'Markdown' });
+      ctx.reply(` *Saldo user berhasil ditambahkan.*\n\n *Detail Saldo:*\n- Jumlah Saldo: *Rp ${currentSaldo}*`, { parse_mode: 'Markdown' });
     } catch (error) {
-      ctx.reply('❌ *Terjadi kesalahan saat menambahkan saldo user.*', { parse_mode: 'Markdown' });
+      ctx.reply(' *Terjadi kesalahan saat menambahkan saldo user.*', { parse_mode: 'Markdown' });
     }
     delete userState[ctx.chat.id];
     return;
   } else if (data === 'cancel') {
     delete userState[ctx.chat.id];
-      return await ctx.answerCbQuery('⚠️ *Jumlah saldo tidak valid!*', { show_alert: true });
+      return await ctx.answerCbQuery(' *Jumlah saldo tidak valid!*', { show_alert: true });
   } else {
     if (currentSaldo.length < 10) {
       currentSaldo += data;
     } else {
-      return await ctx.answerCbQuery('⚠️ *Jumlah saldo maksimal adalah 10 karakter!*', { show_alert: true });
+      return await ctx.answerCbQuery(' *Jumlah saldo maksimal adalah 10 karakter!*', { show_alert: true });
     }
   }
 
   userStateData.saldo = currentSaldo;
-  const newMessage = `📊 *Silakan masukkan jumlah saldo yang ingin ditambahkan:*\n\nJumlah saldo saat ini: *${currentSaldo}*`;
+  const newMessage = ` *Silakan masukkan jumlah saldo yang ingin ditambahkan:*\n\nJumlah saldo saat ini: *${currentSaldo}*`;
     await ctx.editMessageText(newMessage, {
       reply_markup: { inline_keyboard: keyboard_nomor_simple() },
       parse_mode: 'Markdown'
@@ -16957,29 +16957,29 @@ async function handleEditField(ctx, userStateData, data, field, fieldName, query
     currentValue = currentValue.slice(0, -1);
   } else if (data === 'confirm') {
     if (currentValue.length === 0) {
-      return await ctx.answerCbQuery(`⚠️ *${fieldName} tidak boleh kosong!*`, { show_alert: true });
+      return await ctx.answerCbQuery(` *${fieldName} tidak boleh kosong!*`, { show_alert: true });
     }
     try {
       await updateServerField(userStateData.serverId, currentValue, query);
-      ctx.reply(`✅ *${fieldName} server berhasil diupdate.*\n\n📄 *Detail Server:*\n- ${fieldName.charAt(0).toUpperCase() + fieldName.slice(1)}: *${currentValue}*`, { parse_mode: 'Markdown' });
+      ctx.reply(` *${fieldName} server berhasil diupdate.*\n\n *Detail Server:*\n- ${fieldName.charAt(0).toUpperCase() + fieldName.slice(1)}: *${currentValue}*`, { parse_mode: 'Markdown' });
     } catch (err) {
-      ctx.reply(`❌ *Terjadi kesalahan saat mengupdate ${fieldName} server.*`, { parse_mode: 'Markdown' });
+      ctx.reply(` *Terjadi kesalahan saat mengupdate ${fieldName} server.*`, { parse_mode: 'Markdown' });
     }
     delete userState[ctx.chat.id];
     return;
   } else {
     if (!/^[a-zA-Z0-9.-]+$/.test(data)) {
-      return await ctx.answerCbQuery(`⚠️ *${fieldName} tidak valid!*`, { show_alert: true });
+      return await ctx.answerCbQuery(` *${fieldName} tidak valid!*`, { show_alert: true });
     }
     if (currentValue.length < 253) {
       currentValue += data;
     } else {
-      return await ctx.answerCbQuery(`⚠️ *${fieldName} maksimal adalah 253 karakter!*`, { show_alert: true });
+      return await ctx.answerCbQuery(` *${fieldName} maksimal adalah 253 karakter!*`, { show_alert: true });
     }
   }
 
   userStateData[field] = currentValue;
-  const newMessage = `📊 *Silakan masukkan ${fieldName} server baru:*\n\n${fieldName.charAt(0).toUpperCase() + fieldName.slice(1)} saat ini: *${currentValue}*`;
+  const newMessage = ` *Silakan masukkan ${fieldName} server baru:*\n\n${fieldName.charAt(0).toUpperCase() + fieldName.slice(1)} saat ini: *${currentValue}*`;
   if (newMessage !== ctx.callbackQuery.message.text) {
     await ctx.editMessageText(newMessage, {
       reply_markup: { inline_keyboard: (keyboardBuilder ? keyboardBuilder() : keyboard_nomor_simple()) },
@@ -16991,7 +16991,7 @@ async function updateUserSaldo(userId, saldo) {
   return new Promise((resolve, reject) => {
     db.run('UPDATE users SET saldo = saldo + ? WHERE user_id = ?', [saldo, userId], function (err) {
       if (err) {
-        logger.error('⚠️ Kesalahan saat menambahkan saldo user:', err.message);
+        logger.error(' Kesalahan saat menambahkan saldo user:', err.message);
         reject(err);
       } else {
         resolve();
@@ -17004,7 +17004,7 @@ async function updateServerField(serverId, value, query) {
   return new Promise((resolve, reject) => {
     db.run(query, [value, serverId], function (err) {
       if (err) {
-        logger.error(`⚠️ Kesalahan saat mengupdate ${fieldName} server:`, err.message);
+        logger.error(` Kesalahan saat mengupdate ${fieldName} server:`, err.message);
         reject(err);
       } else {
         resolve();
@@ -17038,7 +17038,7 @@ function getTopupFeeDisplay(mode, amount) {
   if (normalizedMode === 'gopay') {
     return {
       menuNotice:
-        '💳 *BIAYA ADMIN:*\n' +
+        ' *BIAYA ADMIN:*\n' +
         '• GoPay tanpa biaya admin\n' +
         '• Total bayar sama dengan nominal top-up\n\n',
       confirmFeeLine: 'Biaya Admin GoPay: Rp 0',
@@ -17050,7 +17050,7 @@ function getTopupFeeDisplay(mode, amount) {
   if (normalizedMode === 'both') {
     return {
       menuNotice:
-        '🎲 *BIAYA ADMIN:*\n' +
+        ' *BIAYA ADMIN:*\n' +
         '• OrderKuota: random Rp 100-200\n' +
         '• GoPay: tanpa fee\n' +
         '• Total final mengikuti gateway yang membuat QRIS\n\n',
@@ -17062,7 +17062,7 @@ function getTopupFeeDisplay(mode, amount) {
 
   return {
     menuNotice:
-      '🎲 *SISTEM KEAMANAN ORDERKUOTA:*\n' +
+      ' *SISTEM KEAMANAN ORDERKUOTA:*\n' +
       '• Biaya admin OrderKuota *RANDOM 100-200*\n' +
       '• Setiap transaksi punya *nominal unik*\n' +
       '• Mencegah duplikasi pembayaran\n\n',
@@ -17208,7 +17208,7 @@ async function processDeposit(ctx, amount, options = {}) {
   const currentTime = Date.now();
   
   if (currentTime - lastRequestTime < requestInterval) {
-    await ctx.editMessageText('⚠️ *Terlalu banyak permintaan. Silakan tunggu sebentar sebelum mencoba lagi.*', { parse_mode: 'Markdown' });
+    await ctx.editMessageText(' *Terlalu banyak permintaan. Silakan tunggu sebentar sebelum mencoba lagi.*', { parse_mode: 'Markdown' });
     return;
   }
 
@@ -17221,11 +17221,11 @@ async function processDeposit(ctx, amount, options = {}) {
   
   if (userPendingCount >= 1) {
     await ctx.editMessageText(
-      '⚠️ *Anda masih memiliki transaksi pending yang belum dibayar.*\n\n' +
+      ' *Anda masih memiliki transaksi pending yang belum dibayar.*\n\n' +
       'Silakan selesaikan pembayaran yang ada atau tunggu QRIS expired sebelum membuat top-up baru.',
       { 
         parse_mode: 'Markdown',
-        reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali ke Menu', callback_data: 'send_main_menu' }]] }
+        reply_markup: { inline_keyboard: [[{ text: ' Kembali ke Menu', callback_data: 'send_main_menu' }]] }
       }
     );
     delete global.depositState[userId];
@@ -17239,10 +17239,10 @@ async function processDeposit(ctx, amount, options = {}) {
 
   if (amountNum < minAmount) {
     await ctx.editMessageText(
-      `❌ *Minimal top-up Rp ${minAmount.toLocaleString('id-ID')}!*\n\nSilakan masukkan nominal yang valid.`,
+      ` *Minimal top-up Rp ${minAmount.toLocaleString('id-ID')}!*\n\nSilakan masukkan nominal yang valid.`,
       { 
         parse_mode: 'Markdown',
-        reply_markup: { inline_keyboard: [[{ text: '🔄 Coba Lagi', callback_data: 'topup_saldo' }]] }
+        reply_markup: { inline_keyboard: [[{ text: ' Coba Lagi', callback_data: 'topup_saldo' }]] }
       }
     );
     delete global.depositState[userId];
@@ -17280,8 +17280,8 @@ async function processDeposit(ctx, amount, options = {}) {
     const qrExpireMinutes = getPaymentQrExpireMinutes(gatewayProvider);
     const qrExpiresAt = Date.now() + qrExpireMs;
     const adminFeeCaptionLine = gatewayProvider === 'gopay'
-      ? '💳 Biaya admin GoPay: Rp 0'
-      : `🎲 Biaya admin OrderKuota: Rp ${adminFee.toLocaleString('id-ID')}`;
+      ? ' Biaya admin GoPay: Rp 0'
+      : ` Biaya admin OrderKuota: Rp ${adminFee.toLocaleString('id-ID')}`;
 
     // DOWNLOAD QR
     const qrResponse = await axios.get(qrImageUrl, { responseType: 'arraybuffer', timeout: 15000 });
@@ -17293,19 +17293,19 @@ async function processDeposit(ctx, amount, options = {}) {
       : '';
 
     const caption = 
-`⚠️ *PENTING: Setelah transfer, WAJIB tekan tombol "✅ Sudah Bayar, Cek Status" di bawah QRIS.*
+` *PENTING: Setelah transfer, WAJIB tekan tombol " Sudah Bayar, Cek Status" di bawah QRIS.*
 
-💵 *Total Bayar:* *Rp ${finalAmount.toLocaleString('id-ID')}*
-💰 Topup: Rp ${amountNum.toLocaleString('id-ID')}
+ *Total Bayar:* *Rp ${finalAmount.toLocaleString('id-ID')}*
+ Topup: Rp ${amountNum.toLocaleString('id-ID')}
 ${adminFeeCaptionLine}
 
-🧾 *Langkah Singkat*
+ *Langkah Singkat*
 1. Scan QRIS
 2. Bayar *tepat* Rp ${finalAmount.toLocaleString('id-ID')}
-3. ${gatewayProvider === 'orderkuota' ? 'Tekan tombol *✅ Sudah Bayar, Cek Status*' : 'Tunggu verifikasi otomatis 1-2 menit'}
+3. ${gatewayProvider === 'orderkuota' ? 'Tekan tombol * Sudah Bayar, Cek Status*' : 'Tunggu verifikasi otomatis 1-2 menit'}
 
-⏰ QRIS berlaku ${qrExpireMinutes} menit
-${gatewayProvider === 'orderkuota' ? 'ℹ️ Saldo masuk setelah tombol ditekan lalu pembayaran terdeteksi sistem\n' : ''}🆔 Ref: \`${referenceId}\`${purposeLine}`;
+ QRIS berlaku ${qrExpireMinutes} menit
+${gatewayProvider === 'orderkuota' ? 'ℹ Saldo masuk setelah tombol ditekan lalu pembayaran terdeteksi sistem\n' : ''}🆔 Ref: \`${referenceId}\`${purposeLine}`;
     
     const paymentKeyboard = gatewayProvider === 'orderkuota'
       ? {
@@ -17370,25 +17370,25 @@ ${gatewayProvider === 'orderkuota' ? 'ℹ️ Saldo masuk setelah tombol ditekan 
     walletType
   ],
   (err) => { 
-    if (err) logger.error('❌ Save error:', err.message);
-    else logger.info(`✅ Saved: ${uniqueCode}`);
+    if (err) logger.error(' Save error:', err.message);
+    else logger.info(` Saved: ${uniqueCode}`);
   }
 );
 
     delete global.depositState[userId];
-    logger.info(`✅ QR sent to ${userId}, amount: ${finalAmount}, ref: ${referenceId}`);
+    logger.info(` QR sent to ${userId}, amount: ${finalAmount}, ref: ${referenceId}`);
 
   } catch (error) {
-    logger.error('❌ Deposit error:', error.message);
+    logger.error(' Deposit error:', error.message);
     
     await ctx.editMessageText(
-      '❌ *GAGAL MEMBUAT PEMBAYARAN*\n\n' + error.message.substring(0, 100) + '...\n\nSilakan coba lagi.',
+      ' *GAGAL MEMBUAT PEMBAYARAN*\n\n' + error.message.substring(0, 100) + '...\n\nSilakan coba lagi.',
       { 
         parse_mode: 'Markdown',
         reply_markup: {
           inline_keyboard: [
-            [{ text: '🔄 Coba Lagi', callback_data: 'topup_saldo' }],
-            [{ text: '🔙 Kembali', callback_data: 'send_main_menu' }]
+            [{ text: ' Coba Lagi', callback_data: 'topup_saldo' }],
+            [{ text: ' Kembali', callback_data: 'send_main_menu' }]
           ]
         }
       }
@@ -17589,20 +17589,20 @@ async function handleOrderKuotaPaymentCheck(ctx, uniqueCode) {
   try {
     if (!deposit || deposit.status !== 'pending') {
       if (canAnswerCallback) await ctx.answerCbQuery('Transaksi tidak ditemukan atau sudah diproses.', { show_alert: true });
-      else await ctx.reply('⚠️ Transaksi tidak ditemukan atau sudah diproses.');
+      else await ctx.reply(' Transaksi tidak ditemukan atau sudah diproses.');
       return;
     }
 
     if (Number(deposit.userId) !== Number(ctx.from.id)) {
       if (canAnswerCallback) await ctx.answerCbQuery('Transaksi ini bukan milik akun Anda.', { show_alert: true });
-      else await ctx.reply('⚠️ Transaksi ini bukan milik akun Anda.');
+      else await ctx.reply(' Transaksi ini bukan milik akun Anda.');
       return;
     }
 
     const provider = String(deposit.gatewayProvider || 'orderkuota').toLowerCase();
     if (provider === 'gopay') {
       if (canAnswerCallback) await ctx.answerCbQuery('Gateway GoPay dicek otomatis oleh sistem.', { show_alert: true });
-      else await ctx.reply('ℹ️ Gateway GoPay dicek otomatis oleh sistem.');
+      else await ctx.reply('ℹ Gateway GoPay dicek otomatis oleh sistem.');
       return;
     }
 
@@ -17613,14 +17613,14 @@ async function handleOrderKuotaPaymentCheck(ctx, uniqueCode) {
       const waitSeconds = Math.ceil(cooldownRemainingMs / 1000);
       const msg = `Tunggu ${waitSeconds} detik sebelum cek lagi.`;
       if (canAnswerCallback) await ctx.answerCbQuery(msg, { show_alert: true });
-      else await ctx.reply(`⏳ ${msg}`);
+      else await ctx.reply(` ${msg}`);
       return;
     }
 
     const expiresAt = deposit.expiresAt || (deposit.timestamp ? deposit.timestamp + getPaymentQrExpireMs(provider) : 0);
     if (expiresAt && now > expiresAt) {
       if (canAnswerCallback) await ctx.answerCbQuery('QRIS sudah expired.', { show_alert: true });
-      else await ctx.reply('⚠️ QRIS sudah expired.');
+      else await ctx.reply(' QRIS sudah expired.');
       await handleExpiredDeposit(deposit, uniqueCode);
       return;
     }
@@ -17629,7 +17629,7 @@ async function handleOrderKuotaPaymentCheck(ctx, uniqueCode) {
     if (currentTapCount >= Math.max(1, Number(ORDERKUOTA_CHECK_MAX_TAPS || 5))) {
       const msg = `Batas tekan tombol tercapai (${ORDERKUOTA_CHECK_MAX_TAPS}x) untuk transaksi ini.`;
       if (canAnswerCallback) await ctx.answerCbQuery(msg, { show_alert: true });
-      else await ctx.reply(`⚠️ ${msg}`);
+      else await ctx.reply(` ${msg}`);
       return;
     }
 
@@ -17644,7 +17644,7 @@ async function handleOrderKuotaPaymentCheck(ctx, uniqueCode) {
 
     if (canAnswerCallback) await ctx.answerCbQuery('Pengecekan pembayaran diaktifkan.', { show_alert: false });
     await ctx.reply(
-      '✅ *Pengecekan pembayaran sudah jalan.*\n\n' +
+      ' *Pengecekan pembayaran sudah jalan.*\n\n' +
       `Bot cek histori tiap ${Math.round(getOrderKuotaTriggeredPollIntervalMs() / 1000)} detik selama ${Math.round(getOrderKuotaTriggeredPollWindowMs() / 60000)} menit.\n` +
       `Jika saldo belum masuk setelah itu, tekan tombol *${ORDERKUOTA_CHECK_REPLY_TEXT}* lagi sebelum QRIS expired.`,
       { parse_mode: 'Markdown' }
@@ -17660,7 +17660,7 @@ async function handleOrderKuotaPaymentCheck(ctx, uniqueCode) {
       : 'Coba beberapa saat lagi.';
     logger.warn(`Gagal cek manual OrderKuota ${uniqueCode}: ${error.message}`);
     await ctx.reply(
-      '⚠️ *Belum bisa cek pembayaran sekarang.*\n\n' +
+      ' *Belum bisa cek pembayaran sekarang.*\n\n' +
       `${error.message}\n${waitText}`,
       { parse_mode: 'Markdown' }
     ).catch(() => {});
@@ -17796,7 +17796,7 @@ async function pollBankMutations() {
 // =================== FUNGSI BANTUAN ===================
 
 async function processSuccessfulPayment(deposit, uniqueCode) {
-  logger.info(`💰 Processing successful payment: ${uniqueCode}`);
+  logger.info(` Processing successful payment: ${uniqueCode}`);
   
   try {
     const bonusConfig = loadTopupBonusSetting();
@@ -17826,11 +17826,11 @@ async function processSuccessfulPayment(deposit, uniqueCode) {
       [totalCredit, deposit.userId],
       async (err) => {
         if (err) {
-          logger.error('❌ Error update saldo:', err.message);
+          logger.error(' Error update saldo:', err.message);
           return;
         }
         
-        logger.info(`✅ ${walletLabel} updated: +${totalCredit} for user ${deposit.userId} (bonus ${bonusAmount})`);
+        logger.info(` ${walletLabel} updated: +${totalCredit} for user ${deposit.userId} (bonus ${bonusAmount})`);
         
         // 2. SIMPAN TRANSAKSI
         db.run(
@@ -17838,9 +17838,9 @@ async function processSuccessfulPayment(deposit, uniqueCode) {
           [deposit.userId, deposit.originalAmount, 'deposit', deposit.referenceId, Date.now()],
           (err) => {
             if (err) {
-              logger.error('❌ Error save transaction:', err.message);
+              logger.error(' Error save transaction:', err.message);
             } else {
-              logger.info(`✅ Transaction saved: ${deposit.referenceId}`);
+              logger.info(` Transaction saved: ${deposit.referenceId}`);
             }
           }
         );
@@ -17850,7 +17850,7 @@ async function processSuccessfulPayment(deposit, uniqueCode) {
             'INSERT INTO transactions (user_id, amount, type, reference_id, timestamp) VALUES (?, ?, ?, ?, ?)',
             [deposit.userId, bonusAmount, 'deposit_bonus', bonusRef, Date.now()],
             (err) => {
-              if (err) logger.error('❌ Error save bonus transaction:', err.message);
+              if (err) logger.error(' Error save bonus transaction:', err.message);
             }
           );
         }
@@ -17877,16 +17877,16 @@ async function processSuccessfulPayment(deposit, uniqueCode) {
           try {
             await bot.telegram.sendMessage(
               deposit.userId,
-              `🎉 *PEMBAYARAN BERHASIL!*\n\n` +
-              `💰 Top-up: Rp ${deposit.originalAmount.toLocaleString('id-ID')}\n` +
-              (bonusAmount > 0 ? `🎁 Bonus: Rp ${bonusAmount.toLocaleString('id-ID')}\n` : '') +
-              `💵 Total bayar: Rp ${deposit.amount.toLocaleString('id-ID')}\n` +
-              `🏦 ${walletLabel} sekarang: Rp ${currentBalance.toLocaleString('id-ID')}\n\n` +
+              ` *PEMBAYARAN BERHASIL!*\n\n` +
+              ` Top-up: Rp ${deposit.originalAmount.toLocaleString('id-ID')}\n` +
+              (bonusAmount > 0 ? ` Bonus: Rp ${bonusAmount.toLocaleString('id-ID')}\n` : '') +
+              ` Total bayar: Rp ${deposit.amount.toLocaleString('id-ID')}\n` +
+              ` ${walletLabel} sekarang: Rp ${currentBalance.toLocaleString('id-ID')}\n\n` +
               (eligibleForReseller
-                ? '✅ Status reseller: aktif\n\n'
+                ? ' Status reseller: aktif\n\n'
                 : '') +
               `🆔 Referensi: \`${deposit.referenceId}\`\n` +
-              `⏰ ${new Date().toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta' })}`,
+              ` ${new Date().toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta' })}`,
               { parse_mode: 'Markdown', reply_markup: { remove_keyboard: true } }
             );
             
@@ -17904,11 +17904,11 @@ async function processSuccessfulPayment(deposit, uniqueCode) {
               try {
                 await bot.telegram.sendMessage(
                   GROUP_ID_NUM,
-                  `💰 *TOP-UP BERHASIL*\n\n` +
-                  `👤 User: \`${deposit.userId}\`\n` +
-                  `💸 Amount: Rp ${deposit.originalAmount.toLocaleString('id-ID')}\n` +
-                  (bonusAmount > 0 ? `🎁 Bonus: Rp ${bonusAmount.toLocaleString('id-ID')}\n` : '') +
-                  `🏦 New Balance: Rp ${currentBalance.toLocaleString('id-ID')}\n` +
+                  ` *TOP-UP BERHASIL*\n\n` +
+                  ` User: \`${deposit.userId}\`\n` +
+                  ` Amount: Rp ${deposit.originalAmount.toLocaleString('id-ID')}\n` +
+                  (bonusAmount > 0 ? ` Bonus: Rp ${bonusAmount.toLocaleString('id-ID')}\n` : '') +
+                  ` New Balance: Rp ${currentBalance.toLocaleString('id-ID')}\n` +
                   `🆔 Ref: ${deposit.referenceId.substring(0, 12)}...`,
                   { parse_mode: 'Markdown' }
                 );
@@ -17917,21 +17917,21 @@ async function processSuccessfulPayment(deposit, uniqueCode) {
               }
             }
             
-            logger.info(`✅ Payment completed for ${uniqueCode}`);
+            logger.info(` Payment completed for ${uniqueCode}`);
             
           } catch (notifyError) {
-            logger.error('❌ Notification error:', notifyError.message);
+            logger.error(' Notification error:', notifyError.message);
           }
         });
       }
     );
     
   } catch (error) {
-    logger.error(`❌ Payment processing error for ${uniqueCode}:`, error.message);
+    logger.error(` Payment processing error for ${uniqueCode}:`, error.message);
   }
 }
 
-// 🔧 SIMPLIFIKASI:
+//  SIMPLIFIKASI:
 async function handleExpiredDeposit(deposit, uniqueCode) {
   try {
     const expireMinutes = getPaymentQrExpireMinutes(deposit.gatewayProvider || 'orderkuota');
@@ -17945,10 +17945,10 @@ async function handleExpiredDeposit(deposit, uniqueCode) {
     // 2. KIRIM NOTIF EXPIRED
     await bot.telegram.sendMessage(
       deposit.userId,
-      '❌ *QR CODE EXPIRED*\n\n' +
+      ' *QR CODE EXPIRED*\n\n' +
       `QR Code sudah tidak berlaku (${expireMinutes} menit).\n` +
-      `💰 Nominal: Rp ${deposit.originalAmount.toLocaleString('id-ID')}\n` +
-      `💵 Total: Rp ${deposit.amount.toLocaleString('id-ID')}\n\n` +
+      ` Nominal: Rp ${deposit.originalAmount.toLocaleString('id-ID')}\n` +
+      ` Total: Rp ${deposit.amount.toLocaleString('id-ID')}\n\n` +
       `Silakan buat permintaan top-up baru.`+
       `Jika sudah terlanjur bayar diatas ${expireMinutes} menit dan saldo ga masuk hubungi admin lewat WA: ${getAdminWhatsappNumber() || '-'} atau Telegram: ${getAdminTelegramUsername()}`,
       { parse_mode: 'Markdown', reply_markup: { remove_keyboard: true } }
@@ -17958,10 +17958,10 @@ async function handleExpiredDeposit(deposit, uniqueCode) {
     delete global.pendingDeposits[uniqueCode];
     db.run('DELETE FROM pending_deposits WHERE unique_code = ?', [uniqueCode]);
     
-    logger.info(`🗑️ Expired cleaned: ${uniqueCode}`);
+    logger.info(` Expired cleaned: ${uniqueCode}`);
     
   } catch (error) {
-    logger.error(`❌ Error expired:`, error.message);
+    logger.error(` Error expired:`, error.message);
   }
 }
 
@@ -17976,7 +17976,7 @@ function cleanupStuckDeposits() {
     // Jika deposit dibuat > 5 menit yang lalu dan masih "generating"
     if (deposit.createdAt && deposit.createdAt < fiveMinutesAgo && 
         deposit.status === 'generating') {
-      logger.info(`🧹 Cleaning up stuck deposit: ${uniqueCode}`);
+      logger.info(` Cleaning up stuck deposit: ${uniqueCode}`);
       delete global.pendingDeposits[uniqueCode];
       
       // Hapus dari database juga
@@ -17998,8 +17998,8 @@ function keyboard_abc() {
     }));
     buttons.push(row);
   }
-  buttons.push([{ text: '🔙 Hapus', callback_data: 'delete' }, { text: '✅ Konfirmasi', callback_data: 'confirm' }]);
-  buttons.push([{ text: '🔙 Kembali ke Menu Utama', callback_data: 'send_main_menu' }]);
+  buttons.push([{ text: ' Hapus', callback_data: 'delete' }, { text: ' Konfirmasi', callback_data: 'confirm' }]);
+  buttons.push([{ text: ' Kembali ke Menu Utama', callback_data: 'send_main_menu' }]);
   return buttons;
 }
 
@@ -18009,13 +18009,13 @@ function keyboard_nomor() {
     [{ text: '4', callback_data: '4' }, { text: '5', callback_data: '5' }, { text: '6', callback_data: '6' }],
     [{ text: '7', callback_data: '7' }, { text: '8', callback_data: '8' }, { text: '9', callback_data: '9' }],
     [{ text: '0', callback_data: '0' }, { text: '00', callback_data: '00' }],
-    [{ text: '🔙 Hapus', callback_data: 'delete' }, { text: '✅ Konfirmasi', callback_data: 'confirm' }],
+    [{ text: ' Hapus', callback_data: 'delete' }, { text: ' Konfirmasi', callback_data: 'confirm' }],
     [
-      { text: '💰 5rb', callback_data: '5000' },
-      { text: '💰 10rb', callback_data: '10000' },
-      { text: '💰 20rb', callback_data: '20000' }
+      { text: ' 5rb', callback_data: '5000' },
+      { text: ' 10rb', callback_data: '10000' },
+      { text: ' 20rb', callback_data: '20000' }
     ],
-    [{ text: '🔙 Kembali ke Menu', callback_data: 'send_main_menu' }]
+    [{ text: ' Kembali ke Menu', callback_data: 'send_main_menu' }]
   ];
   return buttons;
 }
@@ -18042,8 +18042,8 @@ function keyboard_full() {
     }));
     buttons.push(row);
   }
-  buttons.push([{ text: '🔙 Hapus', callback_data: 'delete' }, { text: '✅ Konfirmasi', callback_data: 'confirm' }]);
-  buttons.push([{ text: '🔙 Kembali ke Menu Utama', callback_data: 'send_main_menu' }]);
+  buttons.push([{ text: ' Hapus', callback_data: 'delete' }, { text: ' Konfirmasi', callback_data: 'confirm' }]);
+  buttons.push([{ text: ' Kembali ke Menu Utama', callback_data: 'send_main_menu' }]);
   return buttons;
 }
 
@@ -18051,7 +18051,7 @@ async function getUserBalance(userId) {
   return new Promise((resolve, reject) => {
     db.get("SELECT saldo FROM users WHERE user_id = ?", [userId], function(err, row) {
         if (err) {
-        logger.error('⚠️ Kesalahan saat mengambil saldo user:', err.message);
+        logger.error(' Kesalahan saat mengambil saldo user:', err.message);
           reject(err);
       } else {
         resolve(row ? row.saldo : 0);
@@ -18060,13 +18060,13 @@ async function getUserBalance(userId) {
   });
 }
 
-// ✅ JALANKAN CLEANUP SETIAP 5 MENIT
+//  JALANKAN CLEANUP SETIAP 5 MENIT
 setInterval(cleanupOldDeposits, 5 * 60 * 1000);
 // Cleanup polling broadcast lama setiap 12 jam
 setInterval(cleanupOldBroadcastPolls, 12 * 60 * 60 * 1000);
 
 
-// ✅ FUNGSI CLEANUP PROCESSED TRANSACTIONS
+//  FUNGSI CLEANUP PROCESSED TRANSACTIONS
 function cleanupProcessedTransactions() {
   if (!global.processedTransactions || global.processedTransactions.size === 0) {
     return;
@@ -18079,7 +18079,7 @@ function cleanupProcessedTransactions() {
   global.processedTransactions.clear();
   
   if (oldSize > 0) {
-    logger.info(`🧹 Cleaned ${oldSize} processed transactions from cache`);
+    logger.info(` Cleaned ${oldSize} processed transactions from cache`);
   }
 }
 
@@ -18092,11 +18092,11 @@ function cleanupOldDeposits() {
   Object.keys(global.pendingDeposits).forEach(uniqueCode => {
     const deposit = global.pendingDeposits[uniqueCode];
     
-    // ✅ CEK: Deposit lebih dari 1 jam dan masih pending
+    //  CEK: Deposit lebih dari 1 jam dan masih pending
     if (deposit.createdAt && deposit.createdAt < oneHourAgo && deposit.status === 'pending') {
-      logger.info(`🧹 Cleaning up old deposit: ${uniqueCode}, Age: ${now - deposit.createdAt}ms`);
+      logger.info(` Cleaning up old deposit: ${uniqueCode}, Age: ${now - deposit.createdAt}ms`);
       
-      // ✅ HAPUS PESAN QR CODE JIKA ADA
+      //  HAPUS PESAN QR CODE JIKA ADA
       if (deposit.qrMessageId) {
         try {
           bot.telegram.deleteMessage(deposit.userId, deposit.qrMessageId).catch(() => {});
@@ -18105,11 +18105,11 @@ function cleanupOldDeposits() {
         }
       }
       
-      // ✅ KIRIM NOTIFIKASI KE USER (OPSIONAL)
+      //  KIRIM NOTIFIKASI KE USER (OPSIONAL)
       try {
         bot.telegram.sendMessage(
           deposit.userId,
-          '📝 *Pengingat*\n\n' +
+          ' *Pengingat*\n\n' +
           'Deposit Anda yang belum dibayar telah dihapus dari sistem.\n' +
           'Silakan buat deposit baru jika masih ingin top-up.',
           { parse_mode: 'Markdown' }
@@ -18121,7 +18121,7 @@ function cleanupOldDeposits() {
       delete global.pendingDeposits[uniqueCode];
       cleanedCount++;
       
-      // ✅ HAPUS DARI DATABASE
+      //  HAPUS DARI DATABASE
       db.run('DELETE FROM pending_deposits WHERE unique_code = ?', 
         [uniqueCode], 
         (err) => {
@@ -18132,7 +18132,7 @@ function cleanupOldDeposits() {
   });
   
   if (cleanedCount > 0) {
-    logger.info(`🧹 Cleaned ${cleanedCount} old pending deposits`);
+    logger.info(` Cleaned ${cleanedCount} old pending deposits`);
   }
 }
 
@@ -18160,7 +18160,7 @@ async function pollAkrabOrders() {
     const pendingOrders = await dbH.getPendingAkrabOrders(db, 24 * 60 * 60 * 1000);
     if (!pendingOrders.length) return;
 
-    logger.info(`🔄 Polling Akrab: ${pendingOrders.length} order pending`);
+    logger.info(` Polling Akrab: ${pendingOrders.length} order pending`);
 
     for (const order of pendingOrders) {
       try {
@@ -18178,10 +18178,10 @@ async function pollAkrabOrders() {
 
         if (newStatus && newStatus !== order.status) {
           await dbH.updateAkrabOrderStatus(db, order.reff_id, newStatus);
-          logger.info(`✅ Akrab order ${order.reff_id} → ${newStatus}`);
+          logger.info(` Akrab order ${order.reff_id} → ${newStatus}`);
 
           // Notifikasi ke user
-          const emoji = newStatus === 'success' ? '✅' : '❌';
+          const emoji = newStatus === 'success' ? '' : '';
           const label = newStatus === 'success' ? 'Berhasil' : 'Gagal';
           const msg =
             `${emoji} <b>Update Transaksi Akrab</b>\n\n` +
@@ -18193,11 +18193,11 @@ async function pollAkrabOrders() {
           await bot.telegram.sendMessage(order.user_id, msg, { parse_mode: 'HTML' }).catch(() => {});
         }
       } catch (orderErr) {
-        logger.warn(`⚠️ Gagal cek Akrab order ${order.reff_id}: ${orderErr && orderErr.message ? orderErr.message : orderErr}`);
+        logger.warn(` Gagal cek Akrab order ${order.reff_id}: ${orderErr && orderErr.message ? orderErr.message : orderErr}`);
       }
     }
   } catch (err) {
-    logger.error('❌ pollAkrabOrders error: ' + (err && err.message ? err.message : err));
+    logger.error(' pollAkrabOrders error: ' + (err && err.message ? err.message : err));
   }
 }
 
@@ -18208,7 +18208,7 @@ async function pollSmmOrders() {
     const pendingOrders = await dbH.getPendingSmmOrders(db, 24 * 60 * 60 * 1000);
     if (!pendingOrders.length) return;
 
-    logger.info(`🔄 Polling SMM: ${pendingOrders.length} order pending/processing`);
+    logger.info(` Polling SMM: ${pendingOrders.length} order pending/processing`);
 
     for (const order of pendingOrders) {
       try {
@@ -18226,11 +18226,11 @@ async function pollSmmOrders() {
 
         if (newStatus && newStatus !== order.status) {
           await dbH.updateSmmOrderStatus(db, order.order_id, newStatus);
-          logger.info(`✅ SMM order ${order.order_id} → ${newStatus}`);
+          logger.info(` SMM order ${order.order_id} → ${newStatus}`);
 
           // Hanya notifikasi jika final (completed/failed)
           if (newStatus === 'completed' || newStatus === 'failed') {
-            const emoji = newStatus === 'completed' ? '✅' : '❌';
+            const emoji = newStatus === 'completed' ? '' : '';
             const label = newStatus === 'completed' ? 'Selesai' : 'Gagal';
             const startCount = result?.start_count ? `\nMulai dari: ${result.start_count}` : '';
             const remains   = result?.remains    ? `\nSisa: ${result.remains}`             : '';
@@ -18245,11 +18245,11 @@ async function pollSmmOrders() {
           }
         }
       } catch (orderErr) {
-        logger.warn(`⚠️ Gagal cek SMM order ${order.order_id}: ${orderErr && orderErr.message ? orderErr.message : orderErr}`);
+        logger.warn(` Gagal cek SMM order ${order.order_id}: ${orderErr && orderErr.message ? orderErr.message : orderErr}`);
       }
     }
   } catch (err) {
-    logger.error('❌ pollSmmOrders error: ' + (err && err.message ? err.message : err));
+    logger.error(' pollSmmOrders error: ' + (err && err.message ? err.message : err));
   }
 }
 
@@ -18262,9 +18262,9 @@ setTimeout(pollAkrabOrders, 15000);
 setTimeout(pollSmmOrders, 20000);
 
 
-// ✅ FUNGSI UNTUK GENERATE RANDOM FEE YANG UNIK
+//  FUNGSI UNTUK GENERATE RANDOM FEE YANG UNIK
 async function generateUniqueFee(baseAmount, userId, existingDeposits) {
-  logger.info(`🎲 Generating unique fee for user ${userId}, base: ${baseAmount}`);
+  logger.info(` Generating unique fee for user ${userId}, base: ${baseAmount}`);
   
   // Ambil semua amount yang sedang pending (dalam 24 jam)
   const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
@@ -18311,7 +18311,7 @@ async function generateUniqueFee(baseAmount, userId, existingDeposits) {
             [finalAmount, twentyFourHoursAgo],
             (err, row) => {
               if (err) {
-                logger.error('❌ DB check error:', err.message);
+                logger.error(' DB check error:', err.message);
                 resolve(0);
               } else {
                 resolve(row ? row.count : 0);
@@ -18322,16 +18322,16 @@ async function generateUniqueFee(baseAmount, userId, existingDeposits) {
         
         if (dbCheck === 0) {
           foundUnique = true;
-          logger.info(`   ✅ Found unique amount after ${attempts} attempts`);
+          logger.info(`    Found unique amount after ${attempts} attempts`);
           break;
         } else {
-          logger.info(`   ❌ Amount ${finalAmount} exists in database, trying again...`);
+          logger.info(`    Amount ${finalAmount} exists in database, trying again...`);
         }
       } catch (dbError) {
-        logger.error('❌ Error checking database:', dbError.message);
+        logger.error(' Error checking database:', dbError.message);
       }
     } else {
-      logger.info(`   ❌ Amount ${finalAmount} exists in recent amounts, trying again...`);
+      logger.info(`    Amount ${finalAmount} exists in recent amounts, trying again...`);
     }
     
     // Tunggu sedikit sebelum coba lagi
@@ -18340,7 +18340,7 @@ async function generateUniqueFee(baseAmount, userId, existingDeposits) {
   
   // JIKA MASIH TIDAK UNIK SETELAH MAX ATTEMPTS
   if (!foundUnique) {
-    logger.warn(`⚠️ Could not find unique amount after ${maxAttempts} attempts`);
+    logger.warn(` Could not find unique amount after ${maxAttempts} attempts`);
     
     // Gunakan algoritma fallback yang garansi unik
     // Gabungkan timestamp + user ID untuk garansi keunikan
@@ -18351,7 +18351,7 @@ async function generateUniqueFee(baseAmount, userId, existingDeposits) {
     adminFee = Math.floor(Math.random() * 101) + 100;
     finalAmount = baseAmount + adminFee + microAdjustment;
     
-    logger.info(`   🔄 Using guaranteed unique amount: ${baseAmount} + ${adminFee} + ${microAdjustment} = ${finalAmount}`);
+    logger.info(`    Using guaranteed unique amount: ${baseAmount} + ${adminFee} + ${microAdjustment} = ${finalAmount}`);
     logger.info(`      Timestamp: ${timestampPart}, UserID: ${userIdPart}, Adjustment: ${microAdjustment}`);
   }
   
@@ -18370,16 +18370,16 @@ async function generateUniqueFee(baseAmount, userId, existingDeposits) {
   });
   
   if (finalCheck > 0) {
-    logger.error(`❌ CRITICAL: Generated amount ${finalAmount} STILL EXISTS in database!`);
+    logger.error(` CRITICAL: Generated amount ${finalAmount} STILL EXISTS in database!`);
     
     // EMERGENCY FALLBACK - PASTI UNIK
     const emergencyAdjustment = Date.now() % 1000;
     finalAmount = baseAmount + 150 + emergencyAdjustment; // 150 sebagai fixed fee
     
-    logger.info(`   🚨 EMERGENCY: Using emergency amount: ${finalAmount}`);
+    logger.info(`    EMERGENCY: Using emergency amount: ${finalAmount}`);
   }
   
-  logger.info(`   🎯 Final generated: ${baseAmount} + ${adminFee} = ${finalAmount} (unique: ${foundUnique})`);
+  logger.info(`    Final generated: ${baseAmount} + ${adminFee} = ${finalAmount} (unique: ${foundUnique})`);
   
   return {
     adminFee: adminFee,
@@ -18392,7 +18392,7 @@ async function generateUniqueFee(baseAmount, userId, existingDeposits) {
 
 //////
 
-// ✅ FUNGSI UNTUK GENERATE RANDOM FEE YANG BENAR-BENAR UNIK
+//  FUNGSI UNTUK GENERATE RANDOM FEE YANG BENAR-BENAR UNIK
 function generateUniqueFee(baseAmount, userId) {
   // Generate random fee 100-200
   let adminFee = Math.floor(Math.random() * 101) + 100;
@@ -18420,7 +18420,7 @@ function generateUniqueFee(baseAmount, userId) {
     const timestamp = Date.now() % 100; // 0-99
     adminFee = Math.floor(Math.random() * 101) + 100;
     finalAmount = baseAmount + adminFee + timestamp;
-    logger.warn(`⚠️ Using timestamp adjustment for unique amount`);
+    logger.warn(` Using timestamp adjustment for unique amount`);
   }
   
   return {
@@ -18430,7 +18430,7 @@ function generateUniqueFee(baseAmount, userId) {
   };
 }
 
-// ✅ FUNGSI UNTUK VALIDATE PAYMENT SECURITY
+//  FUNGSI UNTUK VALIDATE PAYMENT SECURITY
 function validatePaymentSecurity(deposit, matchingTransaction) {
   const securityChecks = [];
   
@@ -18472,9 +18472,9 @@ function validatePaymentSecurity(deposit, matchingTransaction) {
   });
   
   // Log all security checks
-  logger.info(`🔒 Payment Security Check:`);
+  logger.info(` Payment Security Check:`);
   securityChecks.forEach(check => {
-    const status = check.passed ? '✅' : '❌';
+    const status = check.passed ? '' : '';
     logger.info(`   ${status} ${check.name}: ${check.details}`);
   });
   
@@ -18486,29 +18486,29 @@ function validatePaymentSecurity(deposit, matchingTransaction) {
   return mandatoryChecks.every(c => c.passed);
 }
 
-// ✅ FUNGSI UNTUK SEND PAYMENT SUMMARY
+//  FUNGSI UNTUK SEND PAYMENT SUMMARY
 async function sendPaymentSummary(deposit, transactionDetails) {
   try {
     const summary = `
-📊 *PAYMENT SUMMARY*
+ *PAYMENT SUMMARY*
 
-👤 User: ${deposit.userId}
-💰 Base Amount: ${deposit.originalAmount}
-🎲 Admin Fee: ${deposit.amount - deposit.originalAmount}
-💵 Total: ${deposit.amount}
+ User: ${deposit.userId}
+ Base Amount: ${deposit.originalAmount}
+ Admin Fee: ${deposit.amount - deposit.originalAmount}
+ Total: ${deposit.amount}
 🆔 Reference: ${deposit.referenceId}
 
-⏰ Timing:
+ Timing:
 • QR Created: ${new Date(deposit.createdAt).toLocaleTimeString('id-ID')}
 • Payment Time: ${new Date(transactionDetails.timestamp).toLocaleTimeString('id-ID')}
 • Delay: ${Math.round((transactionDetails.timestamp - deposit.createdAt)/1000)}s
 
-🔍 Transaction Details:
+ Transaction Details:
 • Amount: ${transactionDetails.kredit}
 • Time: ${new Date(transactionDetails.timestamp).toLocaleString('id-ID')}
 • Description: ${transactionDetails.deskripsi?.substring(0, 50) || 'N/A'}...
 
-✅ Status: VERIFIED & COMPLETED
+ Status: VERIFIED & COMPLETED
     `.trim();
     
     // Kirim ke admin/log channel jika ada
@@ -18516,9 +18516,9 @@ async function sendPaymentSummary(deposit, transactionDetails) {
       await bot.telegram.sendMessage(GROUP_ID_NUM, summary, { parse_mode: 'Markdown' });
     }
     
-    logger.info(`📋 Payment summary logged`);
+    logger.info(` Payment summary logged`);
   } catch (error) {
-    logger.error('❌ Error sending payment summary:', error.message);
+    logger.error(' Error sending payment summary:', error.message);
   }
 }
 
@@ -18533,7 +18533,7 @@ async function recordAccountTransaction(userId, type, amount = 0, action = 'othe
           logger.error('Error recording account transaction:', err.message);
           reject(err);
         } else {
-          // ✅ TAMBAH: Notifikasi ke grup admin jika user adalah reseller
+          //  TAMBAH: Notifikasi ke grup admin jika user adalah reseller
           try {
             const isReseller = await isUserReseller(userId);
             if (isReseller && GROUP_ID_NUM && action === 'create') {
@@ -18558,11 +18558,11 @@ async function recordAccountTransaction(userId, type, amount = 0, action = 'othe
                       
                       bot.telegram.sendMessage(
                         GROUP_ID_NUM,
-                        `🛍️ *RESELLER TRANSAKSI*\n\n` +
-                        `👤 Reseller: ${username}\n` +
-                        `📦 Tipe: ${type.toUpperCase()}\n` +
-                        `📊 Total Bulan Ini: ${totalThisMonth} akun\n` +
-                        `⏰ ${now.toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta' })}`,
+                        ` *RESELLER TRANSAKSI*\n\n` +
+                        ` Reseller: ${username}\n` +
+                        ` Tipe: ${type.toUpperCase()}\n` +
+                        ` Total Bulan Ini: ${totalThisMonth} akun\n` +
+                        ` ${now.toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta' })}`,
                         { parse_mode: 'Markdown' }
                       ).catch(e => logger.error('Gagal kirim notif reseller:', e.message));
                     }).catch(() => {
@@ -18584,7 +18584,7 @@ async function recordAccountTransaction(userId, type, amount = 0, action = 'othe
 }
 
 // =============================
-// 📦 AUTO BACKUP DATABASE 24 JAM
+//  AUTO BACKUP DATABASE 24 JAM
 // =============================
 
 const schedule = require('node-schedule');
@@ -18640,7 +18640,7 @@ schedule.scheduleJob('reseller_monthly_warning', resellerWarningRule, async () =
 
       const remaining = Math.max(0, terms.min_topup - stats.topup);
       const message =
-        `⏰ *PENGINGAT SYARAT RESELLER*\n\n` +
+        ` *PENGINGAT SYARAT RESELLER*\n\n` +
         `Periode: ${periodLabel}\n` +
         `Top up saat ini: ${formatRupiah(stats.topup)}\n` +
         `Minimal top up: ${formatRupiah(terms.min_topup)}\n` +
@@ -18762,11 +18762,11 @@ async function sendAutoBackup(filePath, preferredAdminId = null) {
 
 // Tambahkan error handler untuk bot
 bot.catch((err, ctx) => {
-  logger.error(`❌ Bot error: ${err.message}`);
+  logger.error(` Bot error: ${err.message}`);
   // Jika ini callback query error, coba handle gracefully
   if (ctx && ctx.updateType === 'callback_query') {
     try {
-      ctx.answerCbQuery('⚠️ Terjadi kesalahan, coba lagi').catch(() => {});
+      ctx.answerCbQuery(' Terjadi kesalahan, coba lagi').catch(() => {});
     } catch (e) {
       // Ignore jika sudah expired
     }
@@ -18784,37 +18784,37 @@ app.get('/health', (req, res) => {
 });
 
 app.listen(port, async () => {
-  logger.info(`🚀 Server berjalan di port ${port}`);
+  logger.info(` Server berjalan di port ${port}`);
   
   // =================== VALIDASI AWAL ===================
   try {
-    logger.info('🔧 Memeriksa konfigurasi pembayaran...');
+    logger.info(' Memeriksa konfigurasi pembayaran...');
     
     reloadRuntimePaymentConfig();
     const readiness = getPaymentGatewayReadiness();
 
     if (!hasReadyEnabledPaymentGateway(readiness)) {
-      logger.error('❌ ❌ ❌ PERINGATAN KRITIS! ❌ ❌ ❌');
+      logger.error('   PERINGATAN KRITIS!   ');
       logger.error('Tidak ada payment gateway aktif yang siap: ' + formatMissingGatewayConfig(readiness));
       logger.error('User TIDAK BISA top-up otomatis!');
 
       // Kirim notifikasi ke admin
 // Di app.listen() - bagian yang kirim notifikasi ke admin:
 const adminMessage = 
-  `🚨 *PERINGATAN SISTEM PEMBAYARAN* 🚨\n\n` +
+  ` *PERINGATAN SISTEM PEMBAYARAN* \n\n` +
   `Tidak ada payment gateway aktif yang siap.\n\n` +
   `Detail:\n\`\`\`\n${formatMissingGatewayConfig(readiness)}\n\`\`\`\n\n` +
   `User TIDAK BISA top-up otomatis.\n\n` +
-  `📺 *Tutorial Ambil Credential:*\n` +
-  `[🎬 Video Tutorial](https://drive.google.com/file/d/1ugR_N5gEtcLx8TDsf7ecTFqYY3zrlHn-/view)\n\n` +
-  `📝 *Langkah Perbaikan:*\n` +
+  ` *Tutorial Ambil Credential:*\n` +
+  `[ Video Tutorial](https://drive.google.com/file/d/1ugR_N5gEtcLx8TDsf7ecTFqYY3zrlHn-/view)\n\n` +
+  ` *Langkah Perbaikan:*\n` +
   `1. Tonton video tutorial\n` +
   `2. Buka menu admin: *Setting Payment Gateway*\n` +
   `3. Isi Gateway URL, API Key, dan QRIS\n` +
   `4. Update username & token jika perlu\n` +
   `5. Restart: \`pm2 restart app\`\n\n` +
-  `🔧 Cek status: /checkpaymentconfig\n\n` +
-  `⚠️ Fitur top-up otomatis dinonaktifkan sementara.`;      
+  ` Cek status: /checkpaymentconfig\n\n` +
+  ` Fitur top-up otomatis dinonaktifkan sementara.`;      
       if (Array.isArray(adminIds)) {
         adminIds.forEach(adminId => {
           setTimeout(() => {
@@ -18826,10 +18826,10 @@ const adminMessage =
       }
       
     } else {
-      logger.info('✅ Validasi konfigurasi payment startup: OK');
+      logger.info(' Validasi konfigurasi payment startup: OK');
     }
   } catch (error) {
-    logger.error('❌ Gagal validasi payment config:', error.message);
+    logger.error(' Gagal validasi payment config:', error.message);
   }
   // =================== END VALIDASI ===================
   
@@ -18837,12 +18837,12 @@ const adminMessage =
   let isLaunchingBot = false;
   const startBot = async (retryCount = 0) => {
     if (isLaunchingBot) {
-      logger.warn('⚠️ startBot dipanggil saat proses launch masih berjalan, skip.');
+      logger.warn(' startBot dipanggil saat proses launch masih berjalan, skip.');
       return;
     }
     isLaunchingBot = true;
     try {
-      logger.info('🔄 Memulai bot...');
+      logger.info(' Memulai bot...');
       
       // Konfigurasi bot
       const botConfig = {
@@ -18851,15 +18851,15 @@ const adminMessage =
         handlerTimeout: 60000,
       };
       
-      logger.info('⏳ Menonaktifkan webhook (jika ada)...');
+      logger.info(' Menonaktifkan webhook (jika ada)...');
       await bot.telegram.deleteWebhook({ drop_pending_updates: true }).catch(() => {});
 
-      logger.info('⏳ Menjalankan bot.launch...');
+      logger.info(' Menjalankan bot.launch...');
       // Start bot
       await bot.launch(botConfig);
-      logger.info('✅ Bot berhasil dimulai (Polling Mode)');
+      logger.info(' Bot berhasil dimulai (Polling Mode)');
       
-      logger.info('⏳ Menjalankan setMyCommands...');
+      logger.info(' Menjalankan setMyCommands...');
       // Set commands
       await bot.telegram.setMyCommands([
         { command: 'start', description: 'Mulai bot dan tampilkan menu utama' },
@@ -18867,11 +18867,11 @@ const adminMessage =
         { command: 'checkpaymentconfig', description: 'Cek status konfigurasi pembayaran' },
         { command: 'syncservernow', description: 'Sinkronisasi total akun server' }
       ]);
-      logger.info('✅ Command menu berhasil diset.');
+      logger.info(' Command menu berhasil diset.');
       
       // Enable graceful stop
       const stopBot = () => {
-        logger.info('🛑 Stopping bot gracefully...');
+        logger.info(' Stopping bot gracefully...');
         bot.stop();
         process.exit(0);
       };
@@ -18888,7 +18888,7 @@ const adminMessage =
         responseDescription: error?.response?.description || null,
         stack: error?.stack || null,
       };
-      logger.error(`❌ Error saat memulai bot (Attempt ${retryCount + 1}): ${JSON.stringify(startupErr)}`);
+      logger.error(` Error saat memulai bot (Attempt ${retryCount + 1}): ${JSON.stringify(startupErr)}`);
 
       try {
         bot.stop('startup-retry');
@@ -18897,13 +18897,13 @@ const adminMessage =
       // Jika belum mencapai maksimal retry, coba lagi
       if (retryCount < 3) {
         const delay = Math.min(10000, 2000 * Math.pow(2, retryCount)); // Exponential backoff
-        logger.info(`⏳ Akan mencoba lagi dalam ${delay/1000} detik...`);
+        logger.info(` Akan mencoba lagi dalam ${delay/1000} detik...`);
         
         setTimeout(() => {
           startBot(retryCount + 1);
         }, delay);
       } else {
-        logger.error('❌ Gagal memulai bot setelah 3 kali percobaan. Bot dimatikan.');
+        logger.error(' Gagal memulai bot setelah 3 kali percobaan. Bot dimatikan.');
         process.exit(1);
       }
     } finally {
@@ -18916,7 +18916,7 @@ const adminMessage =
   
   // Jalankan cleanup awal
   setTimeout(() => {
-    logger.info('🚀 Running initial cleanup...');
+    logger.info(' Running initial cleanup...');
     cleanupOldDeposits();
     cleanupOldBroadcastPolls();
   }, 10000);

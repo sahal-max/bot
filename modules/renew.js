@@ -46,24 +46,24 @@ function execJson(command) {
 }
 
 function buildRenewMessage(title, s, withQuota = false) {
-  let msg = `✅ *${title}*
+  let msg = ` *${title}*
 
-🔄 Akun berhasil diperpanjang
+ Akun berhasil diperpanjang
 ────────────────────────────
-👤 Username    : \`${s.username}\`
+ Username    : \`${s.username}\`
 `;
 
   if (withQuota) {
-    msg += `📦 Quota       : \`${s.quota === '0' ? 'Unlimited' : s.quota} GB\`
+    msg += ` Quota       : \`${s.quota === '0' ? 'Unlimited' : s.quota} GB\`
 `;
   }
 
-  msg += `📆 Masa Aktif  :
-🕒 Dari         : \`${s.from || '-'}\`
-🕒 Sampai       : \`${s.to || s.exp || '-'}\`
+  msg += ` Masa Aktif  :
+ Dari         : \`${s.from || '-'}\`
+ Sampai       : \`${s.to || s.exp || '-'}\`
 ────────────────────────────
 
-✨ Terima kasih telah memperpanjang layanan kami.
+ Terima kasih telah memperpanjang layanan kami.
 © Telegram Bots - 2025`;
 
   return msg;
@@ -71,18 +71,18 @@ function buildRenewMessage(title, s, withQuota = false) {
 
 async function renewByEndpoint({ username, exp, quota = 0, limitip = '', password = '', serverId, endpoint, title, withQuota = false }) {
   if (!isValidUsername(username)) {
-    return '❌ Username tidak valid. Gunakan huruf/angka tanpa spasi.';
+    return ' Username tidak valid. Gunakan huruf/angka tanpa spasi.';
   }
 
   const server = await getServer(serverId);
   if (!server) {
-    return '❌ Server tidak ditemukan. Silakan coba lagi.';
+    return ' Server tidak ditemukan. Silakan coba lagi.';
   }
 
   const baseUrl = normalizeApiBase(server.domain);
   const authToken = normalizeAuthToken(server.auth);
-  if (!baseUrl) return '❌ Domain server tidak valid.';
-  if (!authToken) return '❌ Auth token server kosong/tidak valid.';
+  if (!baseUrl) return ' Domain server tidak valid.';
+  if (!authToken) return ' Auth token server kosong/tidak valid.';
   const webURL = `${baseUrl}${endpoint}/${username}/${exp}`;
   const requestBody = { kuota: Number(quota || 0) };
   const limitValue = String(limitip ?? '').trim();
@@ -101,13 +101,13 @@ async function renewByEndpoint({ username, exp, quota = 0, limitip = '', passwor
 
   const result = await execJson(curlCommand);
   if (!result.ok) {
-    return '❌ ' + result.error;
+    return ' ' + result.error;
   }
 
   const d = result.data;
   if (d?.meta?.code !== 200 || !d.data) {
     const errMsg = d?.message || d?.meta?.message || JSON.stringify(d, null, 2);
-    return `❌ Respons error:\n${errMsg}`;
+    return ` Respons error:\n${errMsg}`;
   }
 
   return buildRenewMessage(title, d.data, withQuota);
@@ -182,40 +182,40 @@ async function renewtrojan(username, exp, quota, limitip, serverId) {
 
 async function renewshadowsocks(username, exp, quota, limitip, serverId) {
   if (!isValidUsername(username)) {
-    return '❌ Username tidak valid. Gunakan huruf/angka tanpa spasi.';
+    return ' Username tidak valid. Gunakan huruf/angka tanpa spasi.';
   }
 
   const server = await getServer(serverId);
   if (!server) {
-    return '❌ Server tidak ditemukan. Silakan coba lagi.';
+    return ' Server tidak ditemukan. Silakan coba lagi.';
   }
 
   const baseUrl = normalizeApiBase(server.domain);
   const authToken = normalizeAuthToken(server.auth);
-  if (!baseUrl) return '❌ Domain server tidak valid.';
-  if (!authToken) return '❌ Auth token server kosong/tidak valid.';
+  if (!baseUrl) return ' Domain server tidak valid.';
+  if (!authToken) return ' Auth token server kosong/tidak valid.';
   const param = `:5888/renewshadowsocks?user=${username}&exp=${exp}&quota=${quota}&iplimit=${limitip}&auth=${authToken}`;
   const url = `${baseUrl}${param}`;
 
   try {
     const response = await axios.get(url);
     if (response.data?.status !== 'success') {
-      return `❌ Terjadi kesalahan: ${response.data?.message || 'unknown'}`;
+      return ` Terjadi kesalahan: ${response.data?.message || 'unknown'}`;
     }
 
     const data = response.data.data || {};
-    return `✅ *RENEW SHADOWSOCKS PREMIUM*
+    return ` *RENEW SHADOWSOCKS PREMIUM*
 
-🔹 Informasi Akun
+ Informasi Akun
 ────────────────────────────
-👤 Username     : \`${username}\`
-📆 Kadaluarsa   : \`${data.exp || '-'}\`
-📦 Quota        : \`${data.quota || '-'}\`
-📶 Batas IP     : \`${data.limitip || limitip} IP\`
+ Username     : \`${username}\`
+ Kadaluarsa   : \`${data.exp || '-'}\`
+ Quota        : \`${data.quota || '-'}\`
+ Batas IP     : \`${data.limitip || limitip} IP\`
 ────────────────────────────
-✅ Akun ${username} berhasil diperbarui.`;
+ Akun ${username} berhasil diperbarui.`;
   } catch (error) {
-    return '❌ Terjadi kesalahan saat memperbarui Shadowsocks. Silakan coba lagi nanti.';
+    return ' Terjadi kesalahan saat memperbarui Shadowsocks. Silakan coba lagi nanti.';
   }
 }
 
