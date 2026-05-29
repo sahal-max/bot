@@ -11113,26 +11113,33 @@ bot.action(/^ppob_kat_(.+)$/, async (ctx) => {
   if (!products.length) {
     await ctx.editMessageText('Tidak ada produk pada kategori ini.', {
       parse_mode: 'HTML',
-      reply_markup: { inline_keyboard: [[{ text: ' Kembali', callback_data: 'ppob_list_produk' }]] },
+      reply_markup: { inline_keyboard: [[{ text: 'Kembali', callback_data: 'ppob_list_produk' }]] },
     });
     return;
   }
 
+  const markupGlobal = await dbH.getMarkup(db, 'global', 'ppob', null).catch(() => null);
+  const markupReseller = await dbH.getMarkup(db, 'reseller', 'ppob', userId).catch(() => null);
+
   const keyboard = products.slice(0, 30).map((p) => {
-    const code = p.code || p.product_code;
-    const name = p.name || p.product_name || code;
-    const price = Number(p.price || p.harga || 0);
+    const code = p.code || p.product_code || p.kode_produk;
+    const name = p.name || p.product_name || p.nama_produk || code;
+    const base = Number(p.price || p.harga || p.harga_final || 0);
+    const finalPrice = wallet.getEffectivePrice(base, markupGlobal, markupReseller);
+    const habis = Number(p.kosong || 0) === 1 || Number(p.gangguan || 0) === 1;
+    const labelHarga = base > 0 ? ' - Rp ' + finalPrice.toLocaleString('id-ID') : '';
+    const labelStok = habis ? ' [KOSONG]' : '';
     return [{
-      text: name + ' — Rp ' + price.toLocaleString('id-ID'),
+      text: name + labelHarga + labelStok,
       callback_data: 'ppob_beli_' + code,
     }];
   });
-  keyboard.push([{ text: ' Kembali', callback_data: 'ppob_list_produk' }]);
+  keyboard.push([{ text: 'Kembali', callback_data: 'ppob_list_produk' }]);
 
-  await ctx.editMessageText(' <b>Produk: ' + category + '</b>\n\nPilih produk:', {
-    parse_mode: 'HTML',
-    reply_markup: { inline_keyboard: keyboard },
-  });
+  await ctx.editMessageText(
+    '<blockquote>Produk PPOB: ' + category + '\n\nPilih produk. Tanda <b>[KOSONG]</b> berarti stok habis.</blockquote>',
+    { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } }
+  );
 });
 
 bot.action('ppob_pilih_kategori', async (ctx) => {
@@ -11146,22 +11153,44 @@ bot.action(/^ppob_beli_(.+)$/, async (ctx) => {
   const productCode = ctx.match[1];
   const state = userState[userId] || {};
   const products = state.ppobProducts || [];
-  const product = products.find((p) => p.code === productCode || p.product_code === productCode);
+  const product = products.find((p) =>
+    p.code === productCode || p.product_code === productCode || p.kode_produk === productCode
+  );
+
+  // Cek stok kosong / gangguan
+  if (product && (Number(product.kosong || 0) === 1 || Number(product.gangguan || 0) === 1)) {
+    await ctx.editMessageText(
+      '<blockquote>PRODUK KOSONG\n\nProduk ini sedang habis atau gangguan. Silakan pilih produk lain.</blockquote>',
+      {
+        parse_mode: 'HTML',
+        reply_markup: { inline_keyboard: [[{ text: 'Kembali', callback_data: 'ppob_list_produk' }]] },
+      }
+    );
+    return;
+  }
+
+  const markupGlobal = await dbH.getMarkup(db, 'global', 'ppob', null).catch(() => null);
+  const markupReseller = await dbH.getMarkup(db, 'reseller', 'ppob', userId).catch(() => null);
+  const basePrice = product ? Number(product.price || product.harga || product.harga_final || 0) : 0;
+  const finalPrice = wallet.getEffectivePrice(basePrice, markupGlobal, markupReseller);
 
   userState[userId] = Object.assign({}, state, {
     step: 'ppob_input_target_' + productCode,
     ppobProduct: product,
+    ppobFinalPrice: finalPrice,
   });
 
-  const harga = product ? 'Rp ' + Number(product.price || product.harga || 0).toLocaleString('id-ID') : '-';
+  const namaProduk = product ? (product.name || product.product_name || product.nama_produk || productCode) : productCode;
+  const harga = 'Rp ' + finalPrice.toLocaleString('id-ID');
+
   await ctx.editMessageText(
-    ' <b>Beli Produk PPOB</b>\n\n' +
-    'Produk: <b>' + (product ? (product.name || product.product_name || productCode) : productCode) + '</b>\n' +
-    'Harga: <b>' + harga + '</b>\n\n' +
-    'Masukkan nomor/ID tujuan:',
+    '<blockquote>BELI PRODUK PPOB\n\n' +
+    'Produk: <b>' + namaProduk + '</b>\n' +
+    'Harga : <b>' + harga + '</b>\n\n' +
+    'Masukkan nomor/ID tujuan:</blockquote>',
     {
       parse_mode: 'HTML',
-      reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'menu_ppob' }]] },
+      reply_markup: { inline_keyboard: [[{ text: 'Batal', callback_data: 'menu_ppob' }]] },
     }
   );
 });
@@ -12207,11 +12236,14 @@ bot.on('text', async (ctx) => {
           return;
         }
         const product = ppobState.ppobProduct;
-        const baseAmount = product ? Number(product.price || product.harga || 0) : 0;
+        const baseAmount = product ? Number(product.price || product.harga || product.harga_final || 0) : 0;
 
+        // Pakai harga yang sudah dihitung saat klik beli (kalau ada), agar konsisten
         const markupGlobal = await dbH.getMarkup(db, 'global', 'ppob', null).catch(() => null);
         const markupReseller = await dbH.getMarkup(db, 'reseller', 'ppob', userId).catch(() => null);
-        const finalAmount = wallet.getEffectivePrice(baseAmount, markupGlobal, markupReseller);
+        const finalAmount = ppobState.ppobFinalPrice
+          ? Number(ppobState.ppobFinalPrice)
+          : wallet.getEffectivePrice(baseAmount, markupGlobal, markupReseller);
 
         userState[ctx.chat.id] = Object.assign({}, ppobState, {
           step: null,
