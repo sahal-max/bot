@@ -50,39 +50,68 @@ async function getHidepulsaToken(db, userId) {
 }
 
 // ── Markup Config ────────────────────────────────────────
+// IMPORTANT: getMarkup mengembalikan EXACTLY markup pada scope yang diminta.
+// Tidak ada fallback otomatis ke scope global. Pemanggil yang bertanggung jawab
+// mengambil global dan reseller terpisah lalu menggabungkannya via getEffectivePrice.
 async function getMarkup(db, scope, service, userId = null) {
-  if (scope === 'reseller' && userId) {
-    const row = await dbGet(db,
+  if (scope === 'reseller') {
+    if (!userId) return null;
+    return await dbGet(db,
       'SELECT * FROM markup_config WHERE scope = ? AND service = ? AND user_id = ?',
-      [scope, service, userId]
-    );
-    if (row) return row;
+      ['reseller', service, userId]
+    ) || null;
   }
+  // scope = 'global' (atau lainnya)
   return await dbGet(db,
     'SELECT * FROM markup_config WHERE scope = ? AND service = ? AND (user_id IS NULL OR user_id = 0)',
     ['global', service]
-  );
+  ) || null;
 }
+
 async function setMarkup(db, scope, service, userId, type, value) {
-  const existing = await dbGet(db,
-    'SELECT id FROM markup_config WHERE scope = ? AND service = ? AND (user_id = ? OR (user_id IS NULL AND ? IS NULL))',
-    [scope, service, userId, userId]
-  );
+  // Untuk scope global, paksa user_id = NULL agar konsisten dengan getMarkup.
+  const targetUserId = scope === 'global' ? null : userId;
+
+  let existing;
+  if (targetUserId === null || targetUserId === undefined) {
+    existing = await dbGet(db,
+      'SELECT id FROM markup_config WHERE scope = ? AND service = ? AND (user_id IS NULL OR user_id = 0)',
+      [scope, service]
+    );
+  } else {
+    existing = await dbGet(db,
+      'SELECT id FROM markup_config WHERE scope = ? AND service = ? AND user_id = ?',
+      [scope, service, targetUserId]
+    );
+  }
+
   if (existing) {
     await dbRun(db, 'UPDATE markup_config SET type = ?, value = ? WHERE id = ?', [type, value, existing.id]);
   } else {
     await dbRun(db, 'INSERT INTO markup_config (scope, service, user_id, type, value) VALUES (?,?,?,?,?)',
-      [scope, service, userId, type, value]);
+      [scope, service, targetUserId, type, value]);
   }
 }
+
 async function deleteMarkup(db, scope, service, userId = null) {
-  await dbRun(db, 'DELETE FROM markup_config WHERE scope = ? AND service = ? AND user_id IS ?',
-    [scope, service, userId]);
+  const targetUserId = scope === 'global' ? null : userId;
+  if (targetUserId === null || targetUserId === undefined) {
+    await dbRun(db,
+      'DELETE FROM markup_config WHERE scope = ? AND service = ? AND (user_id IS NULL OR user_id = 0)',
+      [scope, service]);
+  } else {
+    await dbRun(db,
+      'DELETE FROM markup_config WHERE scope = ? AND service = ? AND user_id = ?',
+      [scope, service, targetUserId]);
+  }
 }
+
 function applyMarkup(basePrice, markupRow) {
   if (!markupRow) return basePrice;
-  if (markupRow.type === 'pct') return Math.ceil(basePrice * (1 + markupRow.value / 100));
-  if (markupRow.type === 'flat') return basePrice + markupRow.value;
+  const value = Number(markupRow.value);
+  if (!Number.isFinite(value) || value <= 0) return basePrice;
+  if (markupRow.type === 'pct') return Math.ceil(Number(basePrice) * (1 + value / 100));
+  if (markupRow.type === 'flat') return Number(basePrice) + value;
   return basePrice;
 }
 

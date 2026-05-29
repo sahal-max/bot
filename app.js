@@ -11411,6 +11411,7 @@ bot.action(/^smm_kat_(.+)$/, async (ctx) => {
   const state = userState[userId] || {};
   const services = state.smmServices || [];
   const markupGlobal = await dbH.getMarkup(db, 'global', 'smm', null).catch(() => null);
+  const markupReseller = await dbH.getMarkup(db, 'reseller', 'smm', userId).catch(() => null);
 
   const catServices = services.filter((s) => (s.category || 'Lainnya') === cat).slice(0, 20);
   if (!catServices.length) {
@@ -11423,7 +11424,8 @@ bot.action(/^smm_kat_(.+)$/, async (ctx) => {
 
   const keyboard = catServices.map((s) => {
     const basePrice = parseFloat(s.rate || s.price || 0);
-    const finalPrice = Math.ceil(dbH.applyMarkup(Math.ceil(basePrice * 1000), markupGlobal) / 1000);
+    // Harga FayuPedia adalah per 1 unit, kita tampilkan per 1000 unit (umum di SMM)
+    const finalPrice = wallet.getEffectivePrice(Math.ceil(basePrice * 1000), markupGlobal, markupReseller);
     const name = String(s.name || s.service || '').slice(0, 35);
     return [{
       text: name + ' — Rp' + finalPrice.toLocaleString('id-ID') + '/1000',
@@ -11446,11 +11448,12 @@ bot.action(/^smm_order_(.+)$/, async (ctx) => {
   const services = state.smmServices || [];
   const service = services.find((s) => String(s.service || s.id) === serviceId);
   const markupGlobal = await dbH.getMarkup(db, 'global', 'smm', null).catch(() => null);
+  const markupReseller = await dbH.getMarkup(db, 'reseller', 'smm', userId).catch(() => null);
 
   const basePrice = parseFloat(service ? (service.rate || service.price || 0) : 0);
   const min = parseInt(service ? (service.min || 100) : 100);
   const max = parseInt(service ? (service.max || 100000) : 100000);
-  const finalPricePer1000 = dbH.applyMarkup(Math.ceil(basePrice * 1000), markupGlobal);
+  const finalPricePer1000 = wallet.getEffectivePrice(Math.ceil(basePrice * 1000), markupGlobal, markupReseller);
 
   userState[userId] = Object.assign({}, state, {
     step: 'smm_input_target_' + serviceId,
