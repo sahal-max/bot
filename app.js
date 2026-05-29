@@ -3943,7 +3943,7 @@ async function sendMainMenu(ctx) {
 • 👤 <b>Nama</b>    : ${userName}
 • 🆔 <b>ID</b>      : <code>${userId}</code>
 • 💰 <b>Saldo VPN</b>  : <code>Rp ${Number(saldo || 0).toLocaleString('id-ID')}</code>
-• 💳 <b>Saldo Akrab</b>: <code>Rp ${Number(saldoAkrab || 0).toLocaleString('id-ID')}</code>
+• 💳 <b>Saldo Tembak Kuota</b>: <code>Rp ${Number(saldoAkrab || 0).toLocaleString('id-ID')}</code>
 • 🏷️ <b>Status</b>  : ${statusReseller}
 <code>┗━━━━━━━━━━━━━━━━━━━━┛</code>
 
@@ -4011,7 +4011,7 @@ async function sendMainMenu(ctx) {
     const topupIndex = keyboard.findIndex(row =>
       row.some(btn => btn.callback_data === 'topup_saldo')
     );
-    const autoRow = [{ text: '💰 TopUp Saldo Otomatis', callback_data: 'topup_saldo' }];
+    const autoRow = [{ text: '💰 TopUp Saldo VPN Otomatis', callback_data: 'topup_saldo' }];
     if (topupIndex === -1) {
       keyboard.splice(4, 0, autoRow);
     }
@@ -4021,11 +4021,29 @@ async function sendMainMenu(ctx) {
     const topupIndex = keyboard.findIndex(row =>
       row.some(btn => btn.callback_data === 'topup_saldo')
     );
-    const manualRow = [{ text: '💰 TopUp Saldo Manual via (QRIS)', callback_data: 'topup_manual' }];
+    const manualRow = [{ text: '💰 TopUp Saldo VPN Manual via (QRIS)', callback_data: 'topup_manual' }];
     if (topupIndex === -1) {
       keyboard.push(manualRow);
     } else {
       keyboard.splice(topupIndex + 1, 0, manualRow);
+    }
+  }
+
+  // Tombol Top Up Saldo Tembak Kuota (wallet Akrab) — untuk PPOB + Akrab & Circle
+  {
+    const tembakIndex = keyboard.findIndex(row =>
+      row.some(btn => btn.callback_data === 'topup_akrab')
+    );
+    if (tembakIndex === -1) {
+      const refIndex = keyboard.findIndex(row =>
+        row.some(btn => btn.callback_data === 'topup_manual' || btn.callback_data === 'topup_saldo')
+      );
+      const tembakRow = [{ text: '💳 TopUp Saldo Tembak Kuota', callback_data: 'topup_akrab' }];
+      if (refIndex === -1) {
+        keyboard.push(tembakRow);
+      } else {
+        keyboard.splice(refIndex + 1, 0, tembakRow);
+      }
     }
   }
 
