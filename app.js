@@ -11739,14 +11739,31 @@ bot.action(/^akrab_grup_(v1|v2|circle)$/, async (ctx) => {
 
   try {
     const products = await akrabModule.getProducts(KHFY_ENDPOINT, KHFY_API_KEY);
+
+    // Ambil data stok juga (paralel) agar penandaan KOSONG sinkron dengan menu Cek Stok
+    let stokMap = {};
+    try {
+      const stokResp = await akrabModule.cekStokAkrab(KHFY_ENDPOINT);
+      const stokItems = Array.isArray(stokResp) ? stokResp : (stokResp && Array.isArray(stokResp.data)) ? stokResp.data : [];
+      stokItems.forEach((it) => {
+        const tipe = String(it.type || it.kode || '').toUpperCase();
+        if (tipe) {
+          stokMap[tipe] = Number(it.sisa_slot ?? it.stok ?? it.stock ?? 0);
+        }
+      });
+    } catch (_) { /* stok endpoint optional */ }
+
     const filtered = (products || []).filter((p) => getAkrabGroup(p.kode_provider) === grup);
 
-    userState[userId] = Object.assign({}, userState[userId], { akrabProducts: products });
+    userState[userId] = Object.assign({}, userState[userId], {
+      akrabProducts: products,
+      akrabStokMap: stokMap,
+    });
 
     if (!filtered.length) {
       await ctx.editMessageText(
-        ' <b>' + grupLabel + '</b>\n\nBelum ada produk pada kategori ini.',
-        { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: ' Kembali', callback_data: 'menu_akrab' }]] } }
+        '<blockquote>' + grupLabel + '\n\nBelum ada produk pada kategori ini.</blockquote>',
+        { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: 'Kembali', callback_data: 'menu_akrab' }]] } }
       );
       return;
     }
@@ -11754,29 +11771,44 @@ bot.action(/^akrab_grup_(v1|v2|circle)$/, async (ctx) => {
     const markupGlobal = await dbH.getMarkup(db, 'global', 'akrab', null).catch(() => null);
     const markupReseller = await dbH.getMarkup(db, 'reseller', 'akrab', userId).catch(() => null);
 
+    // Helper: cek apakah produk kosong berdasarkan field 'kosong' produk + sisa_slot di stokMap
+    const isProdukKosong = (p) => {
+      if (Number(p.kosong || 0) === 1) return true;
+      if (Number(p.gangguan || 0) === 1) return true;
+      // Cek sisa slot via mapping kode_produk → tipe (XLA14, XLA32, dll)
+      const code = String(p.kode_produk || p.code || '').toUpperCase();
+      const provider = String(p.kode_provider || '').toUpperCase();
+      // Beberapa kode produk = nama tipe stok (XLA*, XDA*, dll)
+      if (stokMap[code] !== undefined && stokMap[code] === 0) return true;
+      if (stokMap[provider] !== undefined && stokMap[provider] === 0) return true;
+      return false;
+    };
+
     const keyboard = filtered.slice(0, 40).map((p) => {
       const code = p.kode_produk || p.code || p.produk;
       const name = p.nama_produk || p.name || p.nama || code;
       const base = Number(p.harga_final || p.price || p.harga || 0);
-      const habis = Number(p.kosong || 0) === 1;
+      const habis = isProdukKosong(p);
       const finalPrice = wallet.getEffectivePrice(base, markupGlobal, markupReseller);
-      const labelHarga = base > 0 ? ' — Rp ' + finalPrice.toLocaleString('id-ID') : '';
+      const labelHarga = base > 0 ? ' - Rp ' + finalPrice.toLocaleString('id-ID') : '';
+      const labelStok = habis ? ' [KOSONG]' : '';
       return [{
-        text: (habis ? ' ' : '') + name + labelHarga,
+        text: name + labelHarga + labelStok,
         callback_data: 'akrab_beli_' + code,
       }];
     });
-    keyboard.push([{ text: ' Kembali', callback_data: 'menu_akrab' }]);
+    keyboard.push([{ text: 'Kembali', callback_data: 'menu_akrab' }]);
 
     await ctx.editMessageText(
-      ' <b>' + grupLabel + '</b>\n\nPilih produk ( = kosong):',
+      '<blockquote>' + grupLabel + '\n\n' +
+      'Pilih produk. Tanda <b>[KOSONG]</b> berarti stok habis.</blockquote>',
       { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } }
     );
   } catch (err) {
     logger.error('akrab_grup_' + grup + ': ' + (err && err.message ? err.message : err));
-    await ctx.editMessageText(' Gagal memuat produk ' + grupLabel + '.', {
+    await ctx.editMessageText('Gagal memuat produk ' + grupLabel + '.', {
       parse_mode: 'HTML',
-      reply_markup: { inline_keyboard: [[{ text: ' Kembali', callback_data: 'menu_akrab' }]] },
+      reply_markup: { inline_keyboard: [[{ text: 'Kembali', callback_data: 'menu_akrab' }]] },
     });
   }
 });
@@ -11868,17 +11900,29 @@ bot.action(/^akrab_beli_(.+)$/, async (ctx) => {
   const produkCode = ctx.match[1];
   const state = userState[userId] || {};
   const products = state.akrabProducts || [];
+  const stokMap = state.akrabStokMap || {};
   const product = products.find((p) =>
     p.kode_produk === produkCode || p.code === produkCode || p.produk === produkCode
   );
 
-  // Cek stok produk
-  if (product && Number(product.kosong || 0) === 1) {
+  // Cek stok produk: gabungan field kosong/gangguan + sisa_slot dari endpoint stok
+  const isKosong = (() => {
+    if (!product) return false;
+    if (Number(product.kosong || 0) === 1) return true;
+    if (Number(product.gangguan || 0) === 1) return true;
+    const code = String(product.kode_produk || product.code || '').toUpperCase();
+    const provider = String(product.kode_provider || '').toUpperCase();
+    if (stokMap[code] !== undefined && stokMap[code] === 0) return true;
+    if (stokMap[provider] !== undefined && stokMap[provider] === 0) return true;
+    return false;
+  })();
+
+  if (isKosong) {
     await ctx.editMessageText(
-      ' <b>Produk Kosong</b>\n\nProduk ini sedang habis/tidak tersedia. Silakan pilih produk lain.',
+      '<blockquote>PRODUK KOSONG\n\nProduk ini sedang habis/tidak tersedia. Silakan pilih produk lain.</blockquote>',
       {
         parse_mode: 'HTML',
-        reply_markup: { inline_keyboard: [[{ text: ' Kembali', callback_data: 'akrab_list_produk' }]] },
+        reply_markup: { inline_keyboard: [[{ text: 'Kembali', callback_data: 'menu_akrab' }]] },
       }
     );
     return;
@@ -11942,9 +11986,9 @@ bot.action('akrab_cek_stock', async (ctx) => {
         const nama = it.nama || it.name || it.type || '-';
         const tipe = it.type || it.kode || '';
         const slot = Number(it.sisa_slot ?? it.stok ?? it.stock ?? 0);
-        const status = slot > 0 ? '' : '';
-        const tipeText = tipe ? ` <code>${tipe}</code>` : '';
-        return `${status} <b>${nama}</b>${tipeText} — sisa slot: <b>${slot}</b>`;
+        const status = slot > 0 ? '[OK]' : '[KOSONG]';
+        const tipeText = tipe ? ' <code>' + tipe + '</code>' : '';
+        return status + ' <b>' + nama + '</b>' + tipeText + ' - sisa slot: <b>' + slot + '</b>';
       }).join('\n');
     } else {
       // Fallback jika format tak dikenali
@@ -11952,17 +11996,17 @@ bot.action('akrab_cek_stock', async (ctx) => {
     }
 
     await ctx.editMessageText(
-      ' <b>Stok Akrab XL/Axis</b>\n\n' + body + '\n\n = tersedia ·  = habis',
+      '<blockquote>STOK AKRAB XL/AXIS\n\n' + body + '\n\n[OK] = tersedia, [KOSONG] = habis</blockquote>',
       {
         parse_mode: 'HTML',
-        reply_markup: { inline_keyboard: [[{ text: ' Kembali', callback_data: 'menu_akrab' }]] },
+        reply_markup: { inline_keyboard: [[{ text: 'Kembali', callback_data: 'menu_akrab' }]] },
       }
     );
   } catch (err) {
     logger.error('akrab_cek_stock: ' + (err && err.message ? err.message : err));
-    await ctx.editMessageText(' Gagal cek stok. Coba lagi nanti.', {
+    await ctx.editMessageText('Gagal cek stok. Coba lagi nanti.', {
       parse_mode: 'HTML',
-      reply_markup: { inline_keyboard: [[{ text: ' Kembali', callback_data: 'menu_akrab' }]] },
+      reply_markup: { inline_keyboard: [[{ text: 'Kembali', callback_data: 'menu_akrab' }]] },
     });
   }
 });
