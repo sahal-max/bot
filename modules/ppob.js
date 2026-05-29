@@ -1,53 +1,51 @@
 'use strict';
 const axios = require('axios');
-const dbH = require('./db_helpers');
 
-async function getOrRefreshToken(db, userId, BASE_URL) {
-  const token = await dbH.getHidepulsaToken(db, userId);
-  if (!token) return null;
+// HidePulsa PPOB — autentikasi pakai API Key global (tanpa OTP / sesi per-user).
+// API key dipakai langsung sebagai Bearer token + dikirim juga sebagai header/param
+// agar kompatibel dengan beberapa varian backend HidePulsa.
 
-  // Masih valid (buffer 60 detik)
-  if (token.expires_at && token.expires_at > Date.now() + 60000) {
-    return token.access_token;
-  }
+const UA = 'Mozilla/5.0 (compatible; RetriVPNBot/1.0)';
 
-  // Refresh
-  if (!token.refresh_token) return null;
-  try {
-    const resp = await axios.post(`${BASE_URL}/auth/refresh`, {
-      refresh_token: token.refresh_token,
-    });
-    const data = resp.data || {};
-    const accessToken = data.access_token;
-    if (!accessToken) return null;
-    const expiresIn = Number(data.expires_in) || 3600;
-    const expiresAt = Date.now() + expiresIn * 1000;
-    await dbH.saveHidepulsaToken(db, userId, accessToken, token.refresh_token, expiresAt);
-    return accessToken;
-  } catch (err) {
-    return null; // perlu OTP ulang
-  }
+function buildHeaders(apiKey, password) {
+  return {
+    'Authorization': `Bearer ${apiKey}`,
+    'X-API-KEY': apiKey,
+    'X-API-PASSWORD': password || '',
+    'Content-Type': 'application/json',
+    'User-Agent': UA,
+    'Accept': 'application/json',
+  };
 }
 
-async function getProducts(accessToken, BASE_URL) {
+// Dipertahankan agar pemanggil lama tidak error. Sekarang cukup kembalikan API key global.
+async function getOrRefreshToken(db, userId, BASE_URL, apiKey) {
+  return apiKey || null;
+}
+
+async function getProducts(apiKey, BASE_URL, password) {
   const resp = await axios.get(`${BASE_URL}/products`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
+    headers: buildHeaders(apiKey, password),
+    params: { api_key: apiKey },
+    timeout: 30000,
   });
   return resp.data;
 }
 
-async function createTransaction(accessToken, BASE_URL, productCode, target) {
+async function createTransaction(apiKey, BASE_URL, productCode, target, password) {
   const resp = await axios.post(
     `${BASE_URL}/transaction`,
-    { product_code: productCode, target },
-    { headers: { Authorization: `Bearer ${accessToken}` } }
+    { product_code: productCode, target, api_key: apiKey, password },
+    { headers: buildHeaders(apiKey, password), timeout: 30000 }
   );
   return resp.data;
 }
 
-async function getTransactionStatus(accessToken, BASE_URL, orderId) {
+async function getTransactionStatus(apiKey, BASE_URL, orderId, password) {
   const resp = await axios.get(`${BASE_URL}/transaction/${encodeURIComponent(orderId)}`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
+    headers: buildHeaders(apiKey, password),
+    params: { api_key: apiKey },
+    timeout: 30000,
   });
   return resp.data;
 }

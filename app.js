@@ -11042,15 +11042,13 @@ bot.action('ppob_list_produk', async (ctx) => {
   await ctx.answerCbQuery('Memuat produk...');
   const userId = ctx.from.id;
   try {
-    const accessToken = await ppobModule.getOrRefreshToken(db, userId, HIDEPULSA_BASE_URL);
-    if (!accessToken) {
+    if (!HIDEPULSA_API_KEY) {
       await ctx.editMessageText(
-        '⚠️ Sesi PPOB belum aktif. Silakan top up Akrab dulu untuk aktivasi.',
+        '⚠️ API Key HidePulsa belum diset oleh admin. Hubungi admin.',
         {
           parse_mode: 'HTML',
           reply_markup: {
             inline_keyboard: [
-              [{ text: '💰 Top Up Akrab', callback_data: 'topup_akrab' }],
               [{ text: '🔙 Kembali', callback_data: 'menu_ppob' }],
             ],
           },
@@ -11058,7 +11056,7 @@ bot.action('ppob_list_produk', async (ctx) => {
       );
       return;
     }
-    const products = await ppobModule.getProducts(accessToken, HIDEPULSA_BASE_URL);
+    const products = await ppobModule.getProducts(HIDEPULSA_API_KEY, HIDEPULSA_BASE_URL, HIDEPULSA_PASSWORD);
     const items = Array.isArray(products) ? products : (products && products.data) || [];
 
     const grouped = {};
@@ -11238,10 +11236,7 @@ bot.action(/^ppob_konfirmasi_(.+)$/, async (ctx) => {
       return;
     }
 
-    const accessToken = await ppobModule.getOrRefreshToken(db, userId, HIDEPULSA_BASE_URL);
-    if (!accessToken) throw new Error('Sesi HidePulsa tidak valid, silakan top up Akrab ulang untuk verifikasi OTP.');
-
-    const result = await ppobModule.createTransaction(accessToken, HIDEPULSA_BASE_URL, productCode, target);
+    const result = await ppobModule.createTransaction(HIDEPULSA_API_KEY, HIDEPULSA_BASE_URL, productCode, target, HIDEPULSA_PASSWORD);
     const orderId = (result && (result.order_id || result.id)) || ('ppob-' + Date.now());
 
     await wallet.potongSaldoAkrab(db, userId, amount, 'ppob-' + orderId, 'ppob');
@@ -12098,58 +12093,6 @@ bot.on('text', async (ctx) => {
     return;
   }
 
-  // ── Step Top Up Saldo Akrab (HidePulsa) ─────────────────
-  try {
-    const akrabState = userState[ctx.chat.id];
-    if (akrabState && typeof akrabState.step === 'string') {
-      const text = String(ctx.message.text || '').trim();
-      const userId = ctx.from.id;
-
-      if (akrabState.step === 'topup_otp_akrab') {
-        try {
-          const resp = await axios.post(`${HIDEPULSA_BASE_URL}/auth/otp/verify`, {
-            telegram_user_id: userId.toString(),
-            otp: text
-          });
-          const { access_token, refresh_token, expires_in } = resp.data || {};
-          if (!access_token) throw new Error('Token tidak ditemukan pada respon HidePulsa');
-          const expiresAt = Date.now() + (Number(expires_in) || 3600) * 1000;
-          await dbH.saveHidepulsaToken(db, userId, access_token, refresh_token || null, expiresAt);
-          userState[ctx.chat.id] = { step: 'topup_akrab_amount' };
-          await ctx.reply('Verifikasi berhasil!\n\nMasukkan jumlah top up Akrab (contoh: 50000):');
-        } catch (err) {
-          logger.error('Verifikasi OTP HidePulsa gagal: ' + (err && err.message ? err.message : err));
-          await ctx.reply('OTP tidak valid atau sudah expired. Coba ulangi dari menu Akrab.');
-          delete userState[ctx.chat.id];
-        }
-        return;
-      }
-
-      if (akrabState.step === 'topup_akrab_amount') {
-        const amount = parseInt(String(text || '').replace(/\D/g, ''), 10);
-        if (!amount || amount < 10000) {
-          await ctx.reply('Minimum top up Rp 10.000. Masukkan jumlah yang valid:');
-          return;
-        }
-        userState[ctx.chat.id] = { step: 'topup_akrab_confirm', amount };
-        await ctx.reply(
-          'Konfirmasi Top Up Akrab\n\nJumlah: Rp ' + amount.toLocaleString('id-ID') + '\n\nLanjutkan?',
-          {
-            reply_markup: {
-              inline_keyboard: [[
-                { text: 'Ya, Top Up', callback_data: 'confirm_topup_akrab_' + amount },
-                { text: 'Batal', callback_data: 'menu_ppob' }
-              ]]
-            }
-          }
-        );
-        return;
-      }
-    }
-  } catch (akrabErr) {
-    logger.error('Step top up Akrab error: ' + (akrabErr && akrabErr.message ? akrabErr.message : akrabErr));
-  }
-
   // ── Step PPOB ───────────────────────────────────────────
   try {
     const ppobState = userState[ctx.chat.id];
@@ -12204,9 +12147,7 @@ bot.on('text', async (ctx) => {
           return;
         }
         try {
-          const accessToken = await ppobModule.getOrRefreshToken(db, userId, HIDEPULSA_BASE_URL);
-          if (!accessToken) throw new Error('Sesi HidePulsa tidak valid, silakan top up Akrab ulang.');
-          const status = await ppobModule.getTransactionStatus(accessToken, HIDEPULSA_BASE_URL, orderId);
+          const status = await ppobModule.getTransactionStatus(HIDEPULSA_API_KEY, HIDEPULSA_BASE_URL, orderId, HIDEPULSA_PASSWORD);
           const st = (status && (status.status || status.state)) || 'unknown';
           await dbH.updatePpobOrderStatus(db, orderId, st).catch(() => {});
           delete userState[ctx.chat.id];
