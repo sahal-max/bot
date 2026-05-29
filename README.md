@@ -1,203 +1,128 @@
-# BotVPN 1FORCR
-Bot Telegram untuk manajemen layanan VPN yang terintegrasi dengan API AutoScript Potato.
+# RETRI VPN
+
+Bot Telegram multi-layanan untuk penjualan produk digital dalam satu antarmuka percakapan. Menggabungkan lima layanan utama dengan sistem dual wallet dan program reseller lintas layanan.
 
 ---
 
-## Instalasi Otomatis Bot
-Rekomendasi OS: Ubuntu 24 / Debian 12
+## Layanan
+
+| Modul | Deskripsi | Provider |
+|-------|-----------|----------|
+| 🔑 Akun VPN | SSH/Ovpn, VMESS, VLESS, TROJAN, ZIVPN, UDP HTTP | AutoScript Potato (self-hosted) |
+| 📱 PPOB | Pulsa, token listrik, tagihan, produk digital | HidePulsa |
+| 🤝 Akrab & Circle | Produk Akrab / XL Circle | khfy-store |
+| 💉 Suntik Followers | Layanan SMM: followers, likes, views | FayuPedia |
+| 🏪 Join Reseller | Program reseller lintas layanan + markup harga | Internal |
+
+---
+
+## Dual Wallet
+
+Dua wallet saldo berjalan independen — tidak bisa saling transfer:
+
+- 💰 **Saldo VPN** — untuk Akun VPN + Suntik Followers. Top up via QRIS otomatis (OrderKuota/GoPay) atau manual.
+- 💳 **Saldo Akrab** — untuk PPOB + Akrab & Circle. Top up via QRIS HidePulsa (verifikasi OTP Telegram).
+
+---
+
+## Fitur Utama
+
+### User
+- Buat / trial / perpanjang / hapus akun VPN semua protokol.
+- Lihat akun saya (aktif / semua / expired) dan cek masa aktif.
+- Beli produk PPOB, Akrab & Circle, dan layanan SMM.
+- Top up dua wallet (otomatis QRIS, manual QRIS, bonus per range nominal).
+- Riwayat dan cek status transaksi tiap layanan.
+- Join reseller dengan kontak admin dinamis (WA/Telegram).
+
+### Reseller
+- Akses server reseller (harga lebih murah).
+- Lock/unlock akun VPN.
+- Markup harga independent per layanan: VPN, PPOB, Akrab, SMM.
+- Cek semua saldo dan statistik transaksi bulanan.
+- Evaluasi syarat reseller bulanan + notifikasi pengingat otomatis.
+
+### Admin
+- Dashboard: User, Server, Saldo, Reseller, Tools.
+- 🔑 Setting API Keys via menu (FayuPedia, HidePulsa, Akrab) — update tanpa edit file manual.
+- 📢 Markup Global Produk (SMM & Akrab).
+- Manajemen server tunnel, saldo, reseller, broadcast.
+- Setting payment gateway (OrderKuota / GoPay / fallback).
+- Mode maintenance, backup/restore database.
+
+---
+
+## Webhook & Polling
+
+- **Webhook HidePulsa** (`POST /webhook/hidepulsa`) — verifikasi HMAC SHA-256 (`X-Webhook-Signature: v1={hex}`, window 300 detik).
+- **Webhook Akrab** (`GET/POST /webhook/akrab`) — parse format `RC={reffid} TrxID={id} {status} {keterangan}`.
+- **Auto-polling Akrab** setiap 5 menit dan **SMM** setiap 3 menit untuk update status order pending.
+- **Health check** (`GET /health`) untuk monitoring uptime.
+
+---
+
+## Instalasi
+
+Rekomendasi OS: Ubuntu 24 LTS / Debian 12
 
 ```bash
 sysctl -w net.ipv6.conf.all.disable_ipv6=1 && sysctl -w net.ipv6.conf.default.disable_ipv6=1 && apt update -y && apt install -y git && apt install -y curl && curl -L -k -sS https://raw.githubusercontent.com/harismy/BotVPN/main/start -o start && bash start sellvpn && [ $? -eq 0 ] && rm -f start
 ```
 
----
-
-## Bot Telegram
-[Menuju Bot Cihuyyyyy](https://t.me/BOT1FORCR_STORE_bot)
-
----
-
-## Fitur Bot (Aktual)
-
-### User
-- Buat akun: SSH/Ovpn, VMESS, VLESS, TROJAN, ZIVPN, UDP HTTP.
-- Trial akun harian (1x per user per hari).
-- Perpanjang akun semua layanan (termasuk UDP HTTP dan ZIVPN).
-- Lihat akun saya: akun aktif, semua akun, dan akun expired.
-- Hapus akun saya:
-  - pilih server sesuai role (user biasa hanya server user, reseller hanya server reseller),
-  - hapus akun dari daftar akun aktif milik sendiri,
-  - sisa masa aktif dikonversi ke saldo.
-- Cek masa aktif akun saya:
-  - pilih server lalu input username,
-  - bot cek ke API tunnel dan menampilkan layanan, tanggal expired, dan sisa hari aktif,
-  - daftar server dedup per hostname (hostname yang sama tidak dobel).
-- Tools user: Perpanjang akun, Cek Server, V2Ray Setting HC.
-- Top up saldo:
-  - otomatis (QRIS API),
-  - manual QRIS (opsional, bisa diaktif/nonaktifkan admin),
-  - bonus top up per range nominal (opsional, bisa diaktif/nonaktifkan admin).
-- Menu jadi reseller dengan kontak admin dinamis (WA/Telegram dari pengaturan admin).
-
-### Reseller
-- Akses server reseller.
-- Menu lock/unlock akun.
-- Statistik reseller pribadi.
-- Evaluasi syarat reseller bulanan + notifikasi pengingat otomatis.
-
-### Admin
-- Dashboard admin: User, Server, Saldo, Reseller, Tools, Topup.
-- Tools admin:
-  - Backup Database Sekarang,
-  - Restore Database (upload backup untuk `sellvpn.db` / `ressel.db`).
-- Manajemen user/saldo: tambah saldo, hapus saldo, cek user, hapus log.
-- Broadcast ke semua user.
-- Manajemen reseller: tambah/hapus/restore reseller, atur syarat, trigger cek syarat.
-- Manajemen server:
-  - tambah server user/reseller,
-  - atur support layanan (normal / ZIVPN / UDP HTTP),
-  - edit domain/auth/harga/quota/ip limit/batas create/total create,
-  - set server penuh,
-  - aktifkan kembali server penuh dengan input total + batas,
-  - detail/list/hapus server.
-- Kontrol top up: auto/manual/bonus (aktif/nonaktif + atur persentase bonus).
-- Upload QRIS dari menu admin.
-- Command penting: `/admin`, `/syncservernow`, `/checkpaymentconfig`, `/helpadmin`, `/resellerstats`, `/allresellerstats`.
-- Command limit bandwidth server: `/setserverbw <server_id> <limit_tb> [avg_gb_per_user_per_hari]` (contoh: `/setserverbw 1 25 8`).
-
-### Sistem dan Keandalan
-- Auto migrasi kolom/tabel SQLite saat bot start.
-- Menu `/start` tidak menumpuk (menu lama dibersihkan).
-- Pending deposit + cleanup deposit expired.
-- Logging error terstruktur untuk PM2.
+### Setup
+1. Salin `.vars.template.json` → `.vars.json`
+2. Isi `BOT_TOKEN` dan `USER_ID` (admin Telegram)
+3. API key FayuPedia, HidePulsa, Akrab diisi via menu Admin → 🔑 Setting API Keys
+4. Payment Gateway & Server VPN diisi via menu Admin → Setting
 
 ---
 
-## Update Terbaru
-- Payment gateway multi-provider:
-  - Mode `OrderKuota saja`
-  - Mode `GoPay saja`
-  - Mode `Keduanya (fallback)` -> OrderKuota dulu, jika gagal create QR otomatis fallback ke GoPay.
-- Menu admin `Setting Payment Gateway` ditambah:
-  - set mode gateway,
-  - set `GoPay API Base URL`,
-  - set `GoPay API Key`,
-  - tetap mendukung setting OrderKuota lama.
-- `/checkpaymentconfig` sekarang menampilkan status kedua gateway (OrderKuota + GoPay) dan mode aktif.
-- Verifikasi pembayaran sekarang mendukung 2 jalur:
-  - OrderKuota: polling mutasi bank (existing),
-  - GoPay: polling status transaksi `/qris/status` (tanpa webhook).
-- Penyimpanan pending deposit diperluas (auto-migration) untuk metadata gateway: provider, provider transaction id, reference id, expiry, dll.
+## Stack Teknologi
 
-- Notifikasi ke grup saat akun dihapus (self delete dan menu delete reseller/admin).
-- Fitur hapus akun manual by username pada menu `Hapus Akun Saya` dihapus demi keamanan.
-- Menu user baru: `Cek Masa Aktif Akun Saya`.
-- Pemilihan server cek masa aktif sudah dedup per hostname agar tidak dobel.
-- Tools admin ditambah restore database via upload file backup.
-- Trigger backup di Tools admin diarahkan ke `Backup Database Sekarang` untuk kirim backup langsung ke admin yang menekan tombol.
+| Layer | Teknologi |
+|-------|-----------|
+| Bot Framework | Node.js + Telegraf v4 |
+| Database | SQLite3 (`sellvpn.db` + `ressel.db`) |
+| HTTP Client | axios |
+| Web Server | Express.js (webhook endpoint) |
+| Process Manager | PM2 |
+| Reverse Proxy | Nginx + SSL (Let's Encrypt) |
+
 ---
 
 ## Sinkronisasi Server Tunnel (AutoScript Potato)
 
-API tunnel dipakai bot untuk:
-- sinkron total akun aktif ke `Server.total_create_akun`,
-- lookup `date_exp` akun berdasarkan username,
-- ambil trafik bandwidth harian + akumulasi bulan berjalan dari `vnstat` untuk estimasi kapasitas akun berdasarkan limit TB bulanan.
-- kirim notifikasi otomatis ke admin/grup jika proyeksi trafik 30 hari melebihi limit bandwidth bulanan server.
+API tunnel dipakai bot untuk sinkron total akun aktif, lookup masa aktif, dan ambil trafik bandwidth harian dari vnstat.
 
 Trigger sinkron:
-- Manual: `/syncservernow` atau tombol admin `Sync Server Sekarang`.
+- Manual: `/syncservernow` atau tombol admin Sync Server Sekarang.
 - Otomatis: setiap 30 menit.
 
-Endpoint yang dipakai bot:
+Endpoint:
 - `GET /internal/account-summary`
 - `GET /internal/account-expiry?username=<USERNAME>`
 - `GET /internal/expiry-summary?date=<YYYY-MM-DD>`
 - `GET /internal/vnstat-daily`
 
-Auth endpoint:
-- Header `x-sync-token: <TOKEN>`
+Auth: header `x-sync-token: <TOKEN>`
+
+Repo installer API tunnel: https://github.com/harismy/apiCekTotalUserPotato
 
 ---
 
-## Auto Install API Tunnel (SC Potato)
-Repo installer API:
-- https://github.com/harismy/apiCekTotalUserPotato
+## Command Admin
 
-Jalankan di VPS tunnel yang sudah terpasang SC Potato:
-
-```bash
-curl -fL --retry 5 --retry-delay 2 https://raw.githubusercontent.com/harismy/apiCekTotalUserPotato/main/setup-summary-api.sh -o /tmp/setup-summary-api.sh
-sed -i 's/\r$//' /tmp/setup-summary-api.sh
-chmod +x /tmp/setup-summary-api.sh
-bash /tmp/setup-summary-api.sh
-```
-
-### Cara pakai di bot setelah API terpasang
-1. Pastikan setiap server bot punya `domain` atau `sync_host` yang menuju VPS tunnel.
-2. Pastikan token bot (`Server.auth`) cocok dengan token valid di VPS tunnel (`servers.key`).
-3. Jalankan sinkron manual (`/syncservernow`) untuk uji awal.
-4. Cek hasil di menu `Cek Server` (terpakai/sisa/status).
-
-Troubleshooting:
-- `unauthorized`: token tidak cocok.
-- `ECONNREFUSED`: service API tunnel belum jalan atau port belum terbuka.
-
----
-
-## Sistem Pembayaran (Top Up Otomatis)
-
-### Data QRIS
-Gunakan tools berikut untuk extract data QRIS:
-- https://qreader.online/
-
-### Setup API Cek Payment
-Input saat instalasi melalui `start` (disimpan ke `.vars.json`):
-- `ORKUT_USERNAME`
-- `ORKUT_TOKEN`
-- API key (hubungi admin penyedia API)
-
-Jika `ORKUT_USERNAME/ORKUT_TOKEN` belum diisi:
-- Menu top up otomatis nonaktif.
-- Bot memberi notifikasi ke user untuk top up manual.
-
----
-
-## Database
-Database utama: `sellvpn.db`
-
-Auto migrasi saat bot start mencakup:
-- tabel pending deposit,
-- kolom support layanan server,
-- kolom sinkronisasi server tunnel.
-
----
-
-## Modul Baru (v2.0)
-
-### Setup
-1. Salin `.vars.template.json` → `.vars.json`
-2. Isi `BOT_TOKEN` dan `USER_ID` (admin Telegram)
-3. API key FayuPedia, HidePulsa, Akrab sudah terisi di template
-4. Payment Gateway & Server VPN diisi via menu Admin → Setting
-
-### Dual Wallet
-- 💰 **Saldo VPN**: untuk Akun VPN + Suntik Followers
-- 💳 **Saldo Akrab**: untuk PPOB + Akrab & Circle
-
-### Modul Tambahan
-- **PPOB** (`menu_ppob`): bayar tagihan via HidePulsa
-- **Akrab & Circle** (`menu_akrab`): produk Akrab via khfy-store
-- **Suntik Followers** (`menu_suntik`): SMM via FayuPedia
-- **Join Reseller** (`menu_join_reseller`): markup harga per layanan (VPN, PPOB, Akrab, SMM)
-
-### Setting API Keys via Menu Admin
-Admin dapat mengupdate semua API key langsung dari bot tanpa edit file manual:
-- Menu Admin → 🔑 Setting API Keys
-- Perubahan langsung aktif (update in-memory + simpan ke `.vars.json`)
+| Command | Fungsi |
+|---------|--------|
+| `/admin` | Buka menu admin |
+| `/syncservernow` | Sinkron semua server tunnel |
+| `/checkpaymentconfig` | Cek status payment gateway |
+| `/setserverbw <id> <limit_tb> [avg_gb]` | Set limit bandwidth server |
+| `/broadcast <pesan>` | Broadcast ke semua user |
+| `/resellerstats` / `/allresellerstats` | Statistik reseller |
+| `/helpadmin` | Daftar command admin |
 
 ---
 
 ## Catatan
 Simpan file dengan encoding UTF-8 agar teks dan simbol tampil normal.
-
