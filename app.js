@@ -11750,8 +11750,31 @@ bot.action('akrab_cek_stock', async (ctx) => {
   await ctx.answerCbQuery('Mengecek stok...');
   try {
     const stok = await akrabModule.cekStokAkrab(KHFY_ENDPOINT);
+
+    // Ambil array data dari berbagai kemungkinan format response
+    const items = Array.isArray(stok)
+      ? stok
+      : (stok && Array.isArray(stok.data))
+        ? stok.data
+        : [];
+
+    let body;
+    if (items.length) {
+      body = items.map((it) => {
+        const nama = it.nama || it.name || it.type || '-';
+        const tipe = it.type || it.kode || '';
+        const slot = Number(it.sisa_slot ?? it.stok ?? it.stock ?? 0);
+        const status = slot > 0 ? '🟢' : '🔴';
+        const tipeText = tipe ? ` <code>${tipe}</code>` : '';
+        return `${status} <b>${nama}</b>${tipeText} — sisa slot: <b>${slot}</b>`;
+      }).join('\n');
+    } else {
+      // Fallback jika format tak dikenali
+      body = '<pre>' + JSON.stringify(stok, null, 2).slice(0, 3000) + '</pre>';
+    }
+
     await ctx.editMessageText(
-      '📊 <b>Stok Akrab XL/Axis</b>\n\n<pre>' + JSON.stringify(stok, null, 2).slice(0, 3000) + '</pre>',
+      '📊 <b>Stok Akrab XL/Axis</b>\n\n' + body + '\n\n🟢 = tersedia · 🔴 = habis',
       {
         parse_mode: 'HTML',
         reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'menu_akrab' }]] },
@@ -11759,7 +11782,7 @@ bot.action('akrab_cek_stock', async (ctx) => {
     );
   } catch (err) {
     logger.error('akrab_cek_stock: ' + (err && err.message ? err.message : err));
-    await ctx.editMessageText('❌ Gagal cek stok.', {
+    await ctx.editMessageText('❌ Gagal cek stok. Coba lagi nanti.', {
       parse_mode: 'HTML',
       reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'menu_akrab' }]] },
     });
