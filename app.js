@@ -11333,9 +11333,36 @@ bot.action('smm_cek_saldo', async (ctx) => {
 bot.action('smm_list_layanan', async (ctx) => {
   await ctx.answerCbQuery('Memuat layanan...');
   const userId = ctx.from.id;
+
+  // Cek kredensial dulu
+  if (!FAYU_API_ID || !FAYU_API_KEY) {
+    await ctx.editMessageText(
+      '⚠️ <b>Credential FayuPedia belum diset</b>\n\n' +
+      'Admin perlu mengisi <b>FayuPedia API ID</b> dan <b>API Key</b> via:\n' +
+      'Menu Admin → 🔑 Setting API Keys → FayuPedia SMM',
+      {
+        parse_mode: 'HTML',
+        reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'menu_suntik' }]] },
+      }
+    );
+    return;
+  }
+
   try {
     const services = await smmModule.getServices(FAYU_ENDPOINT, FAYU_API_ID, FAYU_API_KEY);
     const markupGlobal = await dbH.getMarkup(db, 'global', 'smm', null).catch(() => null);
+
+    if (!Array.isArray(services) || services.length === 0) {
+      await ctx.editMessageText(
+        '❌ <b>Layanan tidak ditemukan</b>\n\nAPI berhasil terhubung tapi mengembalikan list kosong. Coba lagi nanti.',
+        {
+          parse_mode: 'HTML',
+          reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'menu_suntik' }]] },
+        }
+      );
+      return;
+    }
+
     const grouped = smmModule.groupByCategory(services);
     userState[userId] = Object.assign({}, userState[userId], { smmServices: services });
 
@@ -11349,22 +11376,30 @@ bot.action('smm_list_layanan', async (ctx) => {
     keyboard.push([{ text: '🔙 Kembali', callback_data: 'menu_suntik' }]);
 
     const markupLine = markupGlobal
-      ? 'Markup aktif: ' + (markupGlobal.type === 'pct' ? markupGlobal.value + '%' : 'Rp ' + Number(markupGlobal.value).toLocaleString('id-ID')) + '\n'
+      ? '\nMarkup aktif: ' + (markupGlobal.type === 'pct' ? markupGlobal.value + '%' : 'Rp ' + Number(markupGlobal.value).toLocaleString('id-ID'))
       : '';
 
     await ctx.editMessageText(
-      '📋 <b>Layanan Suntik Followers</b>\n\n' +
-      'Total: ' + services.length + ' layanan tersedia\n' +
-      markupLine +
-      '\nPilih kategori:',
+      '📋 <b>Layanan Suntik Followers</b>\n' +
+      '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
+      '┃ Total : <b>' + services.length + '</b> layanan' + markupLine + '\n' +
+      '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n\n' +
+      'Pilih kategori:',
       { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } }
     );
   } catch (err) {
-    logger.error('smm_list_layanan: ' + (err && err.message ? err.message : err));
-    await ctx.editMessageText('❌ Gagal memuat layanan SMM.', {
-      parse_mode: 'HTML',
-      reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'menu_suntik' }]] },
-    });
+    const apiMsg = (err && err.apiResponse) ? JSON.stringify(err.apiResponse).slice(0, 300) : '';
+    const errText = err && err.message ? err.message : 'Unknown error';
+    logger.error('smm_list_layanan: ' + errText + (apiMsg ? ' | ' + apiMsg : ''));
+    await ctx.editMessageText(
+      '❌ <b>Gagal memuat layanan SMM</b>\n\n' +
+      '<code>' + errText.replace(/[<>]/g, '') + '</code>\n\n' +
+      '<i>Cek API ID dan API Key di Setting Admin.</i>',
+      {
+        parse_mode: 'HTML',
+        reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'menu_suntik' }]] },
+      }
+    );
   }
 });
 

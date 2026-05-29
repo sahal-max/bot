@@ -26,7 +26,13 @@ async function getServices(BASE_URL, apiId, apiKey) {
   // FayuPedia mengembalikan: { ok, status, count, data: [...] }
   if (result && Array.isArray(result.data)) return result.data;
   if (Array.isArray(result)) return result;
-  return [];
+  // API mengembalikan format tak dikenal — lempar error agar handler tampil pesan jelas
+  const errMsg = result && (result.msg || result.message || result.error)
+    ? String(result.msg || result.message || result.error)
+    : 'Format response API tidak dikenal';
+  const err = new Error(errMsg);
+  err.apiResponse = result;
+  throw err;
 }
 
 async function createOrder(BASE_URL, apiId, apiKey, serviceId, link, quantity) {
