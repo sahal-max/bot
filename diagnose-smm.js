@@ -40,18 +40,26 @@ if (!FAYU_API_ID || !FAYU_API_KEY) {
   try {
     const resp = await axios.get(FAYU_ENDPOINT + '/api/services', {
       params: { api_id: FAYU_API_ID, api_key: FAYU_API_KEY },
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (compatible; RetriVPNBot/1.0)',
+      },
       timeout: 30000,
+      validateStatus: () => true,
     });
     console.log('   Status HTTP:', resp.status);
     const data = resp.data;
-    if (data && Array.isArray(data.data)) {
+    console.log('   Type:', typeof data, Array.isArray(data) ? '(array)' : '');
+    if (typeof data === 'string') {
+      console.log('   Body (string):', data.substring(0, 400));
+    } else if (data && Array.isArray(data.data)) {
       console.log('   ✅ SUKSES! Total layanan:', data.data.length);
-      console.log('   Sample layanan pertama:', JSON.stringify(data.data[0]).substring(0, 200));
+      console.log('   Sample:', JSON.stringify(data.data[0]).substring(0, 200));
     } else if (Array.isArray(data)) {
       console.log('   ✅ SUKSES (format array). Total:', data.length);
     } else {
-      console.log('   ⚠️ Response format tak dikenal:');
-      console.log('   ', JSON.stringify(data).substring(0, 500));
+      console.log('   Response keys:', Object.keys(data || {}));
+      console.log('   Body:', JSON.stringify(data).substring(0, 500));
     }
   } catch (err) {
     console.log('   ❌ Error:', err.message);
