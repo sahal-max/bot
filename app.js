@@ -7678,11 +7678,13 @@ bot.action('menu_topup', async (ctx) => {
   keyboard.push([{ text: '🏠 Menu Utama', callback_data: 'send_main_menu' }]);
 
   const msgText =
-    '💳 <b>Top Up Saldo</b>\n\n' +
-    '💰 <b>Saldo VPN</b>          : <code>Rp ' + Number(saldoVpn || 0).toLocaleString('id-ID') + '</code>\n' +
-    '   ↳ untuk Akun VPN + Suntik Followers\n\n' +
-    '💳 <b>Saldo Tembak Kuota</b> : <code>Rp ' + Number(saldoAkrab || 0).toLocaleString('id-ID') + '</code>\n' +
-    '   ↳ untuk PPOB + Akrab & Circle\n\n' +
+    '💳 <b>TOP UP SALDO</b>\n' +
+    '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
+    '┃ 💰 Saldo VPN          : <code>Rp ' + Number(saldoVpn || 0).toLocaleString('id-ID') + '</code>\n' +
+    '┃ 💳 Saldo Tembak Kuota : <code>Rp ' + Number(saldoAkrab || 0).toLocaleString('id-ID') + '</code>\n' +
+    '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
+    '<i>VPN: Akun VPN + Suntik Followers</i>\n' +
+    '<i>Tembak Kuota: PPOB + Akrab & Circle</i>\n\n' +
     'Pilih jenis saldo yang ingin di-top up:';
 
   await ctx.editMessageText(msgText, { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } })
@@ -10993,16 +10995,19 @@ bot.action('menu_ppob', async (ctx) => {
   const saldoAkrab = await dbH.getSaldoAkrab(db, userId).catch(() => 0);
 
   await ctx.editMessageText(
-    '📱 <b>PPOB — Bayar Tagihan & Produk Digital</b>\n\n' +
-    '💳 <b>Saldo Akrab:</b> <code>Rp ' + Number(saldoAkrab || 0).toLocaleString('id-ID') + '</code>\n\n' +
+    '📱 <b>PPOB</b> — Bayar Tagihan & Produk Digital\n' +
+    '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
+    '┃ 💳 Saldo Tembak Kuota : <code>Rp ' + Number(saldoAkrab || 0).toLocaleString('id-ID') + '</code>\n' +
+    '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
+    '<i>Saldo ini juga dipakai untuk Akrab & Circle.</i>\n\n' +
     'Pilih menu:',
     {
       parse_mode: 'HTML',
       reply_markup: {
         inline_keyboard: [
           [
-            { text: '💳 Cek Saldo Akrab', callback_data: 'cek_saldo_akrab' },
-            { text: '💰 Top Up Saldo Akrab', callback_data: 'topup_akrab' },
+            { text: '💳 Cek Saldo', callback_data: 'cek_saldo_akrab' },
+            { text: '💰 Top Up', callback_data: 'topup_akrab' },
           ],
           [
             { text: '📋 Daftar Produk', callback_data: 'ppob_list_produk' },
@@ -11024,13 +11029,16 @@ bot.action('cek_saldo_akrab', async (ctx) => {
   const userId = ctx.from.id;
   const saldo = await dbH.getSaldoAkrab(db, userId).catch(() => 0);
   await ctx.editMessageText(
-    '💳 <b>Saldo Akrab Kamu</b>\n\n<code>Rp ' + Number(saldo || 0).toLocaleString('id-ID') + '</code>\n\n' +
-    'Saldo ini digunakan untuk: PPOB & Akrab/Circle',
+    '💳 <b>SALDO TEMBAK KUOTA</b>\n' +
+    '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
+    '┃ Nominal : <code>Rp ' + Number(saldo || 0).toLocaleString('id-ID') + '</code>\n' +
+    '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
+    '<i>Dipakai untuk PPOB + Akrab & Circle.</i>',
     {
       parse_mode: 'HTML',
       reply_markup: {
         inline_keyboard: [
-          [{ text: '💰 Top Up Akrab', callback_data: 'topup_akrab' }],
+          [{ text: '💰 Top Up', callback_data: 'topup_akrab' }],
           [{ text: '🔙 Kembali', callback_data: 'menu_ppob' }],
         ],
       },
@@ -11293,9 +11301,11 @@ bot.action('menu_suntik', async (ctx) => {
   keyboard.push([{ text: '🏠 Menu Utama', callback_data: 'send_main_menu' }]);
 
   await ctx.editMessageText(
-    '💉 <b>Suntik Followers</b>\n\n' +
-    '💰 <b>Saldo VPN:</b> <code>Rp ' + Number(saldo || 0).toLocaleString('id-ID') + '</code>\n\n' +
-    'Saldo VPN digunakan untuk layanan SMM.',
+    '💉 <b>SUNTIK FOLLOWERS</b>\n' +
+    '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
+    '┃ 💰 Saldo VPN : <code>Rp ' + Number(saldo || 0).toLocaleString('id-ID') + '</code>\n' +
+    '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
+    '<i>Saldo VPN dipakai untuk layanan SMM.</i>',
     { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } }
   );
 });
@@ -11305,8 +11315,11 @@ bot.action('smm_cek_saldo', async (ctx) => {
   const userId = ctx.from.id;
   const saldo = await dbH.getSaldo(db, userId).catch(() => 0);
   await ctx.editMessageText(
-    '💰 <b>Saldo VPN Kamu</b>\n\n<code>Rp ' + Number(saldo || 0).toLocaleString('id-ID') + '</code>\n\n' +
-    'Saldo ini digunakan untuk: Akun VPN & Suntik Followers',
+    '💰 <b>SALDO VPN</b>\n' +
+    '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
+    '┃ Nominal : <code>Rp ' + Number(saldo || 0).toLocaleString('id-ID') + '</code>\n' +
+    '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
+    '<i>Dipakai untuk Akun VPN + Suntik Followers.</i>',
     {
       parse_mode: 'HTML',
       reply_markup: {
@@ -11609,9 +11622,11 @@ bot.action('menu_vpn', async (ctx) => {
   keyboard.push([{ text: '🏠 Menu Utama', callback_data: 'send_main_menu' }]);
 
   const msgText =
-    '🔑 <b>Akun VPN</b>\n\n' +
-    '💰 <b>Saldo VPN:</b> <code>Rp ' + Number(saldo || 0).toLocaleString('id-ID') + '</code>\n\n' +
-    'Saldo VPN digunakan untuk: Akun VPN + Suntik Followers.\n\n' +
+    '🔑 <b>AKUN VPN</b>\n' +
+    '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
+    '┃ 💰 Saldo VPN : <code>Rp ' + Number(saldo || 0).toLocaleString('id-ID') + '</code>\n' +
+    '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
+    '<i>Saldo ini dipakai untuk Akun VPN + Suntik Followers.</i>\n\n' +
     'Pilih layanan:';
 
   await ctx.editMessageText(msgText, { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } })
@@ -11650,12 +11665,15 @@ bot.action('menu_akrab', async (ctx) => {
   keyboard.push([{ text: '🏠 Menu Utama', callback_data: 'send_main_menu' }]);
 
   await ctx.editMessageText(
-    '🤝 <b>Akrab & Circle</b>\n\n' +
-    '💳 <b>Saldo Tembak Kuota:</b> <code>Rp ' + Number(saldoAkrab || 0).toLocaleString('id-ID') + '</code>\n\n' +
-    'Pilih kategori layanan:' +
+    '🤝 <b>AKRAB & CIRCLE</b>\n' +
+    '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
+    '┃ 💳 Saldo Tembak Kuota : <code>Rp ' + Number(saldoAkrab || 0).toLocaleString('id-ID') + '</code>\n' +
+    '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
+    '<i>Pilih kategori layanan:</i>' +
     (isAdminUser
-      ? '\n\nReseller ID: <code>' + (KHFY_RESELLER_ID || '-') + '</code>\n' +
-        'Portal: ' + (KHFY_PORTAL || '-')
+      ? '\n\n<b>Admin:</b>\n' +
+        '┃ Reseller ID : <code>' + (KHFY_RESELLER_ID || '-') + '</code>\n' +
+        '┃ Portal      : ' + (KHFY_PORTAL || '-')
       : ''),
     { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } }
   );
