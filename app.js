@@ -3933,43 +3933,39 @@ async function sendMainMenu(ctx) {
   const latency = (Math.random() * 0.1 + 0.01).toFixed(2);
 
   const messageText = `
-<code>┏━━━━━━━━━━━━━━━━━━━━┓</code>
 <b>🚀 BOT VPN ${NAMA_STORE}</b>
-<code>┗━━━━━━━━━━━━━━━━━━━━┛</code>
+<code>━━━━━━━━━━━━━━━━━━━━━━</code>
 
-<code>┏━━━━━━━━━━━━━━━━━━━━┓</code>
 <b>👤 INFORMASI PENGGUNA</b>
-<code>┣━━━━━━━━━━━━━━━━━━━━┫</code>
-• 👤 <b>Nama</b>    : ${userName}
-• 🆔 <b>ID</b>      : <code>${userId}</code>
-• 💰 <b>Saldo VPN</b>  : <code>Rp ${Number(saldo || 0).toLocaleString('id-ID')}</code>
-• 💳 <b>Saldo Tembak Kuota</b>: <code>Rp ${Number(saldoAkrab || 0).toLocaleString('id-ID')}</code>
-• 🏷️ <b>Status</b>  : ${statusReseller}
-<code>┗━━━━━━━━━━━━━━━━━━━━┛</code>
+<code>──────────────────────</code>
+┃ 👤 Nama   : <b>${userName}</b>
+┃ 🆔 ID     : <code>${userId}</code>
+┃ 🏷️ Status : <b>${statusReseller}</b>
 
-<code>┏━━━━━━━━━━━━━━━━━━━━┓</code>
-<b>📊 STATISTIK ANDA HARI INI</b>
-<code>┣━━━━━━━━━━━━━━━━━━━━┫</code>
-• 📅 <b>Hari Ini</b>   : ${userToday} akun
-• 📆 <b>Minggu Ini</b> : ${userWeek} akun  
-• 🗓️ <b>Bulan Ini</b>  : ${userMonth} akun
-<code>┗━━━━━━━━━━━━━━━━━━━━┛</code>
+<b>💼 DOMPET SALDO</b>
+<code>──────────────────────</code>
+┃ 💰 Saldo VPN         : <code>Rp ${Number(saldo || 0).toLocaleString('id-ID')}</code>
+┃ 💳 Saldo Tembak Kuota : <code>Rp ${Number(saldoAkrab || 0).toLocaleString('id-ID')}</code>
 
-<code>┏━━━━━━━━━━━━━━━━━━━━┓</code>
+<b>📊 STATISTIK ANDA</b>
+<code>──────────────────────</code>
+┃ 📅 Hari Ini   : <b>${userToday}</b> akun
+┃ 📆 Minggu Ini : <b>${userWeek}</b> akun
+┃ 🗓️ Bulan Ini  : <b>${userMonth}</b> akun
+
 <b>🌍 STATISTIK GLOBAL</b>
-<code>┣━━━━━━━━━━━━━━━━━━━━┫</code>
-• 📅 <b>Hari Ini</b>   : ${globalToday} akun
-• 📆 <b>Minggu Ini</b> : ${globalWeek} akun
-• 🗓️ <b>Bulan Ini</b>  : ${globalMonth} akun
-<code>┗━━━━━━━━━━━━━━━━━━━━┛</code>
+<code>──────────────────────</code>
+┃ 📅 Hari Ini   : <b>${globalToday}</b> akun
+┃ 📆 Minggu Ini : <b>${globalWeek}</b> akun
+┃ 🗓️ Bulan Ini  : <b>${globalMonth}</b> akun
 
-<code>┏━━━━━━━━━━━━━━━━━━━━┓</code>
 <b>📈 STATUS SISTEM</b>
-<code>┣━━━━━━━━━━━━━━━━━━━━┫</code>
-👥 <b>Users</b>    : ${jumlahPengguna}
-⏱️ <b>Latency</b>  : ${latency} ms
-👨‍💻 <b>Edited by</b> : 1FORCR
-<code>┗━━━━━━━━━━━━━━━━━━━━┛</code>
+<code>──────────────────────</code>
+┃ 👥 Total Users : <b>${jumlahPengguna}</b>
+┃ ⏱️ Latency     : <b>${latency} ms</b>
+┃ 👨‍💻 Edited by    : <b>1FORCR</b>
+<code>━━━━━━━━━━━━━━━━━━━━━━</code>
+<i>Pilih menu di bawah untuk mulai 👇</i>
 `;
 
   // Buat keyboard dasar untuk semua user
