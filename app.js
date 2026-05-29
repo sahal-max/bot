@@ -11619,8 +11619,7 @@ bot.action('menu_akrab', async (ctx) => {
       { text: '💰 Top Up Akrab', callback_data: 'topup_akrab' },
     ],
     [
-      { text: '📋 Daftar Produk', callback_data: 'akrab_list_produk' },
-      { text: '🛒 Beli Produk', callback_data: 'akrab_list_produk' },
+      { text: '🛒 Daftar & Beli Produk', callback_data: 'akrab_list_produk' },
     ],
     [
       { text: '🔍 Cek Status', callback_data: 'akrab_cek_status' },
@@ -11651,7 +11650,7 @@ bot.action('akrab_list_produk', async (ctx) => {
 
     const grouped = {};
     products.forEach((p) => {
-      const cat = p.type || p.kategori || 'Lainnya';
+      const cat = p.kode_provider || p.type || p.kategori || 'Lainnya';
       if (!grouped[cat]) grouped[cat] = [];
       grouped[cat].push(p);
     });
@@ -11687,7 +11686,7 @@ bot.action(/^akrab_kat_(.+)$/, async (ctx) => {
   try { category = decodeURIComponent(ctx.match[1]); } catch (_) { category = ctx.match[1]; }
   const state = userState[userId] || {};
   const products = (state.akrabProducts || []).filter((p) => {
-    const cat = p.type || p.kategori || 'Lainnya';
+    const cat = p.kode_provider || p.type || p.kategori || 'Lainnya';
     return cat === category;
   });
 
@@ -11703,12 +11702,14 @@ bot.action(/^akrab_kat_(.+)$/, async (ctx) => {
   const markupReseller = await dbH.getMarkup(db, 'reseller', 'akrab', userId).catch(() => null);
 
   const keyboard = products.slice(0, 30).map((p) => {
-    const code = p.code || p.produk;
-    const name = p.name || p.nama || code;
-    const base = Number(p.price || p.harga || 0);
+    const code = p.kode_produk || p.code || p.produk;
+    const name = p.nama_produk || p.name || p.nama || code;
+    const base = Number(p.harga_final || p.price || p.harga || 0);
+    const habis = Number(p.kosong || 0) === 1;
     const finalPrice = wallet.getEffectivePrice(base, markupGlobal, markupReseller);
+    const labelHarga = base > 0 ? ' — Rp ' + finalPrice.toLocaleString('id-ID') : '';
     return [{
-      text: name + ' — Rp ' + finalPrice.toLocaleString('id-ID'),
+      text: (habis ? '🔴 ' : '') + name + labelHarga,
       callback_data: 'akrab_beli_' + code,
     }];
   });
@@ -11726,11 +11727,25 @@ bot.action(/^akrab_beli_(.+)$/, async (ctx) => {
   const produkCode = ctx.match[1];
   const state = userState[userId] || {};
   const products = state.akrabProducts || [];
-  const product = products.find((p) => p.code === produkCode || p.produk === produkCode);
+  const product = products.find((p) =>
+    p.kode_produk === produkCode || p.code === produkCode || p.produk === produkCode
+  );
+
+  // Cek stok produk
+  if (product && Number(product.kosong || 0) === 1) {
+    await ctx.editMessageText(
+      '🔴 <b>Produk Kosong</b>\n\nProduk ini sedang habis/tidak tersedia. Silakan pilih produk lain.',
+      {
+        parse_mode: 'HTML',
+        reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'akrab_list_produk' }]] },
+      }
+    );
+    return;
+  }
 
   const markupGlobal = await dbH.getMarkup(db, 'global', 'akrab', null).catch(() => null);
   const markupReseller = await dbH.getMarkup(db, 'reseller', 'akrab', userId).catch(() => null);
-  const basePrice = product ? Number(product.price || product.harga || 0) : 0;
+  const basePrice = product ? Number(product.harga_final || product.price || product.harga || 0) : 0;
   const finalPrice = wallet.getEffectivePrice(basePrice, markupGlobal, markupReseller);
 
   userState[userId] = Object.assign({}, state, {
@@ -11739,10 +11754,14 @@ bot.action(/^akrab_beli_(.+)$/, async (ctx) => {
     akrabFinalPrice: finalPrice,
   });
 
+  const namaProduk = product ? (product.nama_produk || product.name || product.nama || produkCode) : produkCode;
+  const deskripsi = product && product.deskripsi ? ('\n\n<i>' + String(product.deskripsi).slice(0, 300) + '</i>') : '';
+
   await ctx.editMessageText(
     '🛒 <b>Beli Produk Akrab</b>\n\n' +
-    'Produk: <b>' + (product ? (product.name || product.nama || produkCode) : produkCode) + '</b>\n' +
-    'Harga: <b>Rp ' + Number(finalPrice).toLocaleString('id-ID') + '</b>\n\n' +
+    'Produk: <b>' + namaProduk + '</b>\n' +
+    'Harga: <b>Rp ' + Number(finalPrice).toLocaleString('id-ID') + '</b>' +
+    deskripsi + '\n\n' +
     'Masukkan nomor tujuan:',
     {
       parse_mode: 'HTML',
