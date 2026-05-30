@@ -7284,7 +7284,7 @@ bot.action('test_akrab_start', async (ctx) => {
     }
 
     // Ambil 1 produk tersedia sebagai sample
-    const sample = products.find(p => Number(p.kosong || 0) !== 1) || products[0];
+    const sample = products.find(p => !(p.kosong == 1 || p.kosong === true)) || products[0];
     const kode = sample.kode_produk || sample.code || '-';
     const nama = sample.nama_produk || sample.name || kode;
     const harga = Number(sample.harga_final || sample.price || sample.harga || 0);
@@ -11916,8 +11916,8 @@ bot.action(/^akrab_grup_(v1|v2|circle)$/, async (ctx) => {
 
     // Helper: cek apakah produk kosong berdasarkan field 'kosong' produk + sisa_slot di stokMap
     const isProdukKosong = (p) => {
-      if (Number(p.kosong || 0) === 1) return true;
-      if (Number(p.gangguan || 0) === 1) return true;
+      if ((p.kosong == 1 || p.kosong === true || String(p.status || '').toLowerCase() === 'kosong')) return true;
+      if ((p.gangguan == 1 || p.gangguan === true || String(p.status || '').toLowerCase() === 'gangguan')) return true;
       // Cek sisa slot via mapping kode_produk → tipe (XLA14, XLA32, dll)
       const code = String(p.kode_produk || p.code || '').toUpperCase();
       const provider = String(p.kode_provider || '').toUpperCase();
@@ -12022,7 +12022,7 @@ bot.action(/^akrab_kat_(.+)$/, async (ctx) => {
     const code = p.kode_produk || p.code || p.produk;
     const name = p.nama_produk || p.name || p.nama || code;
     const base = Number(p.harga_final || p.price || p.harga || 0);
-    const habis = Number(p.kosong || 0) === 1 || Number(p.gangguan || 0) === 1;
+    const habis = (p.kosong == 1 || p.kosong === true || String(p.status || '').toLowerCase() === 'kosong') || (p.gangguan == 1 || p.gangguan === true || String(p.status || '').toLowerCase() === 'gangguan');
     const finalPrice = wallet.getEffectivePrice(base, markupGlobal, markupReseller);
     const labelHarga = base > 0 ? ' — Rp ' + finalPrice.toLocaleString('id-ID') : '';
     const labelStok = habis ? ' [KOSONG]' : '';
@@ -12039,8 +12039,8 @@ bot.action(/^akrab_kat_(.+)$/, async (ctx) => {
     const name = p.nama_produk || p.name || p.nama || code;
     const base = Number(p.harga_final || p.price || p.harga || 0);
     const finalPrice = wallet.getEffectivePrice(base, markupGlobal, markupReseller);
-    const kosong = Number(p.kosong || 0) === 1;
-    const gangguan = Number(p.gangguan || 0) === 1;
+    const kosong = (p.kosong == 1 || p.kosong === true || String(p.status || '').toLowerCase() === 'kosong');
+    const gangguan = (p.gangguan == 1 || p.gangguan === true || String(p.status || '').toLowerCase() === 'gangguan');
     const stokIcon = gangguan ? '🚫 Gangguan' : kosong ? '❌ Kosong' : '✅ Tersedia';
     const hargaText = base > 0 ? `<code>│</code> Rp ${finalPrice.toLocaleString('id-ID')}\n` : '';
     return `<blockquote><code>┌─────────────────────────┐</code>\n` +
@@ -12165,8 +12165,9 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
     });
 
     const allProducts   = [...xlaProducts, ...xdaProducts, ...circleProducts];
-    const totalTersedia = allProducts.filter(p => Number(p.kosong || 0) !== 1 && Number(p.gangguan || 0) !== 1).length;
-    const totalKosong   = allProducts.filter(p => Number(p.kosong || 0) === 1 || Number(p.gangguan || 0) === 1).length;
+    const isUnavailable = (p) => p.kosong == 1 || p.kosong === true || p.gangguan == 1 || p.gangguan === true || String(p.status || '').toLowerCase() === 'gangguan' || String(p.status || '').toLowerCase() === 'kosong';
+    const totalTersedia = allProducts.filter(p => !isUnavailable(p)).length;
+    const totalKosong   = allProducts.filter(p => isUnavailable(p)).length;
     const now = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
 
     // Helper: singkat nama produk
@@ -12203,8 +12204,8 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
       const items = [...xlaProducts.filter(p => !/^XLAP/i.test(p.kode_produk || '')), ...xlaProducts.filter(p => /^XLAP/i.test(p.kode_produk || ''))].map(p => {
         const kode = String(p.kode_produk || '').toUpperCase();
         const nama = shortName(p.nama_produk || p.name || kode);
-        const kosong = Number(p.kosong || 0) === 1;
-        const gangguan = Number(p.gangguan || 0) === 1;
+        const kosong = (p.kosong == 1 || p.kosong === true || String(p.status || '').toLowerCase() === 'kosong');
+        const gangguan = (p.gangguan == 1 || p.gangguan === true || String(p.status || '').toLowerCase() === 'gangguan');
         const icon = gangguan ? '🚫' : kosong ? '❌' : '✅';
         return { icon, label: nama, qty: kosong || gangguan ? '' : '' };
       });
@@ -12217,8 +12218,8 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
         const kode = String(p.kode_produk || '').toUpperCase();
         const nama = shortName(p.nama_produk || p.name || kode);
         const slot = xdaSlotMap[kode];
-        const kosong = Number(p.kosong || 0) === 1;
-        const gangguan = Number(p.gangguan || 0) === 1;
+        const kosong = (p.kosong == 1 || p.kosong === true || String(p.status || '').toLowerCase() === 'kosong');
+        const gangguan = (p.gangguan == 1 || p.gangguan === true || String(p.status || '').toLowerCase() === 'gangguan');
         const icon = gangguan ? '🚫' : (kosong || slot === 0) ? '❌' : '✅';
         const qty = (slot !== undefined && slot > 0) ? String(slot) : '';
         return { icon, label: nama, qty };
@@ -12230,8 +12231,8 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
     if (circleProducts.length) {
       const items = circleProducts.map(p => {
         const nama = shortName(p.nama_produk || p.name || p.kode_produk || '-');
-        const kosong = Number(p.kosong || 0) === 1;
-        const gangguan = Number(p.gangguan || 0) === 1;
+        const kosong = (p.kosong == 1 || p.kosong === true || String(p.status || '').toLowerCase() === 'kosong');
+        const gangguan = (p.gangguan == 1 || p.gangguan === true || String(p.status || '').toLowerCase() === 'gangguan');
         const icon = gangguan ? '🚫' : kosong ? '❌' : '✅';
         return { icon, label: nama, qty: '' };
       });
