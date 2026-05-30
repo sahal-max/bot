@@ -12412,8 +12412,22 @@ async function broadcastRestok(tipe, stokItems) {
   const users = await dbGetAllPreorderUsers(tipe);
   if (!users.length) return;
 
+  // Ambil nama produk dari API untuk tampilan lebih detail
+  let produkMap = {};
+  try {
+    const products = await akrabModule.getProducts(KHFY_ENDPOINT, KHFY_API_KEY);
+    (products || []).forEach(p => {
+      const kode = String(p.kode_produk || p.code || '').toUpperCase();
+      if (kode) produkMap[kode] = p.nama_produk || p.name || p.nama || kode;
+    });
+  } catch (_) {}
+
   const stokText = stokItems.length
-    ? stokItems.map(it => `✦ <code>${it.type}</code> — <b>${it.sisa_slot}</b> unit`).join('\n')
+    ? stokItems.map(it => {
+        const kode = String(it.type || '').toUpperCase();
+        const nama = it.nama || produkMap[kode] || kode;
+        return `✦ <b>${nama}</b> <code>(${kode})</code> — <b>${it.sisa_slot}</b> unit`;
+      }).join('\n')
     : '✦ Stok tersedia';
 
   const msg =
@@ -12421,7 +12435,7 @@ async function broadcastRestok(tipe, stokItems) {
     `<code>──────────────────────</code>\n` +
     `${stokText}\n` +
     `<code>──────────────────────</code>\n` +
-    `<i>Segera beli sebelum habis!</i>`;
+    `🛒 <i>Segera beli sebelum habis!</i>`;
 
   let ok = 0, fail = 0;
   for (const row of users) {
@@ -18798,10 +18812,18 @@ let lastStokSnapshot = { xla: {}, xda: {} };
 
 async function checkAkrabRestok() {
   try {
-    const [stokV1Resp, stokV2Resp] = await Promise.all([
+    const [stokV1Resp, stokV2Resp, products] = await Promise.all([
       akrabModule.cekStokAkrab(KHFY_ENDPOINT).catch(() => null),
       akrabModule.cekStokAkrabV2(KHFY_ENDPOINT).catch(() => null),
+      akrabModule.getProducts(KHFY_ENDPOINT, KHFY_API_KEY).catch(() => []),
     ]);
+
+    // Build map kode → nama produk dari getProducts()
+    const namaMap = {};
+    (products || []).forEach(p => {
+      const kode = String(p.kode_produk || p.code || '').toUpperCase();
+      if (kode) namaMap[kode] = p.nama_produk || p.name || p.nama || kode;
+    });
 
     // Parse XLA
     const itemsV1 = Array.isArray(stokV1Resp)
@@ -18823,7 +18845,7 @@ async function checkAkrabRestok() {
       const slot = Number(it.sisa_slot ?? it.stok ?? it.stock ?? 0);
       const prev = lastStokSnapshot.xla[tipe] ?? null;
       if (prev !== null && prev === 0 && slot > 0) {
-        restokXla.push({ type: tipe, sisa_slot: slot });
+        restokXla.push({ type: tipe, sisa_slot: slot, nama: namaMap[tipe] || tipe });
       }
       lastStokSnapshot.xla[tipe] = slot;
     }
@@ -18835,7 +18857,7 @@ async function checkAkrabRestok() {
       const slot = Number(it.sisa_slot ?? it.stok ?? 0);
       const prev = lastStokSnapshot.xda[tipe] ?? null;
       if (prev !== null && prev === 0 && slot > 0) {
-        restokXda.push({ type: tipe, sisa_slot: slot });
+        restokXda.push({ type: tipe, sisa_slot: slot, nama: namaMap[tipe] || tipe });
       }
       lastStokSnapshot.xda[tipe] = slot;
     }
