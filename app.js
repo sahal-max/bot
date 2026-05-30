@@ -1867,13 +1867,26 @@ db.run(`CREATE TABLE IF NOT EXISTS akrab_orders (
 });
 
 // ── Tabel Baru: akrab_preorders ──────────────────────────
+// Kolom baru: produk_kode, tujuan, harga untuk auto-beli
 db.run(`CREATE TABLE IF NOT EXISTS akrab_preorders (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL,
   tipe TEXT NOT NULL,
+  produk_kode TEXT,
+  tujuan TEXT,
+  harga INTEGER DEFAULT 0,
   created_at INTEGER NOT NULL
 )`, (err) => {
   if (err) logger.error('Kesalahan membuat tabel akrab_preorders:', err.message);
+});
+// Migrasi kolom baru jika tabel sudah ada
+['produk_kode TEXT', 'tujuan TEXT', 'harga INTEGER DEFAULT 0'].forEach(col => {
+  const colName = col.split(' ')[0];
+  db.run(`ALTER TABLE akrab_preorders ADD COLUMN ${col}`, (err) => {
+    if (err && !err.message.includes('duplicate column')) {
+      logger.error(`migrate akrab_preorders.${colName}:`, err.message);
+    }
+  });
 });
 
 // ── Tabel Baru: smm_orders ───────────────────────────────
@@ -12307,26 +12320,37 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
 });
 
 // ══════════════════════════════════════════
-// PRE-ORDER AKRAB V1 (XLA) & V2 (XDA)
+// PRE-ORDER AKRAB V1 (XLA) & V2 (XDA) — AUTO-BELI
 // ══════════════════════════════════════════
 
 // Helper DB preorder
-function dbGetPreorderCount(tipe, userId) {
+function dbGetPreorder(tipe, userId) {
   return new Promise((resolve) =>
-    db.get('SELECT COUNT(*) as c FROM akrab_preorders WHERE tipe = ? AND user_id = ?',
-      [tipe, userId], (err, row) => resolve(row ? row.c : 0))
+    db.get('SELECT * FROM akrab_preorders WHERE tipe = ? AND user_id = ? LIMIT 1',
+      [tipe, userId], (err, row) => resolve(row || null))
   );
 }
-function dbAddPreorder(tipe, userId) {
+function dbSavePreorder(tipe, userId, produkKode, tujuan, harga) {
   return new Promise((resolve, reject) =>
-    db.run('INSERT INTO akrab_preorders (user_id, tipe, created_at) VALUES (?,?,?)',
-      [userId, tipe, Date.now()], (err) => err ? reject(err) : resolve())
+    db.run(
+      `INSERT INTO akrab_preorders (user_id, tipe, produk_kode, tujuan, harga, created_at)
+       VALUES (?,?,?,?,?,?)
+       ON CONFLICT DO NOTHING`,
+      [userId, tipe, produkKode, tujuan, harga, Date.now()],
+      (err) => err ? reject(err) : resolve()
+    )
   );
 }
 function dbRemovePreorder(tipe, userId) {
   return new Promise((resolve) =>
     db.run('DELETE FROM akrab_preorders WHERE tipe = ? AND user_id = ?',
       [tipe, userId], () => resolve())
+  );
+}
+function dbGetAllPreorders(tipe) {
+  return new Promise((resolve) =>
+    db.all('SELECT * FROM akrab_preorders WHERE tipe = ?',
+      [tipe], (err, rows) => resolve(rows || []))
   );
 }
 function dbGetAllPreorderUsers(tipe) {
@@ -12345,26 +12369,36 @@ async function showPreorderMenu(ctx, tipe) {
   const userId = ctx.from.id;
   const label = tipe === 'xla' ? 'Akrab V1 (XLA)' : 'Akrab V2 (XDA)';
   const emoji = tipe === 'xla' ? '🔵' : '🟢';
-  const sudahDaftar = (await dbGetPreorderCount(tipe, userId)) > 0;
+  const existing = await dbGetPreorder(tipe, userId);
   const totalDaftar = await new Promise((resolve) =>
-    db.get('SELECT COUNT(DISTINCT user_id) as c FROM akrab_preorders WHERE tipe = ?',
+    db.get('SELECT COUNT(*) as c FROM akrab_preorders WHERE tipe = ?',
       [tipe], (err, row) => resolve(row ? row.c : 0))
   );
+
+  let statusText = '🔕 Belum daftar';
+  if (existing) {
+    statusText = `🔔 Terdaftar\n` +
+      `✦ Produk : <code>${existing.produk_kode || '-'}</code>\n` +
+      `✦ Tujuan : <code>${existing.tujuan || '-'}</code>\n` +
+      `✦ Harga  : <code>Rp ${Number(existing.harga || 0).toLocaleString('id-ID')}</code>`;
+  }
 
   await ctx.editMessageText(
     `<blockquote>${emoji} <b>Pre-Order ${label}</b>\n` +
     `<code>──────────────────────</code>\n` +
-    `✦ Status kamu : ${sudahDaftar ? '🔔 Sudah daftar' : '🔕 Belum daftar'}\n` +
+    `✦ Status kamu :\n${statusText}\n` +
+    `<code>──────────────────────</code>\n` +
     `✦ Total antrian : <code>${totalDaftar}</code> user\n` +
     `<code>──────────────────────</code>\n` +
-    `<i>Saat stok ${label} tersedia kembali, kamu akan otomatis mendapat notifikasi broadcast.</i></blockquote>`,
+    `<i>Saat stok tersedia, bot otomatis membelikan produk dan memotong saldo kamu.\n` +
+    `Jika gagal, saldo dikembalikan penuh.</i></blockquote>`,
     {
       parse_mode: 'HTML',
       reply_markup: {
         inline_keyboard: [
-          sudahDaftar
+          existing
             ? [{ text: '🔕 Batalkan Pre-Order', callback_data: `preorder_cancel_${tipe}` }]
-            : [{ text: '🔔 Daftar Pre-Order', callback_data: `preorder_daftar_${tipe}` }],
+            : [{ text: '🔔 Daftar Pre-Order', callback_data: `preorder_pilih_produk_${tipe}` }],
           [{ text: '🔙 Kembali', callback_data: 'menu_akrab' }],
         ],
       },
@@ -12382,18 +12416,86 @@ bot.action('preorder_xda', async (ctx) => {
   await showPreorderMenu(ctx, 'xda');
 });
 
-bot.action(/^preorder_daftar_(xla|xda)$/, async (ctx) => {
-  await ctx.answerCbQuery();
-  const userId = ctx.from.id;
+// ── Pilih produk untuk pre-order ─────────────────────────────────────────────
+bot.action(/^preorder_pilih_produk_(xla|xda)$/, async (ctx) => {
+  await ctx.answerCbQuery('Memuat produk...');
   const tipe = ctx.match[1];
-  const sudah = (await dbGetPreorderCount(tipe, userId)) > 0;
-  if (sudah) {
-    await ctx.answerCbQuery('Kamu sudah terdaftar.', { show_alert: true });
-    return showPreorderMenu(ctx, tipe);
+  const label = tipe === 'xla' ? 'Akrab V1 (XLA)' : 'Akrab V2 (XDA)';
+
+  try {
+    const products = await akrabModule.getProducts(KHFY_ENDPOINT, KHFY_API_KEY);
+    const filtered = (products || []).filter(p => {
+      const kode = String(p.kode_produk || '').toUpperCase();
+      return tipe === 'xla'
+        ? /^XLAP?[0-9]/i.test(kode)
+        : /^XDA/i.test(kode);
+    });
+
+    if (!filtered.length) {
+      return ctx.editMessageText(
+        `<blockquote>❌ Tidak ada produk ${label} tersedia saat ini.</blockquote>`,
+        { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: `preorder_${tipe}` }]] } }
+      );
+    }
+
+    const markupGlobal = await dbH.getMarkup(db, 'global', 'akrab', null).catch(() => null);
+    const markupReseller = await dbH.getMarkup(db, 'reseller', 'akrab', ctx.from.id).catch(() => null);
+
+    const keyboard = filtered.slice(0, 20).map(p => {
+      const kode = p.kode_produk || p.code || '';
+      const nama = p.nama_produk || p.name || p.nama || kode;
+      const base = Number(p.harga_final || p.price || p.harga || 0);
+      const harga = wallet.getEffectivePrice(base, markupGlobal, markupReseller);
+      const hargaText = harga > 0 ? ` — Rp ${harga.toLocaleString('id-ID')}` : '';
+      return [{ text: `${nama}${hargaText}`, callback_data: `preorder_set_produk_${tipe}_${kode}` }];
+    });
+    keyboard.push([{ text: '🔙 Kembali', callback_data: `preorder_${tipe}` }]);
+
+    await ctx.editMessageText(
+      `<blockquote>🔔 <b>Pre-Order ${label}</b>\n` +
+      `<code>──────────────────────</code>\n` +
+      `✦ Pilih produk yang ingin dibeli otomatis saat restok:</blockquote>`,
+      { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } }
+    );
+  } catch (err) {
+    logger.error('preorder_pilih_produk: ' + err.message);
+    await ctx.editMessageText('❌ Gagal memuat produk.', {
+      parse_mode: 'HTML',
+      reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: `preorder_${tipe}` }]] }
+    });
   }
-  await dbAddPreorder(tipe, userId);
-  await ctx.answerCbQuery('✅ Berhasil daftar pre-order!', { show_alert: true });
-  await showPreorderMenu(ctx, tipe);
+});
+
+// ── Set produk, minta nomor tujuan ───────────────────────────────────────────
+bot.action(/^preorder_set_produk_(xla|xda)_(.+)$/, async (ctx) => {
+  await ctx.answerCbQuery();
+  const tipe = ctx.match[1];
+  const produkKode = ctx.match[2];
+  const userId = ctx.from.id;
+
+  // Ambil harga produk
+  let harga = 0;
+  try {
+    const products = await akrabModule.getProducts(KHFY_ENDPOINT, KHFY_API_KEY);
+    const p = (products || []).find(x => (x.kode_produk || x.code || '') === produkKode);
+    if (p) {
+      const markupGlobal = await dbH.getMarkup(db, 'global', 'akrab', null).catch(() => null);
+      const markupReseller = await dbH.getMarkup(db, 'reseller', 'akrab', userId).catch(() => null);
+      harga = wallet.getEffectivePrice(Number(p.harga_final || p.price || p.harga || 0), markupGlobal, markupReseller);
+    }
+  } catch (_) {}
+
+  userState[userId] = { step: 'preorder_input_tujuan', tipe, produkKode, harga };
+
+  await ctx.editMessageText(
+    `<blockquote>🔔 <b>Pre-Order</b>\n` +
+    `<code>──────────────────────</code>\n` +
+    `✦ Produk : <code>${produkKode}</code>\n` +
+    `✦ Harga  : <code>Rp ${harga.toLocaleString('id-ID')}</code>\n` +
+    `<code>──────────────────────</code>\n` +
+    `✦ Masukkan nomor tujuan (nomor HP/ID):</blockquote>`,
+    { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '❌ Batal', callback_data: `preorder_${tipe}` }]] } }
+  );
 });
 
 bot.action(/^preorder_cancel_(xla|xda)$/, async (ctx) => {
@@ -12404,6 +12506,109 @@ bot.action(/^preorder_cancel_(xla|xda)$/, async (ctx) => {
   await ctx.answerCbQuery('🔕 Pre-order dibatalkan.', { show_alert: true });
   await showPreorderMenu(ctx, tipe);
 });
+
+// ── Fungsi auto-beli saat restok ──────────────────────────────────────────────
+async function autoBuyPreorders(tipe, stokItems) {
+  const label = tipe === 'xla' ? 'Akrab V1 (XLA)' : 'Akrab V2 (XDA)';
+  const emoji = tipe === 'xla' ? '🔵' : '🟢';
+  const orders = await dbGetAllPreorders(tipe);
+  if (!orders.length) return;
+
+  // Buat set kode produk yang tersedia
+  const tersediaKode = new Set(stokItems.map(it => String(it.type || '').toUpperCase()));
+
+  for (const order of orders) {
+    const userId = order.user_id;
+    const produkKode = order.produk_kode;
+    const tujuan = order.tujuan;
+    const harga = Number(order.harga || 0);
+
+    // Cek apakah produk yang dipesan tersedia
+    if (!tersediaKode.has(String(produkKode || '').toUpperCase())) {
+      // Produk ini belum restok, skip
+      continue;
+    }
+
+    // Cek saldo
+    let saldo = 0;
+    try { saldo = await dbH.getSaldoAkrab(db, userId); } catch (_) {}
+
+    if (saldo < harga) {
+      // Saldo tidak cukup — kirim notif
+      try {
+        await bot.telegram.sendMessage(userId,
+          `${emoji} <b>Pre-Order Gagal — Saldo Tidak Cukup</b>\n` +
+          `<code>──────────────────────</code>\n` +
+          `✦ Produk : <code>${produkKode}</code>\n` +
+          `✦ Tujuan : <code>${tujuan}</code>\n` +
+          `✦ Harga  : <code>Rp ${harga.toLocaleString('id-ID')}</code>\n` +
+          `✦ Saldo  : <code>Rp ${saldo.toLocaleString('id-ID')}</code>\n` +
+          `<code>──────────────────────</code>\n` +
+          `<i>Top up saldo dan daftar ulang pre-order.</i>`,
+          { parse_mode: 'HTML' }
+        );
+      } catch (_) {}
+      await dbRemovePreorder(tipe, userId);
+      continue;
+    }
+
+    // Proses beli
+    try {
+      const reffId = akrabModule.generateUUID();
+      const result = await akrabModule.createTransaction(KHFY_ENDPOINT, KHFY_API_KEY, produkKode, tujuan, reffId);
+
+      // Potong saldo
+      await wallet.potongSaldoAkrab(db, userId, harga, 'akrab-' + reffId, 'akrab');
+      await dbH.saveAkrabOrder(db, userId, reffId, produkKode, tujuan, harga);
+
+      // Hapus preorder
+      await dbRemovePreorder(tipe, userId);
+
+      // Notif sukses
+      await bot.telegram.sendMessage(userId,
+        `${emoji} <b>Pre-Order Berhasil Diproses!</b>\n` +
+        `<code>──────────────────────</code>\n` +
+        `✦ Produk  : <code>${produkKode}</code>\n` +
+        `✦ Tujuan  : <code>${tujuan}</code>\n` +
+        `✦ Harga   : <code>Rp ${harga.toLocaleString('id-ID')}</code>\n` +
+        `✦ Reff ID : <code>${reffId}</code>\n` +
+        `✦ Status  : ${(result && result.status) || 'pending'}\n` +
+        `<code>──────────────────────</code>\n` +
+        `<i>Simpan Reff ID untuk cek status.</i>`,
+        { parse_mode: 'HTML' }
+      );
+      logger.info(`autoBuyPreorders ${tipe}: user ${userId} produk ${produkKode} → ${reffId}`);
+    } catch (err) {
+      logger.error(`autoBuyPreorders ${tipe} user ${userId}: ${err.message}`);
+
+      // Kembalikan saldo jika sudah terpotong
+      try {
+        const saldoSekarang = await dbH.getSaldoAkrab(db, userId);
+        // Cek apakah saldo sudah terpotong (lebih kecil dari sebelumnya)
+        if (saldoSekarang < saldo) {
+          await dbH.updateSaldoAkrab(db, userId, harga);
+          logger.info(`autoBuyPreorders: saldo dikembalikan ke user ${userId} Rp ${harga}`);
+        }
+      } catch (_) {}
+
+      await dbRemovePreorder(tipe, userId);
+
+      // Notif gagal
+      try {
+        await bot.telegram.sendMessage(userId,
+          `❌ <b>Pre-Order Gagal</b>\n` +
+          `<code>──────────────────────</code>\n` +
+          `✦ Produk : <code>${produkKode}</code>\n` +
+          `✦ Tujuan : <code>${tujuan}</code>\n` +
+          `✦ Error  : ${String(err.message || 'unknown').slice(0, 100)}\n` +
+          `<code>──────────────────────</code>\n` +
+          `<i>Saldo dikembalikan. Silakan coba lagi.</i>`,
+          { parse_mode: 'HTML' }
+        );
+      } catch (_) {}
+    }
+  }
+}
 
 // ── Fungsi broadcast restok ke user preorder ──────────────────────────────────
 async function broadcastRestok(tipe, stokItems) {
@@ -12711,9 +12916,49 @@ bot.on('text', async (ctx) => {
       const text = String(ctx.message.text || '').trim();
       const userId = ctx.from.id;
 
+      // ── Input nomor tujuan pre-order ─────────────────
+      if (akState.step === 'preorder_input_tujuan') {
+        const tujuan = text;
+        if (!tujuan) { await ctx.reply('Nomor tujuan tidak boleh kosong.'); return; }
+        const { tipe, produkKode, harga } = akState;
+        delete userState[ctx.chat.id];
+
+        // Cek saldo dulu
+        const saldo = await dbH.getSaldoAkrab(db, userId).catch(() => 0);
+        if (saldo < harga) {
+          await ctx.reply(
+            `❌ <b>Saldo tidak cukup untuk pre-order</b>\n` +
+            `<code>──────────────────────</code>\n` +
+            `✦ Harga  : <code>Rp ${harga.toLocaleString('id-ID')}</code>\n` +
+            `✦ Saldo  : <code>Rp ${saldo.toLocaleString('id-ID')}</code>\n` +
+            `<code>──────────────────────</code>\n` +
+            `<i>Top up saldo terlebih dahulu.</i>`,
+            { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '💳 Top Up', callback_data: 'topup_akrab' }]] } }
+          );
+          return;
+        }
+
+        // Hapus preorder lama jika ada, lalu simpan baru
+        await dbRemovePreorder(tipe, userId);
+        await dbSavePreorder(tipe, userId, produkKode, tujuan, harga);
+
+        const label = tipe === 'xla' ? 'Akrab V1 (XLA)' : 'Akrab V2 (XDA)';
+        await ctx.reply(
+          `✅ <b>Pre-Order Terdaftar!</b>\n` +
+          `<code>──────────────────────</code>\n` +
+          `✦ Tipe   : ${label}\n` +
+          `✦ Produk : <code>${produkKode}</code>\n` +
+          `✦ Tujuan : <code>${tujuan}</code>\n` +
+          `✦ Harga  : <code>Rp ${harga.toLocaleString('id-ID')}</code>\n` +
+          `<code>──────────────────────</code>\n` +
+          `<i>Bot akan otomatis membeli saat stok tersedia.\nSaldo akan terpotong saat itu.</i>`,
+          { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Menu Akrab', callback_data: 'menu_akrab' }]] } }
+        );
+        return;
+      }
+
       // ── Test Akrab (dry run) ──────────────────────────
-      if (akState.step === 'test_akrab_input_nomor') {
-        const nomor = text;
+      if (akState.step === 'test_akrab_input_nomor') {        const nomor = text;
         const product = akState.testProduct || {};
         const kode = product.kode_produk || product.code || '-';
         const nama = product.nama_produk || product.name || kode;
@@ -18864,10 +19109,12 @@ async function checkAkrabRestok() {
 
     if (restokXla.length > 0) {
       logger.info(`Restok XLA terdeteksi: ${restokXla.map(i => i.type).join(', ')}`);
+      await autoBuyPreorders('xla', restokXla);
       await broadcastRestok('xla', restokXla);
     }
     if (restokXda.length > 0) {
       logger.info(`Restok XDA terdeteksi: ${restokXda.map(i => i.type).join(', ')}`);
+      await autoBuyPreorders('xda', restokXda);
       await broadcastRestok('xda', restokXda);
     }
   } catch (err) {
