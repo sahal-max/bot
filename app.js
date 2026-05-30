@@ -3965,8 +3965,7 @@ async function sendMainMenu(ctx) {
     });
   } catch (e) {}
 
-  const messageText = `✦ <b>${NAMA_STORE}</b> ✦
-<code>━━━━━━━━━━━━━━━━━━━━━━</code>
+  const messageText = `<code>────────────────────── ${NAMA_STORE} ──────────────────────</code>
 👤 <b>Informasi Pengguna</b>
 <code>──────────────────────</code>
 ✦ Nama    : <b>${userName}</b>
@@ -3974,13 +3973,13 @@ async function sendMainMenu(ctx) {
 ✦ Status  : <b>${statusReseller}</b>
 ✦ Saldo   : <code>Rp ${Number(saldo || 0).toLocaleString('id-ID')}</code>
 <code>──────────────────────</code>
-📊 <b>Statistik Transaksi</b>
-🏅 <b>Anda</b>
+<b>Statistik Transaksi</b>
+<b>Anda</b>
 ✧ Hari ini  : <b>${userToday}</b> akun
 ✧ Minggu ini: <b>${userWeek}</b> akun
 ✧ Bulan ini : <b>${userMonth}</b> akun
 <code>──────────────────────</code>
-🏅 <b>Global</b>
+<b>Global</b>
 ✧ Hari ini  : <b>${globalToday}</b> akun
 ✧ Minggu ini: <b>${globalWeek}</b> akun
 ✧ Bulan ini : <b>${globalMonth}</b> akun
