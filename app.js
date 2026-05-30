@@ -3948,30 +3948,21 @@ async function sendMainMenu(ctx) {
   const statusReseller = isReseller ? 'Reseller' : 'Bukan Reseller';
   const latency = (Math.random() * 0.1 + 0.01).toFixed(2);
 
-  const messageText = `<blockquote><code>──────────────────────</code>
-<code>      ✦ ${NAMA_STORE} ✦</code>
-<code>──────────────────────</code>
-<code>👤 Informasi Pengguna</code>
-<code>──────────────────────</code>
-<code>✦ Nama   : ${userName}</code>
-<code>✦ ID     : ${String(userId)}</code>
-<code>✦ Status : ${statusReseller}</code>
-<code>✦ Saldo  : Rp ${Number(saldo || 0).toLocaleString('id-ID')}</code>
-<code>──────────────────────</code>
-<code>📊 Statistik Transaksi</code>
-<code>── Anda ──────────────</code>
-<code>✧ Hari ini   : ${userToday} akun</code>
-<code>✧ Minggu ini : ${userWeek} akun</code>
-<code>✧ Bulan ini  : ${userMonth} akun</code>
-<code>── Global ────────────</code>
-<code>✧ Hari ini   : ${globalToday} akun</code>
-<code>✧ Minggu ini : ${globalWeek} akun</code>
-<code>✧ Bulan ini  : ${globalMonth} akun</code>
-<code>✧ Semua      : ${globalAll} akun</code>
-<code>──────────────────────</code>
-<code>👥 Users   : ${jumlahPengguna}</code>
-<code>🕐 Latency : ${latency} ms</code>
-<code>──────────────────────</code></blockquote>`;
+  const messageText = `<blockquote>
+        ✦ <b>${NAMA_STORE}</b> ✦
+
+👤 <b>${userName}</b>
+🆔 <code>${userId}</code> • ${statusReseller}
+💰 <code>Rp ${Number(saldo || 0).toLocaleString('id-ID')}</code>
+
+─── Transaksi Anda ───
+Hari ${userToday} • Minggu ${userWeek} • Bulan ${userMonth}
+
+─── Global ───
+Hari ${globalToday} • Minggu ${globalWeek} • Bulan ${globalMonth}
+Total ${globalAll} transaksi
+
+👥 ${jumlahPengguna} • 🕐 ${latency}ms</blockquote>`;
 
   // Buat keyboard dasar untuk semua user
   const testMenuEnabled = loadTestMenuSetting();
@@ -11064,13 +11055,10 @@ const serverBlocks = currentServers.map(server => {
 
   return (
 `<blockquote>🖥️ <b>${server.nama_server.toUpperCase()}</b>
-<code>──────────────────────</code>
-${priceLines.join('\n')}
-<code>──────────────────────</code>
-✦ Domain : <code>${server.domain}</code>
-✦ Quota  : <code>${server.quota} GB</code>
-✦ Akun   : <code>${server.total_create_akun}/${akunLimitText}</code>
-✦ Status : ${isFullByManualLimit ? 'Server Penuh ❌' : 'Tersedia ✅'}</blockquote>`
+
+💰 1IP <code>Rp ${hargaPerHari1.toLocaleString('id-ID')}</code> • 2IP <code>Rp ${hargaPerHari2.toLocaleString('id-ID')}</code>${monthlyEnabled ? `\n📅 30H: <code>Rp ${hargaPer30Hari1.toLocaleString('id-ID')}</code> / <code>Rp ${hargaPer30Hari2.toLocaleString('id-ID')}</code>` : ''}
+🌐 <code>${server.domain}</code>
+📊 ${server.total_create_akun}/${akunLimitText} ${isFullByManualLimit ? '❌' : '✅'}</blockquote>`
   );
 });
     const title = `🖥️ <b>List Server (Halaman ${currentPage + 1} dari ${totalPages})</b>\n<code>──────────────────────</code>`;
@@ -11387,30 +11375,21 @@ bot.action('menu_suntik', async (ctx) => {
 
   const keyboard = [
     [
-      { text: ' Daftar & Pesan Layanan', callback_data: 'smm_list_layanan' },
-    ],
-    [
-      { text: ' Cek Status', callback_data: 'smm_cek_status' },
-      { text: ' Refill Pesanan', callback_data: 'smm_refill' },
+      { text: '📋 Pesan', callback_data: 'smm_list_layanan' },
+      { text: '📊 Status', callback_data: 'smm_cek_status' },
+      { text: '🔄 Refill', callback_data: 'smm_refill' },
     ],
   ];
   if (isAdminUser) {
-    keyboard.push([{ text: ' Markup Produk SMM', callback_data: 'smm_markup_menu' }]);
+    keyboard.push([{ text: '⚙️ Markup', callback_data: 'smm_markup_menu' }]);
   }
-  keyboard.push([{ text: ' Menu Utama', callback_data: 'send_main_menu' }]);
+  keyboard.push([{ text: '🔙 Kembali', callback_data: 'send_main_menu' }]);
 
   await ctx.editMessageText(
     '<blockquote>💉 <b>SUNTIK FOLLOWERS</b>\n' +
-    '<code>──────────────────────</code>\n' +
-    '✦ Saldo VPN : <code>Rp ' + Number(saldo || 0).toLocaleString('id-ID') + '</code>\n' +
-    '<code>──────────────────────</code>\n' +
-    '<b>Keterangan Ikon:</b>\n' +
-    '🛡️ = Bergaransi (refill jika drop)\n' +
-    '⚠️ = Tidak bergaransi (no refill)\n' +
-    '✅ = Bisa dibatalkan\n' +
-    '❌ = Tidak bisa dibatalkan\n' +
-    '<code>──────────────────────</code>\n' +
-    '<i>Saldo VPN dipakai untuk layanan SMM.</i></blockquote>',
+    '💰 <code>Rp ' + Number(saldo || 0).toLocaleString('id-ID') + '</code>\n\n' +
+    '🛡️ Garansi • ⚠️ No Refill\n' +
+    '✅ Cancel • ❌ No Cancel</blockquote>',
     { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } }
   );
 });
@@ -11557,10 +11536,7 @@ bot.action(/^smm_kat_(.+)$/, async (ctx) => {
     const cancelText = bisaCancel ? '  ✦ Cancel : ✅ Bisa' : '  ✦ Cancel : ❌ Tidak';
 
     return `<blockquote><b>${i + 1}. ${name}</b>\n` +
-      `✦ Harga  : <code>Rp ${finalPrice.toLocaleString('id-ID')} / 1000</code>\n` +
-      `✦ Min    : <code>${min.toLocaleString('id-ID')}</code>  |  Max: <code>${max.toLocaleString('id-ID')}</code>\n` +
-      `✦ Status : ${bisaRefill ? '🛡️ Bergaransi' : '⚠️ Tidak Bergaransi'}\n` +
-      `✦ Cancel : ${bisaCancel ? '✅ Bisa' : '❌ Tidak'}</blockquote>`;
+      `Rp ${finalPrice.toLocaleString('id-ID')}/1K • ${min.toLocaleString('id-ID')}-${max.toLocaleString('id-ID')} • ${bisaRefill ? '🛡️' : '⚠️'} ${bisaCancel ? '✅' : '❌'}</blockquote>`;
   }).join('\n');
 
   await ctx.editMessageText(
@@ -11597,12 +11573,9 @@ bot.action(/^smm_order_(.+)$/, async (ctx) => {
 
   await ctx.editMessageText(
     `<blockquote>💉 <b>${service ? (service.name || serviceId) : serviceId}</b>\n` +
-    `<code>──────────────────────</code>\n` +
-    `✦ Harga  : <code>Rp ${Number(finalPricePer1000).toLocaleString('id-ID')} / 1000</code>\n` +
-    `✦ Min    : <code>${min.toLocaleString('id-ID')}</code>  |  Max: <code>${max.toLocaleString('id-ID')}</code>\n` +
-    `✦ Status : ${bisaRefill ? '🛡️ Bergaransi' : '⚠️ Tidak Bergaransi'}\n` +
-    `✦ Cancel : ${bisaCancel ? '✅ Bisa dibatalkan' : '❌ Tidak bisa dibatalkan'}</blockquote>\n\n` +
-    `✦ Masukkan target (URL/username):`,
+    `Rp ${Number(finalPricePer1000).toLocaleString('id-ID')}/1K • ${min.toLocaleString('id-ID')}-${max.toLocaleString('id-ID')}\n` +
+    `${bisaRefill ? '🛡️ Garansi' : '⚠️ No Refill'} • ${bisaCancel ? '✅ Cancel' : '❌ No Cancel'}</blockquote>\n\n` +
+    `Masukkan target (URL/username):`,
     {
       parse_mode: 'HTML',
       reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'menu_suntik' }]] },
@@ -11841,20 +11814,7 @@ bot.action('menu_akrab', async (ctx) => {
 
   await ctx.editMessageText(
     '<blockquote>🤝 <b>AKRAB &amp; CIRCLE</b>\n' +
-    '<code>──────────────────────</code>\n' +
-    '✦ Saldo Tembak Kuota : <code>Rp ' + Number(saldoAkrab || 0).toLocaleString('id-ID') + '</code>\n' +
-    '<code>──────────────────────</code>\n' +
-    '<b>Keterangan Ikon:</b>\n' +
-    '✅ = Stok tersedia\n' +
-    '❌ = Stok kosong\n' +
-    '⚠️ = Sedang gangguan\n' +
-    '<code>──────────────────────</code>\n' +
-    '✦ Pilih kategori layanan:' +
-    (isAdminUser
-      ? '\n\n👤 <b>Admin</b>\n' +
-        '✦ Reseller ID : <code>' + (KHFY_RESELLER_ID || '-') + '</code>\n' +
-        '✦ Portal      : ' + (KHFY_PORTAL || '-')
-      : '') + '</blockquote>',
+    '💰 <code>Rp ' + Number(saldoAkrab || 0).toLocaleString('id-ID') + '</code></blockquote>',
     { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } }
   );
 });
@@ -12179,115 +12139,86 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
     const totalKosong   = allProducts.filter(p => Number(p.kosong || 0) === 1 || Number(p.gangguan || 0) === 1).length;
     const now = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
 
-    // Helper buat satu blockquote per item
-    const makeItem = (nomor, nama, kode, icon, extraText = '') => {
-      return `<blockquote><b>${nomor}. ${nama} (${kode})</b>\n${extraText}${icon === '✅' ? 'Stok: ✅ Tersedia' : icon === '❌' ? 'Stok: ❌ Kosong' : 'Stok: ⚠️ Gangguan'}</blockquote>`;
+    // Helper: singkat nama produk
+    const shortName = (nama) => {
+      return String(nama || '-')
+        .replace(/XL AXIS Data /gi, '')
+        .replace(/Reguler \+ Lokal/gi, '')
+        .replace(/\(Promo\)/gi, 'P')
+        .replace(/CIRCLE /gi, '')
+        .trim()
+        .slice(0, 15);
     };
 
-    const parts = [];
+    // Helper: format 2 produk per baris
+    const formatPair = (items) => {
+      const lines = [];
+      for (let i = 0; i < items.length; i += 2) {
+        const a = items[i];
+        const b = items[i + 1];
+        const lineA = `${a.icon} ${a.label} ${a.qty}`;
+        if (b) {
+          lines.push(`${lineA} • ${b.icon} ${b.label} ${b.qty}`);
+        } else {
+          lines.push(lineA);
+        }
+      }
+      return lines.join('\n');
+    };
 
-    // Header
-    parts.push(
-      `<blockquote>📦 <b>CEK STOK REAL-TIME</b>\n` +
-      `🕐 Update: <i>${now} WIB</i>\n` +
-      `✦ Tersedia: <b>${totalTersedia}</b>  ✦ Kosong: <b>${totalKosong}</b>  ✦ Total: <b>${allProducts.length}</b></blockquote>`
-    );
+    let body = `<blockquote>📦 <b>STOK AKRAB</b>\n🕐 ${now}\n\n`;
 
-    // ── XLA ──────────────────────────────────────────────────────────────────
+    // ── XLA ──
     if (xlaProducts.length) {
-      parts.push(`<b>🔵 XLA — Akrab V1</b>`);
-      const reguler = xlaProducts.filter(p => !/^XLAP/i.test(p.kode_produk || ''));
-      const promo   = xlaProducts.filter(p => /^XLAP/i.test(p.kode_produk || ''));
-      [...reguler, ...promo].forEach((p, i) => {
-        const kode     = String(p.kode_produk || '').toUpperCase();
-        const nama     = p.nama_produk || p.name || p.nama || kode;
-        const harga    = Number(p.harga_final || p.price || p.harga || 0);
-        const hargaText = harga > 0 ? `Harga: Rp ${harga.toLocaleString('id-ID')} | ` : '';
-        const kosong   = Number(p.kosong || 0) === 1;
+      const items = [...xlaProducts.filter(p => !/^XLAP/i.test(p.kode_produk || '')), ...xlaProducts.filter(p => /^XLAP/i.test(p.kode_produk || ''))].map(p => {
+        const kode = String(p.kode_produk || '').toUpperCase();
+        const nama = shortName(p.nama_produk || p.name || kode);
+        const kosong = Number(p.kosong || 0) === 1;
         const gangguan = Number(p.gangguan || 0) === 1;
-        const icon     = gangguan ? '⚠️' : kosong ? '❌' : '✅';
-        parts.push(makeItem(i + 1, nama, kode, icon, hargaText));
+        const icon = gangguan ? '⚠️' : kosong ? '❌' : '✅';
+        return { icon, label: nama, qty: kosong || gangguan ? '' : '' };
       });
+      body += `🔵 <b>XLA</b>\n${formatPair(items)}\n\n`;
     }
 
-    // ── XDA ──────────────────────────────────────────────────────────────────
+    // ── XDA ──
     if (xdaProducts.length) {
-      parts.push(`<b>🟢 XDA — Akrab V2</b>`);
-      xdaProducts.forEach((p, i) => {
-        const kode     = String(p.kode_produk || '').toUpperCase();
-        const nama     = p.nama_produk || p.name || p.nama || kode;
-        const harga    = Number(p.harga_final || p.price || p.harga || 0);
-        const hargaText = harga > 0 ? `Harga: Rp ${harga.toLocaleString('id-ID')} | ` : '';
-        const slot     = xdaSlotMap[kode];
-        const kosong   = Number(p.kosong || 0) === 1;
+      const items = xdaProducts.map(p => {
+        const kode = String(p.kode_produk || '').toUpperCase();
+        const nama = shortName(p.nama_produk || p.name || kode);
+        const slot = xdaSlotMap[kode];
+        const kosong = Number(p.kosong || 0) === 1;
         const gangguan = Number(p.gangguan || 0) === 1;
-        const icon     = gangguan ? '⚠️' : (kosong || slot === 0) ? '❌' : '✅';
-        const slotText = (slot !== undefined && slot > 0) ? `Stok: ✅ ${slot} unit` : icon === '✅' ? 'Stok: ✅ Tersedia' : 'Stok: ❌ Kosong';
-        parts.push(`<blockquote><b>${i + 1}. ${nama} (${kode})</b>\n${hargaText}${slotText}</blockquote>`);
+        const icon = gangguan ? '⚠️' : (kosong || slot === 0) ? '❌' : '✅';
+        const qty = (slot !== undefined && slot > 0) ? String(slot) : '';
+        return { icon, label: nama, qty };
       });
+      body += `🟢 <b>XDA</b>\n${formatPair(items)}\n\n`;
     }
 
-    // ── Circle ────────────────────────────────────────────────────────────────
+    // ── Circle ──
     if (circleProducts.length) {
-      const grouped = {};
-      circleProducts.forEach((p) => {
-        const cat = String(p.kode_provider || 'Lainnya').toUpperCase();
-        if (!grouped[cat]) grouped[cat] = [];
-        grouped[cat].push(p);
+      const items = circleProducts.map(p => {
+        const nama = shortName(p.nama_produk || p.name || p.kode_produk || '-');
+        const kosong = Number(p.kosong || 0) === 1;
+        const gangguan = Number(p.gangguan || 0) === 1;
+        const icon = gangguan ? '⚠️' : kosong ? '❌' : '✅';
+        return { icon, label: nama, qty: '' };
       });
-      for (const [cat, prods] of Object.entries(grouped)) {
-        parts.push(`<b>⭕ Circle — ${cat}</b>`);
-        prods.forEach((p, i) => {
-          const kode     = String(p.kode_produk || p.code || '').toUpperCase();
-          const nama     = p.nama_produk || p.name || p.nama || kode;
-          const harga    = Number(p.harga_final || p.price || p.harga || 0);
-          const hargaText = harga > 0 ? `Harga: Rp ${harga.toLocaleString('id-ID')} | ` : '';
-          const kosong   = Number(p.kosong || 0) === 1;
-          const gangguan = Number(p.gangguan || 0) === 1;
-          const icon     = gangguan ? '⚠️' : kosong ? '❌' : '✅';
-          parts.push(makeItem(i + 1, nama, kode, icon, hargaText));
-        });
-      }
+      body += `⭕ <b>Circle</b>\n${formatPair(items)}\n\n`;
     }
 
-    // Gabung semua — kirim per bagian jika terlalu panjang
-    const CHUNK_MAX = 3800;
-    const chunks = [];
-    let current = '';
-    for (const part of parts) {
-      if ((current + '\n' + part).length > CHUNK_MAX) {
-        if (current) chunks.push(current);
-        current = part;
-      } else {
-        current = current ? current + '\n' + part : part;
-      }
-    }
-    if (current) chunks.push(current);
+    body += `📊 Ready ${totalTersedia} • Kosong ${totalKosong}</blockquote>`;
 
-    // Edit pesan pertama
-    await ctx.editMessageText(chunks[0] || '❌ Tidak ada data.', {
+    await ctx.editMessageText(body, {
       parse_mode: 'HTML',
-      reply_markup: chunks.length === 1 ? {
+      reply_markup: {
         inline_keyboard: [
           [{ text: '🔄 Refresh', callback_data: 'akrab_cek_stock_all' }],
           [{ text: '🔙 Kembali', callback_data: 'menu_akrab' }],
         ],
-      } : undefined,
+      },
     });
-
-    // Kirim sisa chunk sebagai pesan baru
-    for (let i = 1; i < chunks.length; i++) {
-      const isLast = i === chunks.length - 1;
-      await ctx.reply(chunks[i], {
-        parse_mode: 'HTML',
-        reply_markup: isLast ? {
-          inline_keyboard: [
-            [{ text: '🔄 Refresh', callback_data: 'akrab_cek_stock_all' }],
-            [{ text: '🔙 Kembali', callback_data: 'menu_akrab' }],
-          ],
-        } : undefined,
-      });
-    }
   } catch (err) {
     logger.error('akrab_cek_stock_all: ' + (err && err.message ? err.message : err));
     await ctx.editMessageText('❌ Gagal cek stok. Coba lagi nanti.', {
@@ -12296,7 +12227,6 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
     });
   }
 });
-
 // ══════════════════════════════════════════
 // PRE-ORDER AKRAB V1 (XLA) & V2 (XDA) — AUTO-BELI
 // ══════════════════════════════════════════
