@@ -3948,26 +3948,28 @@ async function sendMainMenu(ctx) {
   const statusReseller = isReseller ? 'Reseller' : 'Bukan Reseller';
   const latency = (Math.random() * 0.1 + 0.01).toFixed(2);
 
-  const messageText = `<code>┌─────────────────────────┐</code>
-<code>│</code> ✦ <b>${NAMA_STORE}</b> ✦
-<code>│──────────────────────────</code>
-<code>│</code> Nama   : <b>${userName}</b>
-<code>│</code> ID     : <code>${userId}</code>
-<code>│</code> Status : <b>${statusReseller}</b>
-<code>│</code> Saldo  : <code>Rp ${Number(saldo || 0).toLocaleString('id-ID')}</code>
-<code>└─────────────────────────┘</code>
+  const messageText = `<code>┏━━━━━━━━━━━━━━━━━━━━━┓</code>
+  🏪 <b>${NAMA_STORE}</b>
+<code>┗━━━━━━━━━━━━━━━━━━━━━┛</code>
 
-<code>┌─────────────────────────┐</code>
-<code>│</code> Statistik
-<code>│── Anda ─────────────────</code>
-<code>│</code> Hari : ${userToday} | Minggu : ${userWeek}
-<code>│</code> Bulan : ${userMonth}
-<code>│── Global ───────────────</code>
-<code>│</code> Hari : ${globalToday} | Minggu : ${globalWeek}
-<code>│</code> Bulan : ${globalMonth} | Total : ${globalAll}
-<code>└─────────────────────────┘</code>
+👤 <b>Informasi Akun</b>
+<code>├ Nama   : ${userName}</code>
+<code>├ ID     : ${userId}</code>
+<code>├ Status : ${statusReseller}</code>
+<code>└ Saldo  : Rp ${Number(saldo || 0).toLocaleString('id-ID')}</code>
 
-👥 ${jumlahPengguna} user  •  🕐 ${latency}ms`;
+📊 <b>Transaksi Kamu</b>
+<code>├ 📅 Hari ini   : ${userToday}</code>
+<code>├ 📆 Minggu ini : ${userWeek}</code>
+<code>└ 🗓️ Bulan ini  : ${userMonth}</code>
+
+🌍 <b>Transaksi Global</b>
+<code>├ Hari   : ${globalToday}</code>
+<code>├ Minggu : ${globalWeek}</code>
+<code>├ Bulan  : ${globalMonth}</code>
+<code>└ Total  : ${globalAll}</code>
+
+⚙️ <b>${jumlahPengguna} user · ${latency}ms</b>`;
 
   // Buat keyboard dasar untuk semua user
   const testMenuEnabled = loadTestMenuSetting();
