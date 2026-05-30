@@ -12165,10 +12165,13 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
       });
     }
 
+    // Helper: ambil kode produk dari berbagai kemungkinan field
+    const getKode = (p) => String(p.kode_produk || p.code || p.produk || '').toUpperCase();
+
     // Pisahkan produk — hanya XLA, XDA, XCLP (Circle). Produk lain dibuang.
-    const xlaProducts    = (products || []).filter(p => /^XLA/i.test(p.kode_produk || '') && !/^XCLP/i.test(p.kode_produk || ''));
-    const xdaProducts    = (products || []).filter(p => /^XDA/i.test(p.kode_produk || ''));
-    const circleProducts = (products || []).filter(p => /^XCLP/i.test(p.kode_produk || ''));
+    const xlaProducts    = (products || []).filter(p => /^XLA/i.test(getKode(p)) && !/^XCLP/i.test(getKode(p)));
+    const xdaProducts    = (products || []).filter(p => /^XDA/i.test(getKode(p)));
+    const circleProducts = (products || []).filter(p => /^XCLP/i.test(getKode(p)));
 
     const now = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
 
@@ -12183,6 +12186,8 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
         .replace(/Reguler \+ Lokal/gi, '')
         .replace(/\(Promo\)/gi, 'P')
         .replace(/CIRCLE /gi, '')
+        .replace(/PROMO/gi, '')
+        .replace(/\s+/g, ' ')
         .trim()
         .slice(0, 15);
     };
@@ -12255,10 +12260,10 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
       body += `🟢 <b>XDA</b>\n<code>${formatPair(items)}</code>\n\n`;
     }
 
-    // ── Circle ── tidak ada endpoint stok, pakai field kosong
+    // ── Circle (XCLP) ── tidak ada endpoint stok, pakai field kosong
     if (circleProducts.length) {
       const items = circleProducts.map(p => {
-        const nama = shortName(p.nama_produk || p.name || p.kode_produk || '-');
+        const nama = shortName(p.nama_produk || p.name || getKode(p) || '-');
         const tersedia = !isKosongProduk(p);
         const icon = tersedia ? '✅' : '❌';
         if (tersedia) totalReady++; else totalKosong++;
