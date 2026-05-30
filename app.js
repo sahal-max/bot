@@ -11672,16 +11672,21 @@ bot.action('menu_akrab', async (ctx) => {
   keyboard.push([{ text: ' Menu Utama', callback_data: 'send_main_menu' }]);
 
   await ctx.editMessageText(
-    '🤝 <b>AKRAB &amp; CIRCLE</b>\n' +
+    '<blockquote>🤝 <b>AKRAB &amp; CIRCLE</b>\n' +
     '<code>──────────────────────</code>\n' +
     '✦ Saldo Tembak Kuota : <code>Rp ' + Number(saldoAkrab || 0).toLocaleString('id-ID') + '</code>\n' +
+    '<code>──────────────────────</code>\n' +
+    '<b>Keterangan Ikon:</b>\n' +
+    '✅ = Stok tersedia\n' +
+    '❌ = Stok kosong\n' +
+    '⚠️ = Sedang gangguan\n' +
     '<code>──────────────────────</code>\n' +
     '✦ Pilih kategori layanan:' +
     (isAdminUser
       ? '\n\n👤 <b>Admin</b>\n' +
         '✦ Reseller ID : <code>' + (KHFY_RESELLER_ID || '-') + '</code>\n' +
         '✦ Portal      : ' + (KHFY_PORTAL || '-')
-      : ''),
+      : '') + '</blockquote>',
     { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } }
   );
 });
