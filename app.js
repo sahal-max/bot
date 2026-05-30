@@ -3977,26 +3977,24 @@ async function sendMainMenu(ctx) {
   const testMenuEnabled = loadTestMenuSetting();
   let keyboard = [
     [
-      { text: '🔑 Akun VPN', callback_data: 'menu_vpn' }
+      { text: '🔑 Akun VPN', callback_data: 'menu_vpn' },
+      { text: '🤝 Akrab', callback_data: 'menu_akrab' }
     ],
     [
-      { text: '🤝 Akrab & Circle', callback_data: 'menu_akrab' },
-      { text: '💉 Suntik Followers', callback_data: 'menu_suntik' }
-    ],
-    [
-      { text: '💳 Top Up Saldo', callback_data: 'menu_topup' }
+      { text: '💉 Suntik', callback_data: 'menu_suntik' },
+      { text: '💳 Top Up', callback_data: 'menu_topup' }
     ],
     ...(testMenuEnabled ? [[
-      { text: '🧪 Test Transaksi', callback_data: 'admin_test_menu' },
+      { text: '🧪 Test', callback_data: 'admin_test_menu' },
       { text: '🔧 Tools', callback_data: 'menu_tools' }
+    ], [
+      { text: '📞 Admin', callback_data: 'hubungi_admin' }
     ]] : [[
-      { text: '🔧 Tools', callback_data: 'menu_tools' }
+      { text: '🔧 Tools', callback_data: 'menu_tools' },
+      { text: '📞 Admin', callback_data: 'hubungi_admin' }
     ]]),
     [
-      { text: '⭐ Jadi Reseller — Harga Lebih Murah!', callback_data: 'jadi_reseller' }
-    ],
-    [
-      { text: '📞 Hubungi Admin', callback_data: 'hubungi_admin' }
+      { text: '⭐ Jadi Reseller', callback_data: 'jadi_reseller' }
     ],
   ];
 
@@ -11820,30 +11818,26 @@ bot.action('menu_akrab', async (ctx) => {
 
   const keyboard = [
     [
-      { text: ' Top Up Saldo Tembak Kuota', callback_data: 'topup_akrab' },
+      { text: '💳 Top Up', callback_data: 'topup_akrab' },
+      { text: '📋 Cek Status', callback_data: 'akrab_cek_status' },
     ],
     [
-      { text: ' Akrab V1', callback_data: 'akrab_grup_v1' },
-      { text: ' Akrab V2', callback_data: 'akrab_grup_v2' },
+      { text: '🔵 Akrab V1', callback_data: 'akrab_grup_v1' },
+      { text: '🟢 Akrab V2', callback_data: 'akrab_grup_v2' },
     ],
     [
       { text: '⭕ Circle', callback_data: 'akrab_grup_circle' },
+      { text: '📦 Cek Stok', callback_data: 'akrab_cek_stock_all' },
     ],
     [
-      { text: ' Cek Status', callback_data: 'akrab_cek_status' },
-    ],
-    [
-      { text: '📦 Cek Stok XLA / XDA / Circle', callback_data: 'akrab_cek_stock_all' },
-    ],
-    [
-      { text: '🔔 Pre-Order Akrab V1 (XLA)', callback_data: 'preorder_xla' },
-      { text: '🔔 Pre-Order Akrab V2 (XDA)', callback_data: 'preorder_xda' },
+      { text: '🔔 PO V1', callback_data: 'preorder_xla' },
+      { text: '🔔 PO V2', callback_data: 'preorder_xda' },
     ],
   ];
   if (isAdminUser) {
-    keyboard.push([{ text: ' Markup Produk Akrab', callback_data: 'akrab_markup_menu' }]);
+    keyboard.push([{ text: '⚙️ Markup', callback_data: 'akrab_markup_menu' }]);
   }
-  keyboard.push([{ text: ' Menu Utama', callback_data: 'send_main_menu' }]);
+  keyboard.push([{ text: '🔙 Menu Utama', callback_data: 'send_main_menu' }]);
 
   await ctx.editMessageText(
     '<blockquote>🤝 <b>AKRAB &amp; CIRCLE</b>\n' +
