@@ -12315,15 +12315,18 @@ function dbGetPreorder(tipe, userId) {
   );
 }
 function dbSavePreorder(tipe, userId, produkKode, tujuan, harga) {
-  return new Promise((resolve, reject) =>
-    db.run(
-      `INSERT INTO akrab_preorders (user_id, tipe, produk_kode, tujuan, harga, created_at)
-       VALUES (?,?,?,?,?,?)
-       ON CONFLICT DO NOTHING`,
-      [userId, tipe, produkKode, tujuan, harga, Date.now()],
-      (err) => err ? reject(err) : resolve()
-    )
-  );
+  return new Promise((resolve, reject) => {
+    // Hapus dulu jika ada, lalu insert baru (upsert manual)
+    db.run('DELETE FROM akrab_preorders WHERE tipe = ? AND user_id = ?', [tipe, userId], (delErr) => {
+      if (delErr) return reject(delErr);
+      db.run(
+        `INSERT INTO akrab_preorders (user_id, tipe, produk_kode, tujuan, harga, created_at)
+         VALUES (?,?,?,?,?,?)`,
+        [userId, tipe, produkKode, tujuan, harga, Date.now()],
+        (err) => err ? reject(err) : resolve()
+      );
+    });
+  });
 }
 function dbRemovePreorder(tipe, userId) {
   return new Promise((resolve) =>
@@ -12560,22 +12563,6 @@ async function _autoBuyPreordersInner(tipe, stokItems) {
       // Potong saldo
       await wallet.potongSaldoAkrab(db, userId, harga, 'akrab-' + reffId, 'akrab');
       await dbH.saveAkrabOrder(db, userId, reffId, produkKode, tujuan, harga);
-
-      // Cek saldo setelah potong — notif jika hampir habis
-      const saldoSisa = await dbH.getSaldoAkrab(db, userId).catch(() => 0);
-      const SALDO_WARNING = 10000;
-      if (saldoSisa < SALDO_WARNING && saldoSisa >= 0) {
-        try {
-          await bot.telegram.sendMessage(userId,
-            `⚠️ <b>Saldo Tembak Kuota Hampir Habis</b>\n` +
-            `<code>──────────────────────</code>\n` +
-            `✦ Sisa saldo : <code>Rp ${saldoSisa.toLocaleString('id-ID')}</code>\n` +
-            `<code>──────────────────────</code>\n` +
-            `<i>Segera top up agar pre-order berikutnya bisa diproses.</i>`,
-            { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '💳 Top Up', callback_data: 'topup_akrab' }]] } }
-          );
-        } catch (_) {}
-      }
 
       // Hapus preorder
       await dbRemovePreorder(tipe, userId);
@@ -12846,83 +12833,6 @@ bot.on('text', async (ctx) => {
     }
     await handleOrderKuotaPaymentCheck(ctx, uniqueCode);
     return;
-  }
-
-  // ── Step PPOB ───────────────────────────────────────────
-  try {
-    const ppobState = userState[ctx.chat.id];
-    if (ppobState && typeof ppobState.step === 'string') {
-      const text = String(ctx.message.text || '').trim();
-      const userId = ctx.from.id;
-
-      // Input nomor/ID tujuan untuk pembelian produk PPOB
-      if (ppobState.step.startsWith('ppob_input_target_')) {
-        const productCode = ppobState.step.replace('ppob_input_target_', '');
-        const target = text;
-        if (!target) {
-          await ctx.reply('Tujuan tidak boleh kosong. Masukkan nomor/ID tujuan:');
-          return;
-        }
-        const product = ppobState.ppobProduct;
-        const baseAmount = product ? Number(product.price || product.harga || product.harga_final || 0) : 0;
-
-        // Pakai harga yang sudah dihitung saat klik beli (kalau ada), agar konsisten
-        const markupGlobal = await dbH.getMarkup(db, 'global', 'ppob', null).catch(() => null);
-        const markupReseller = await dbH.getMarkup(db, 'reseller', 'ppob', userId).catch(() => null);
-        const finalAmount = ppobState.ppobFinalPrice
-          ? Number(ppobState.ppobFinalPrice)
-          : wallet.getEffectivePrice(baseAmount, markupGlobal, markupReseller);
-
-        userState[ctx.chat.id] = Object.assign({}, ppobState, {
-          step: null,
-          ppobConfirm: { productCode, target, amount: finalAmount },
-        });
-
-        await ctx.reply(
-          ' <b>Konfirmasi Pembelian PPOB</b>\n\n' +
-          'Produk: <b>' + (product ? (product.name || product.product_name || productCode) : productCode) + '</b>\n' +
-          'Tujuan: <code>' + target + '</code>\n' +
-          'Total : <b>Rp ' + Number(finalAmount).toLocaleString('id-ID') + '</b>\n\n' +
-          'Saldo Akrab kamu akan terpotong.',
-          {
-            parse_mode: 'HTML',
-            reply_markup: {
-              inline_keyboard: [
-                [{ text: ' Konfirmasi', callback_data: 'ppob_konfirmasi_' + productCode }],
-                [{ text: ' Batal', callback_data: 'menu_akrab' }],
-              ],
-            },
-          }
-        );
-        return;
-      }
-
-      // Cek status transaksi PPOB by Order ID
-      if (ppobState.step === 'ppob_input_order_id') {
-        const orderId = text;
-        if (!orderId) {
-          await ctx.reply('Order ID tidak boleh kosong.');
-          return;
-        }
-        try {
-          const status = await ppobModule.getTransactionStatus(HIDEPULSA_API_KEY, HIDEPULSA_BASE_URL, orderId, HIDEPULSA_PASSWORD);
-          const st = (status && (status.status || status.state)) || 'unknown';
-          await dbH.updatePpobOrderStatus(db, orderId, st).catch(() => {});
-          delete userState[ctx.chat.id];
-          await ctx.reply(
-            ' <b>Status Transaksi</b>\n\nOrder ID: <code>' + orderId + '</code>\nStatus: <b>' + st + '</b>',
-            { parse_mode: 'HTML' }
-          );
-        } catch (err) {
-          logger.error('ppob_input_order_id error: ' + (err && err.message ? err.message : err));
-          delete userState[ctx.chat.id];
-          await ctx.reply(' Gagal cek status: ' + (err && err.message ? err.message : 'unknown'));
-        }
-        return;
-      }
-    }
-  } catch (ppobErr) {
-    logger.error('Step PPOB error: ' + (ppobErr && ppobErr.message ? ppobErr.message : ppobErr));
   }
 
   // ── Step Akrab & Circle ────────────────────────────────
@@ -19077,32 +18987,20 @@ setTimeout(pollSmmOrders, 20000);
 let lastStokSnapshot = { xla: {}, xda: {} };
 
 // ── TTL cleanup userState (hapus state > 1 jam) ───────────────────────────────
-const _userStateTimestamps = new Map();
-const _origUserStateSet = (userId, state) => {
-  _userStateTimestamps.set(String(userId), Date.now());
-};
-// Patch userState agar catat timestamp saat set
-const _userStateProxy = new Proxy(userState, {
-  set(target, key, value) {
-    _userStateTimestamps.set(String(key), Date.now());
-    target[key] = value;
-    return true;
-  },
-  deleteProperty(target, key) {
-    _userStateTimestamps.delete(String(key));
-    delete target[key];
-    return true;
-  }
-});
+// Setiap state yang punya field `_ts` akan dicek TTL-nya
+// Wrapper sederhana: set timestamp saat state dibuat
+function setUserState(userId, state) {
+  userState[userId] = Object.assign({}, state, { _ts: Date.now() });
+}
 
 setInterval(() => {
   const now = Date.now();
   const TTL = 60 * 60 * 1000; // 1 jam
   let cleaned = 0;
-  for (const [key, ts] of _userStateTimestamps.entries()) {
-    if (now - ts > TTL) {
+  for (const key of Object.keys(userState)) {
+    const state = userState[key];
+    if (state && state._ts && (now - state._ts) > TTL) {
       delete userState[key];
-      _userStateTimestamps.delete(key);
       cleaned++;
     }
   }
