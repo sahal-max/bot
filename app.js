@@ -11059,11 +11059,13 @@ const serverBlocks = currentServers.map(server => {
   const isFullByManualLimit = !isManualUnlimited && Number(server.total_create_akun || 0) >= manualLimit;
 
   return (
-`🖥️ <b>${server.nama_server.toUpperCase()}</b>
-
-💰 1IP <code>Rp ${hargaPerHari1.toLocaleString('id-ID')}</code> • 2IP <code>Rp ${hargaPerHari2.toLocaleString('id-ID')}</code>${monthlyEnabled ? `\n📅 30H: <code>Rp ${hargaPer30Hari1.toLocaleString('id-ID')}</code> / <code>Rp ${hargaPer30Hari2.toLocaleString('id-ID')}</code>` : ''}
-🌐 <code>${server.domain}</code>
-📊 ${server.total_create_akun}/${akunLimitText} ${isFullByManualLimit ? '❌' : '✅'}`
+`<code>┌─────────────────────────┐</code>
+<code>│</code> 🖥️ <b>${server.nama_server.toUpperCase()}</b>
+<code>│─────────────────────────</code>
+<code>│</code> 💰 1IP <code>Rp ${hargaPerHari1.toLocaleString('id-ID')}</code> • 2IP <code>Rp ${hargaPerHari2.toLocaleString('id-ID')}</code>${monthlyEnabled ? `\n<code>│</code> 📅 30H: <code>Rp ${hargaPer30Hari1.toLocaleString('id-ID')}</code> / <code>Rp ${hargaPer30Hari2.toLocaleString('id-ID')}</code>` : ''}
+<code>│</code> 🌐 <code>${server.domain}</code>
+<code>│</code> 📊 ${server.total_create_akun}/${akunLimitText} ${isFullByManualLimit ? '❌' : '✅'}
+<code>└─────────────────────────┘</code>`
   );
 });
     const title = `🖥️ <b>List Server (Halaman ${currentPage + 1} dari ${totalPages})</b>\n<code>──────────────────────</code>`;
@@ -11391,10 +11393,14 @@ bot.action('menu_suntik', async (ctx) => {
   keyboard.push([{ text: '🔙 Kembali', callback_data: 'send_main_menu' }]);
 
   await ctx.editMessageText(
-    '💉 <b>SUNTIK FOLLOWERS</b>\n' +
-    '💰 <code>Rp ' + Number(saldo || 0).toLocaleString('id-ID') + '</code>\n\n' +
-    '🛡️ Garansi • ⚠️ No Refill\n' +
-    '✅ Cancel • ❌ No Cancel',
+    '<code>┌─────────────────────────┐</code>\n' +
+    '<code>│</code> 💉 <b>SUNTIK FOLLOWERS</b>\n' +
+    '<code>│─────────────────────────</code>\n' +
+    '<code>│</code> Saldo : <code>Rp ' + Number(saldo || 0).toLocaleString('id-ID') + '</code>\n' +
+    '<code>│─────────────────────────</code>\n' +
+    '<code>│</code> 🛡️ Garansi • ⚠️ No Refill\n' +
+    '<code>│</code> ✅ Cancel • ❌ No Cancel\n' +
+    '<code>└─────────────────────────┘</code>',
     { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } }
   );
 });
@@ -11540,8 +11546,10 @@ bot.action(/^smm_kat_(.+)$/, async (ctx) => {
       : '⚠️ <b>Tidak Bergaransi</b> (No Refill)';
     const cancelText = bisaCancel ? '  ✦ Cancel : ✅ Bisa' : '  ✦ Cancel : ❌ Tidak';
 
-    return `<b>${i + 1}. ${name}</b>\n` +
-      `Rp ${finalPrice.toLocaleString('id-ID')}/1K • ${min.toLocaleString('id-ID')}-${max.toLocaleString('id-ID')} • ${bisaRefill ? '🛡️' : '⚠️'} ${bisaCancel ? '✅' : '❌'}`;
+    return `<code>┌─────────────────────────┐</code>\n` +
+      `<code>│</code> <b>${i + 1}. ${name}</b>\n` +
+      `<code>│</code> Rp ${finalPrice.toLocaleString('id-ID')}/1K • ${min.toLocaleString('id-ID')}-${max.toLocaleString('id-ID')} • ${bisaRefill ? '🛡️' : '⚠️'} ${bisaCancel ? '✅' : '❌'}\n` +
+      `<code>└─────────────────────────┘</code>`;
   }).join('\n');
 
   await ctx.editMessageText(
@@ -11577,9 +11585,12 @@ bot.action(/^smm_order_(.+)$/, async (ctx) => {
   const cancelLine  = bisaCancel ? '✅ Bisa dibatalkan' : '❌ Tidak bisa dibatalkan';
 
   await ctx.editMessageText(
-    `💉 <b>${service ? (service.name || serviceId) : serviceId}</b>\n` +
-    `Rp ${Number(finalPricePer1000).toLocaleString('id-ID')}/1K • ${min.toLocaleString('id-ID')}-${max.toLocaleString('id-ID')}\n` +
-    `${bisaRefill ? '🛡️ Garansi' : '⚠️ No Refill'} • ${bisaCancel ? '✅ Cancel' : '❌ No Cancel'}\n\n` +
+    `<code>┌─────────────────────────┐</code>\n` +
+    `<code>│</code> 💉 <b>${service ? (service.name || serviceId) : serviceId}</b>\n` +
+    `<code>│─────────────────────────</code>\n` +
+    `<code>│</code> Rp ${Number(finalPricePer1000).toLocaleString('id-ID')}/1K • ${min.toLocaleString('id-ID')}-${max.toLocaleString('id-ID')}\n` +
+    `<code>│</code> ${bisaRefill ? '🛡️ Garansi' : '⚠️ No Refill'} • ${bisaCancel ? '✅ Cancel' : '❌ No Cancel'}\n` +
+    `<code>└─────────────────────────┘</code>\n\n` +
     `Masukkan target (URL/username):`,
     {
       parse_mode: 'HTML',
@@ -11774,12 +11785,12 @@ bot.action('menu_vpn', async (ctx) => {
   keyboard.push([{ text: ' Menu Utama', callback_data: 'send_main_menu' }]);
 
   const msgText =
-    '🔑 <b>AKUN VPN</b>\n' +
-    '<code>──────────────────────</code>\n' +
-    '✦ Saldo VPN : <code>Rp ' + Number(saldo || 0).toLocaleString('id-ID') + '</code>\n' +
-    '<code>──────────────────────</code>\n' +
-    '<i>Saldo dipakai untuk Akun VPN + Suntik Followers.</i>\n\n' +
-    '✦ Pilih layanan di bawah:';
+    '<code>┌─────────────────────────┐</code>\n' +
+    '<code>│</code> 🔑 <b>AKUN VPN</b>\n' +
+    '<code>│─────────────────────────</code>\n' +
+    '<code>│</code> Saldo : <code>Rp ' + Number(saldo || 0).toLocaleString('id-ID') + '</code>\n' +
+    '<code>└─────────────────────────┘</code>\n\n' +
+    'Pilih layanan:';
 
   await ctx.editMessageText(msgText, { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } })
     .catch(async () => { await ctx.reply(msgText, { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } }); });
@@ -11818,8 +11829,11 @@ bot.action('menu_akrab', async (ctx) => {
   keyboard.push([{ text: '🔙 Menu Utama', callback_data: 'send_main_menu' }]);
 
   await ctx.editMessageText(
-    '🤝 <b>AKRAB &amp; CIRCLE</b>\n' +
-    '💰 <code>Rp ' + Number(saldoAkrab || 0).toLocaleString('id-ID') + '</code>',
+    '<code>┌─────────────────────────┐</code>\n' +
+    '<code>│</code> 🤝 <b>AKRAB &amp; CIRCLE</b>\n' +
+    '<code>│─────────────────────────</code>\n' +
+    '<code>│</code> Saldo : <code>Rp ' + Number(saldoAkrab || 0).toLocaleString('id-ID') + '</code>\n' +
+    '<code>└─────────────────────────┘</code>',
     { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } }
   );
 });
@@ -12022,8 +12036,11 @@ bot.action(/^akrab_kat_(.+)$/, async (ctx) => {
     const kosong = Number(p.kosong || 0) === 1;
     const gangguan = Number(p.gangguan || 0) === 1;
     const stokIcon = gangguan ? '⚠️ Gangguan' : kosong ? '❌ Kosong' : '✅ Tersedia';
-    const hargaText = base > 0 ? `✦ Harga : <code>Rp ${finalPrice.toLocaleString('id-ID')}</code>\n` : '';
-    return `<b>${i + 1}. ${name}</b> <code>${code}</code>\n${hargaText}✦ Stok  : ${stokIcon}`;
+    const hargaText = base > 0 ? `<code>│</code> Rp ${finalPrice.toLocaleString('id-ID')}\n` : '';
+    return `<code>┌─────────────────────────┐</code>\n` +
+      `<code>│</code> <b>${i + 1}. ${name}</b> <code>${code}</code>\n` +
+      `${hargaText}<code>│</code> ${stokIcon}\n` +
+      `<code>└─────────────────────────┘</code>`;
   }).join('\n');
 
   await ctx.editMessageText(
@@ -12084,12 +12101,14 @@ bot.action(/^akrab_beli_(.+)$/, async (ctx) => {
   const deskripsi = product && product.deskripsi ? ('\n\n<i>' + String(product.deskripsi).slice(0, 300) + '</i>') : '';
 
   await ctx.editMessageText(
-    `🤝 <b>Beli Produk Akrab</b>\n` +
-    `<code>──────────────────────</code>\n` +
-    `✦ Produk : <b>${namaProduk}</b>\n` +
-    `✦ Harga  : <code>Rp ${Number(finalPrice).toLocaleString('id-ID')}</code>` +
-    (deskripsi ? `\n<i>${String(product.deskripsi).slice(0, 200)}</i>` : '') + `\n\n` +
-    `✦ Masukkan nomor tujuan:`,
+    `<code>┌─────────────────────────┐</code>\n` +
+    `<code>│</code> 🤝 <b>Beli Produk Akrab</b>\n` +
+    `<code>│─────────────────────────</code>\n` +
+    `<code>│</code> Produk : <b>${namaProduk}</b>\n` +
+    `<code>│</code> Harga  : <code>Rp ${Number(finalPrice).toLocaleString('id-ID')}</code>` +
+    (deskripsi ? `\n<code>│</code> <i>${String(product.deskripsi).slice(0, 150)}</i>` : '') +
+    `\n<code>└─────────────────────────┘</code>\n\n` +
+    `Masukkan nomor tujuan:`,
     {
       parse_mode: 'HTML',
       reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'menu_akrab' }]] },
