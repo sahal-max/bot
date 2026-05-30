@@ -3949,7 +3949,7 @@ async function sendMainMenu(ctx) {
   const latency = (Math.random() * 0.1 + 0.01).toFixed(2);
 
   const messageText = `<code>┏━━━━━━━━━━━━━━━━━━━━━┓</code>
-  🏪 <b>${NAMA_STORE}</b>
+   ✨ <b>${NAMA_STORE}</b> ✨
 <code>┗━━━━━━━━━━━━━━━━━━━━━┛</code>
 
 👤 <b>Informasi Akun</b>
@@ -12207,7 +12207,10 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
     };
 
     let totalReady = 0, totalKosong = 0;
-    let body = `<blockquote>📦 <b>STOK AKRAB</b>\n🕐 ${now}\n\n`;
+    let body = `<code>┏━━━━━━━━━━━━━━━━━━━━━┓</code>
+   ✨ <b>STOK AKRAB</b> ✨
+<code>┗━━━━━━━━━━━━━━━━━━━━━┛</code>
+🕐 <i>${now}</i>\n\n`;
 
     // ── XLA ── prioritas slot endpoint V1, fallback field kosong
     if (xlaProducts.length) {
@@ -12221,7 +12224,7 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
         if (tersedia) totalReady++; else totalKosong++;
         return { icon, label: nama, qty };
       });
-      body += `🔵 <b>XLA</b>\n${formatPair(items)}\n\n`;
+      body += `🔵 <b>XLA</b>\n<code>${formatPair(items)}</code>\n\n`;
     }
 
     // ── XDA ── prioritas slot endpoint V2, fallback field kosong
@@ -12236,7 +12239,7 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
         if (tersedia) totalReady++; else totalKosong++;
         return { icon, label: nama, qty };
       });
-      body += `🟢 <b>XDA</b>\n${formatPair(items)}\n\n`;
+      body += `🟢 <b>XDA</b>\n<code>${formatPair(items)}</code>\n\n`;
     }
 
     // ── Circle ── tidak ada endpoint stok, pakai field kosong
@@ -12248,10 +12251,10 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
         if (tersedia) totalReady++; else totalKosong++;
         return { icon, label: nama, qty: '' };
       });
-      body += `⭕ <b>Circle</b>\n${formatPair(items)}\n\n`;
+      body += `⭕ <b>Circle</b>\n<code>${formatPair(items)}</code>\n\n`;
     }
 
-    body += `📊 Ready ${totalReady} • Kosong ${totalKosong}</blockquote>`;
+    body += `📊 <b>Ready ${totalReady} · Kosong ${totalKosong}</b>`;
 
     await ctx.editMessageText(body, {
       parse_mode: 'HTML',
