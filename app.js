@@ -11925,60 +11925,82 @@ bot.action('akrab_cek_status', async (ctx) => {
 bot.action('akrab_cek_stock_all', async (ctx) => {
   await ctx.answerCbQuery('Mengecek stok...');
   try {
-    // Fetch paralel: stok V1 (XLA), stok V2 (XDA), dan daftar produk (Circle)
-    const [stokV1Resp, stokV2Resp, products] = await Promise.all([
-      akrabModule.cekStokAkrab(KHFY_ENDPOINT).catch(() => null),
-      akrabModule.cekStokAkrabV2(KHFY_ENDPOINT).catch(() => null),
+    // Satu sumber kebenaran: getProducts() + stok XDA dari endpoint V2
+    const [products, stokV2Resp] = await Promise.all([
       akrabModule.getProducts(KHFY_ENDPOINT, KHFY_API_KEY).catch(() => []),
+      akrabModule.cekStokAkrabV2(KHFY_ENDPOINT).catch(() => null),
     ]);
+
+    // Build map slot XDA dari endpoint V2 (lebih akurat untuk jumlah unit)
+    const xdaSlotMap = {};
+    if (stokV2Resp && stokV2Resp.message) {
+      akrabModule.parseStokV2Message(stokV2Resp.message).forEach((it) => {
+        xdaSlotMap[String(it.type || '').toUpperCase()] = Number(it.sisa_slot || 0);
+      });
+    } else if (stokV2Resp && Array.isArray(stokV2Resp.data)) {
+      stokV2Resp.data.forEach((it) => {
+        xdaSlotMap[String(it.type || it.kode || '').toUpperCase()] = Number(it.sisa_slot ?? it.stok ?? 0);
+      });
+    }
+
+    // Pisahkan produk berdasarkan prefix kode
+    const xlaProducts   = (products || []).filter(p => /^XLAP?[0-9]/i.test(p.kode_produk || ''));
+    const xdaProducts   = (products || []).filter(p => /^XDA/i.test(p.kode_produk || ''));
+    const circleProducts = (products || []).filter(p => {
+      const kode = String(p.kode_produk || '').toUpperCase();
+      return !kode.startsWith('XLA') && !kode.startsWith('XLAP') && !kode.startsWith('XDA');
+    });
 
     const now = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
     let body = `📦 <b>STOK AKRAB &amp; CIRCLE</b>\n`;
     body += `<code>──────────────────────</code>\n`;
     body += `🕐 <i>${now} WIB</i>\n`;
 
-    // ── XLA (V1) ──────────────────────────────────────────────────────────────
-    const itemsV1 = Array.isArray(stokV1Resp)
-      ? stokV1Resp
-      : (stokV1Resp && Array.isArray(stokV1Resp.data)) ? stokV1Resp.data : [];
-
+    // ── XLA (V1 + Promo) ──────────────────────────────────────────────────────
     body += `\n<b>🔵 XLA — Akrab V1</b>\n`;
-    if (itemsV1.length) {
-      itemsV1.forEach((it) => {
-        const tipe = String(it.type || it.kode || '-').toUpperCase();
-        const slot = Number(it.sisa_slot ?? it.stok ?? it.stock ?? 0);
-        const icon = slot > 0 ? '✅' : '❌';
-        body += `${icon} <code>${tipe}</code> — ${slot > 0 ? `<b>${slot}</b> slot` : '<b>KOSONG</b>'}\n`;
+    if (xlaProducts.length) {
+      // Pisah: reguler dulu, promo belakang
+      const reguler = xlaProducts.filter(p => !/^XLAP/i.test(p.kode_produk || ''));
+      const promo   = xlaProducts.filter(p => /^XLAP/i.test(p.kode_produk || ''));
+      const allXla  = [...reguler, ...promo];
+
+      allXla.forEach((p) => {
+        const kode    = String(p.kode_produk || '').toUpperCase();
+        const nama    = p.nama_produk || p.name || p.nama || kode;
+        const kosong  = Number(p.kosong || 0) === 1;
+        const gangguan = Number(p.gangguan || 0) === 1;
+        let icon;
+        if (gangguan)     icon = '⚠️';
+        else if (kosong)  icon = '❌';
+        else              icon = '✅';
+        body += `${icon} ${nama} <code>${kode}</code>\n`;
       });
     } else {
       body += `<i>Data tidak tersedia.</i>\n`;
     }
 
     // ── XDA (V2) ──────────────────────────────────────────────────────────────
-    let itemsV2 = [];
-    if (stokV2Resp && stokV2Resp.message) {
-      itemsV2 = akrabModule.parseStokV2Message(stokV2Resp.message);
-    } else if (stokV2Resp && Array.isArray(stokV2Resp.data)) {
-      itemsV2 = stokV2Resp.data;
-    }
-
     body += `\n<b>🟢 XDA — Akrab V2</b>\n`;
-    if (itemsV2.length) {
-      itemsV2.forEach((it) => {
-        const tipe = String(it.type || it.kode || '-').toUpperCase();
-        const slot = Number(it.sisa_slot ?? it.stok ?? it.stock ?? 0);
-        const icon = slot > 0 ? '✅' : '❌';
-        body += `${icon} <code>${tipe}</code> — ${slot > 0 ? `<b>${slot}</b> slot` : '<b>KOSONG</b>'}\n`;
+    if (xdaProducts.length) {
+      xdaProducts.forEach((p) => {
+        const kode    = String(p.kode_produk || '').toUpperCase();
+        const nama    = p.nama_produk || p.name || p.nama || kode;
+        const kosong  = Number(p.kosong || 0) === 1;
+        const gangguan = Number(p.gangguan || 0) === 1;
+        // Slot dari endpoint V2 jika ada, lebih akurat
+        const slot    = xdaSlotMap[kode];
+        let icon;
+        if (gangguan)                          icon = '⚠️';
+        else if (kosong || slot === 0)         icon = '❌';
+        else                                   icon = '✅';
+        const slotText = (slot !== undefined && slot > 0) ? ` — <b>${slot}</b> unit` : '';
+        body += `${icon} ${nama} <code>${kode}</code>${slotText}\n`;
       });
     } else {
       body += `<i>Data tidak tersedia.</i>\n`;
     }
 
     // ── Circle ────────────────────────────────────────────────────────────────
-    const circleProducts = (products || []).filter(
-      (p) => getAkrabGroup(p.kode_provider) === 'circle'
-    );
-
     body += `\n<b>⭕ Circle</b>\n`;
     if (circleProducts.length) {
       // Kelompokkan per kode_provider
@@ -11992,17 +12014,17 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
       for (const [cat, prods] of Object.entries(grouped)) {
         body += `<b>  📂 ${cat}</b>\n`;
         prods.forEach((p) => {
-          const nama = p.nama_produk || p.name || p.nama || p.kode_produk || '-';
-          const kode = p.kode_produk || p.code || '';
-          const kosong = Number(p.kosong || 0) === 1;
+          const kode    = String(p.kode_produk || p.code || '').toUpperCase();
+          const nama    = p.nama_produk || p.name || p.nama || kode;
+          const kosong  = Number(p.kosong || 0) === 1;
           const gangguan = Number(p.gangguan || 0) === 1;
-          const harga = Number(p.harga_final || p.price || p.harga || 0);
+          const harga   = Number(p.harga_final || p.price || p.harga || 0);
           const hargaText = harga > 0 ? ` — Rp ${harga.toLocaleString('id-ID')}` : '';
-          const kodeText = kode ? ` <code>${kode}</code>` : '';
+          const kodeText  = kode ? ` <code>${kode}</code>` : '';
           let icon;
-          if (gangguan) icon = '⚠️';
+          if (gangguan)    icon = '⚠️';
           else if (kosong) icon = '❌';
-          else icon = '✅';
+          else             icon = '✅';
           body += `  ${icon} ${nama}${kodeText}${hargaText}\n`;
         });
       }
@@ -12010,7 +12032,13 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
       body += `<i>Tidak ada produk Circle.</i>\n`;
     }
 
+    // ── Ringkasan ─────────────────────────────────────────────────────────────
+    const allProducts = [...xlaProducts, ...xdaProducts, ...circleProducts];
+    const totalTersedia = allProducts.filter(p => Number(p.kosong || 0) !== 1 && Number(p.gangguan || 0) !== 1).length;
+    const totalKosong   = allProducts.filter(p => Number(p.kosong || 0) === 1 || Number(p.gangguan || 0) === 1).length;
+
     body += `\n<code>──────────────────────</code>\n`;
+    body += `📊 Tersedia: <b>${totalTersedia}</b>  ❌ Kosong: <b>${totalKosong}</b>  Total: <b>${allProducts.length}</b>\n`;
     body += `✅ tersedia  ❌ kosong  ⚠️ gangguan`;
 
     await ctx.editMessageText(body, {
