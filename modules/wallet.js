@@ -41,11 +41,13 @@ async function tambahSaldoAkrab(db, userId, amount) {
   ));
 }
 
+// Markup dipisah, TIDAK numpuk:
+//  - Reseller (punya markup reseller)  → pakai markup reseller saja
+//  - Member biasa (tanpa markup reseller) → pakai markup global saja
 function getEffectivePrice(basePrice, markupGlobal, markupReseller) {
-  let price = basePrice;
-  if (markupGlobal) price = dbH.applyMarkup(price, markupGlobal);
-  if (markupReseller) price = dbH.applyMarkup(price, markupReseller);
-  return price;
+  if (markupReseller) return dbH.applyMarkup(basePrice, markupReseller);
+  if (markupGlobal) return dbH.applyMarkup(basePrice, markupGlobal);
+  return basePrice;
 }
 
 module.exports = {

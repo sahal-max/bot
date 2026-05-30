@@ -10525,7 +10525,8 @@ async function showResellerMarkupMenu(ctx, service, label) {
 
   const msgText =
     ` <b>Markup Harga ${label}</b>\n\n${statusText}\n\n` +
-    `Harga yang pembeli kamu lihat = harga dasar + markup global admin + markup kamu.`;
+    `<i>Harga yang pembeli kamu lihat = harga dasar + markup kamu.\n` +
+    `Markup reseller menggantikan markup global admin (tidak ditambah dua kali).</i>`;
   const replyMarkup = { inline_keyboard: [
     [{ text: ` Set Markup %`,    callback_data: `reseller_markup_${service}_set_pct`  }],
     [{ text: ` Set Markup Flat`, callback_data: `reseller_markup_${service}_set_flat` }],
@@ -11710,7 +11711,8 @@ bot.action('smm_markup_menu', async (ctx) => {
     : 'Belum ada markup';
 
   await ctx.editMessageText(
-    ' <b>Markup Global SMM</b>\n\n' + statusText + '\n\nPilih aksi:',
+    ' <b>Markup Global SMM</b>\n\n' + statusText + '\n\n' +
+    '<i>Markup ini berlaku untuk member biasa.\nReseller pakai markup sendiri (tidak kena markup global).</i>\n\nPilih aksi:',
     {
       parse_mode: 'HTML',
       reply_markup: {
@@ -12734,7 +12736,8 @@ bot.action('akrab_markup_menu', async (ctx) => {
     : 'Belum ada markup';
 
   await ctx.editMessageText(
-    ' <b>Markup Global Produk Akrab</b>\n\n' + statusText + '\n\nPilih aksi:',
+    ' <b>Markup Global Produk Akrab</b>\n\n' + statusText + '\n\n' +
+    '<i>Markup ini berlaku untuk member biasa.\nReseller pakai markup sendiri (tidak kena markup global).</i>\n\nPilih aksi:',
     {
       parse_mode: 'HTML',
       reply_markup: {
