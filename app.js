@@ -12214,21 +12214,15 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
 <code>┗━━━━━━━━━━━━━━━━━━━━━┛</code>
 🕐 <i>${now}</i>\n\n`;
 
-    // ── XLA ── gabung produk + slot map V1, render semua kode unik
-    if (xlaProducts.length || Object.keys(xlaSlotMap).length) {
-      const namaMapXla = {};
-      xlaProducts.forEach(p => {
-        namaMapXla[String(p.kode_produk || '').toUpperCase()] = shortName(p.nama_produk || p.name || p.kode_produk);
-      });
-      const kodeSetXla = new Set([
-        ...xlaProducts.map(p => String(p.kode_produk || '').toUpperCase()),
-        ...Object.keys(xlaSlotMap),
-      ]);
-      const items = [...kodeSetXla].sort().map(kode => {
-        const nama = namaMapXla[kode] || kode;
+    // ── XLA ── sumber: getProducts(), enrich angka dari slot map V1
+    if (xlaProducts.length) {
+      const reguler = xlaProducts.filter(p => !/^XLAP/i.test(getKode(p)));
+      const promo   = xlaProducts.filter(p => /^XLAP/i.test(getKode(p)));
+      const items = [...reguler, ...promo].map(p => {
+        const kode = getKode(p);
+        const nama = shortName(p.nama_produk || p.name || kode);
         const slot = xlaSlotMap[kode];
-        const prod = xlaProducts.find(p => String(p.kode_produk || '').toUpperCase() === kode);
-        const tersedia = (slot !== undefined) ? slot > 0 : (prod ? !isKosongProduk(prod) : false);
+        const tersedia = (slot !== undefined) ? slot > 0 : !isKosongProduk(p);
         const icon = tersedia ? '✅' : '❌';
         const qty = (slot !== undefined && slot > 0) ? String(slot) : '';
         if (tersedia) totalReady++; else totalKosong++;
@@ -12237,21 +12231,13 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
       body += `🔵 <b>XLA</b>\n<code>${formatPair(items)}</code>\n\n`;
     }
 
-    // ── XDA ── gabung produk + slot map V2, render semua kode unik
-    if (xdaProducts.length || Object.keys(xdaSlotMap).length) {
-      const namaMapXda = {};
-      xdaProducts.forEach(p => {
-        namaMapXda[String(p.kode_produk || '').toUpperCase()] = shortName(p.nama_produk || p.name || p.kode_produk);
-      });
-      const kodeSetXda = new Set([
-        ...xdaProducts.map(p => String(p.kode_produk || '').toUpperCase()),
-        ...Object.keys(xdaSlotMap),
-      ]);
-      const items = [...kodeSetXda].sort().map(kode => {
-        const nama = namaMapXda[kode] || kode;
+    // ── XDA ── sumber: getProducts(), enrich angka dari slot map V2
+    if (xdaProducts.length) {
+      const items = xdaProducts.map(p => {
+        const kode = getKode(p);
+        const nama = shortName(p.nama_produk || p.name || kode);
         const slot = xdaSlotMap[kode];
-        const prod = xdaProducts.find(p => String(p.kode_produk || '').toUpperCase() === kode);
-        const tersedia = (slot !== undefined) ? slot > 0 : (prod ? !isKosongProduk(prod) : false);
+        const tersedia = (slot !== undefined) ? slot > 0 : !isKosongProduk(p);
         const icon = tersedia ? '✅' : '❌';
         const qty = (slot !== undefined && slot > 0) ? String(slot) : '';
         if (tersedia) totalReady++; else totalKosong++;
