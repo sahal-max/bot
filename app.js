@@ -12035,7 +12035,7 @@ bot.action(/^akrab_kat_(.+)$/, async (ctx) => {
     const finalPrice = wallet.getEffectivePrice(base, markupGlobal, markupReseller);
     const kosong = Number(p.kosong || 0) === 1;
     const gangguan = Number(p.gangguan || 0) === 1;
-    const stokIcon = gangguan ? '⚠️ Gangguan' : kosong ? '❌ Kosong' : '✅ Tersedia';
+    const stokIcon = gangguan ? '🚫 Gangguan' : kosong ? '❌ Kosong' : '✅ Tersedia';
     const hargaText = base > 0 ? `<code>│</code> Rp ${finalPrice.toLocaleString('id-ID')}\n` : '';
     return `<code>┌─────────────────────────┐</code>\n` +
       `<code>│</code> <b>${i + 1}. ${name}</b> <code>${code}</code>\n` +
@@ -12199,7 +12199,7 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
         const nama = shortName(p.nama_produk || p.name || kode);
         const kosong = Number(p.kosong || 0) === 1;
         const gangguan = Number(p.gangguan || 0) === 1;
-        const icon = gangguan ? '⚠️' : kosong ? '❌' : '✅';
+        const icon = gangguan ? '🚫' : kosong ? '❌' : '✅';
         return { icon, label: nama, qty: kosong || gangguan ? '' : '' };
       });
       body += `🔵 <b>XLA</b>\n${formatPair(items)}\n\n`;
@@ -12213,7 +12213,7 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
         const slot = xdaSlotMap[kode];
         const kosong = Number(p.kosong || 0) === 1;
         const gangguan = Number(p.gangguan || 0) === 1;
-        const icon = gangguan ? '⚠️' : (kosong || slot === 0) ? '❌' : '✅';
+        const icon = gangguan ? '🚫' : (kosong || slot === 0) ? '❌' : '✅';
         const qty = (slot !== undefined && slot > 0) ? String(slot) : '';
         return { icon, label: nama, qty };
       });
@@ -12226,7 +12226,7 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
         const nama = shortName(p.nama_produk || p.name || p.kode_produk || '-');
         const kosong = Number(p.kosong || 0) === 1;
         const gangguan = Number(p.gangguan || 0) === 1;
-        const icon = gangguan ? '⚠️' : kosong ? '❌' : '✅';
+        const icon = gangguan ? '🚫' : kosong ? '❌' : '✅';
         return { icon, label: nama, qty: '' };
       });
       body += `⭕ <b>Circle</b>\n${formatPair(items)}\n\n`;
