@@ -3892,6 +3892,24 @@ db.get('SELECT saldo FROM users WHERE user_id = ?', [targetUserId], async (err2,
 });
 
 //////////////////
+bot.command('debugcekstok', async (ctx) => {
+  if (!adminIds.includes(ctx.from.id)) return;
+  try {
+    const [stokV1Resp, stokV2Resp] = await Promise.all([
+      akrabModule.cekStokAkrab(KHFY_ENDPOINT).catch(() => null),
+      akrabModule.cekStokAkrabV2(KHFY_ENDPOINT).catch(() => null),
+    ]);
+
+    let body = '<b>Debug Slot Map</b>\n\n';
+    body += '<b>V1 (XLA) raw response:</b>\n<pre>' + JSON.stringify(stokV1Resp, null, 2).slice(0, 800) + '</pre>\n\n';
+    body += '<b>V2 (XDA) raw response:</b>\n<pre>' + JSON.stringify(stokV2Resp, null, 2).slice(0, 800) + '</pre>';
+
+    await ctx.reply(body, { parse_mode: 'HTML' });
+  } catch (err) {
+    await ctx.reply('Error: ' + err.message);
+  }
+});
+
 bot.command('debugakrab', async (ctx) => {
   if (!adminIds.includes(ctx.from.id)) return;
   try {
