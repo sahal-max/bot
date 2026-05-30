@@ -3892,6 +3892,28 @@ db.get('SELECT saldo FROM users WHERE user_id = ?', [targetUserId], async (err2,
 });
 
 //////////////////
+bot.command('debugakrab', async (ctx) => {
+  if (!adminIds.includes(ctx.from.id)) return;
+  try {
+    const products = await akrabModule.getProducts(KHFY_ENDPOINT, KHFY_API_KEY);
+    const xda = (products || []).filter(p => /^XDA/i.test(p.kode_produk || p.code || ''));
+    if (!xda.length) {
+      return ctx.reply('❌ Tidak ada produk XDA dari getProducts()');
+    }
+    const lines = xda.map(p => {
+      const kode = p.kode_produk || p.code || '-';
+      const nama = (p.nama_produk || p.name || '-').slice(0, 30);
+      const harga = p.harga_final || p.price || p.harga || 0;
+      const kosong = p.kosong || 0;
+      const provider = p.kode_provider || '-';
+      return `<code>${kode}</code> | ${nama} | Rp ${Number(harga).toLocaleString('id-ID')} | k:${kosong} | prov:${provider}`;
+    });
+    await ctx.reply(`<b>Debug XDA dari getProducts()</b>\n${xda.length} produk\n\n${lines.join('\n')}`, { parse_mode: 'HTML' });
+  } catch (err) {
+    await ctx.reply('Error: ' + err.message);
+  }
+});
+
 bot.command('admin', async (ctx) => {
   logger.info('Admin menu requested');
   
@@ -11898,31 +11920,7 @@ bot.action(/^akrab_grup_(v1|v2|circle)$/, async (ctx) => {
     // Filter berdasarkan kode produk + nama (bukan kode_provider)
     const getKode = (p) => String(p.kode_produk || p.code || p.produk || '').toUpperCase();
     const getNama = (p) => String(p.nama_produk || p.name || p.nama || '');
-    let filtered = (products || []).filter((p) => getAkrabGroup(getKode(p), getNama(p)) === grup);
-
-    // Untuk V1/V2, lengkapi daftar dari slot map (data stok asli) — tambahkan virtual product
-    // jika ada kode di slot map yang TIDAK ada di getProducts
-    if (grup === 'v1' || grup === 'v2') {
-      const slotKeys = Object.keys(stokMap).filter(k => {
-        if (grup === 'v1') return /^XLA/.test(k) && !/^XCL/.test(k);
-        if (grup === 'v2') return /^XDA/.test(k);
-        return false;
-      });
-      const existingKodes = new Set(filtered.map(getKode));
-      slotKeys.forEach(kode => {
-        if (!existingKodes.has(kode)) {
-          // Virtual product — coba ambil harga/nama dari produk lain dengan prefix sama
-          const refProduct = (products || []).find(p => getKode(p).startsWith(kode.slice(0, 3))) || {};
-          filtered.push({
-            kode_produk: kode,
-            nama_produk: kode,
-            harga_final: refProduct.harga_final || refProduct.price || refProduct.harga || 0,
-            kosong: 0,
-            _virtual: true,
-          });
-        }
-      });
-    }
+    const filtered = (products || []).filter((p) => getAkrabGroup(getKode(p), getNama(p)) === grup);
 
     userState[userId] = Object.assign({}, userState[userId], {
       akrabProducts: products,
