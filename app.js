@@ -18,6 +18,8 @@ const topupBonusPath = path.join(__dirname, 'topup_bonus.json');
 const defaultTopupBonus = { enabled: true, range_10_40: 0, range_50_70: 0, range_70_100: 0 };
 const scNexusMenuPath = path.join(__dirname, 'sc_nexus_menu.json');
 const defaultScNexusMenu = { enabled: true };
+const testMenuPath = path.join(__dirname, 'test_menu.json');
+const defaultTestMenu = { enabled: true };
 const maintenancePath = path.join(__dirname, 'maintenance_mode.json');
 const defaultMaintenance = { enabled: false, estimate: '' };
 const varsPath = path.join(__dirname, '.vars.json');
@@ -126,6 +128,22 @@ function loadScNexusMenuSetting() {
 function saveScNexusMenuSetting(enabled) {
   const payload = { enabled: !!enabled };
   fs.writeFileSync(scNexusMenuPath, JSON.stringify(payload, null, 2), 'utf8');
+  return payload.enabled;
+}
+
+function loadTestMenuSetting() {
+  try {
+    const raw = fs.readFileSync(testMenuPath, 'utf8');
+    const parsed = JSON.parse(raw);
+    return !!parsed.enabled;
+  } catch (err) {
+    return defaultTestMenu.enabled;
+  }
+}
+
+function saveTestMenuSetting(enabled) {
+  const payload = { enabled: !!enabled };
+  fs.writeFileSync(testMenuPath, JSON.stringify(payload, null, 2), 'utf8');
   return payload.enabled;
 }
 
@@ -3991,6 +4009,7 @@ async function sendMainMenu(ctx) {
 <code>──────────────────────</code></blockquote>`;
 
   // Buat keyboard dasar untuk semua user
+  const testMenuEnabled = loadTestMenuSetting();
   let keyboard = [
     [
       { text: '🔑 Akun VPN', callback_data: 'menu_vpn' }
@@ -4002,10 +4021,12 @@ async function sendMainMenu(ctx) {
     [
       { text: '💳 Top Up Saldo', callback_data: 'menu_topup' }
     ],
-    [
+    ...(testMenuEnabled ? [[
       { text: '🧪 Test Transaksi', callback_data: 'admin_test_menu' },
       { text: '🔧 Tools', callback_data: 'menu_tools' }
-    ],
+    ]] : [[
+      { text: '🔧 Tools', callback_data: 'menu_tools' }
+    ]]),
     [
       { text: '⭐ Jadi Reseller — Harga Lebih Murah!', callback_data: 'jadi_reseller' }
     ],
@@ -5596,6 +5617,8 @@ async function sendAdminToolsMenu(ctx) {
   const maintenanceLabel = maintenance.enabled
     ? ` Maintenance: ON (${maintenance.estimate || 'estimasi belum diisi'})`
     : ' Maintenance: OFF';
+  const testMenuEnabled = loadTestMenuSetting();
+  const testMenuLabel = testMenuEnabled ? '🧪 Test Transaksi : ON' : '🧪 Test Transaksi : OFF';
   const keyboard = [
     [{ text: ' Help Admin', callback_data: 'helpadmin_menu' }],
     [{ text: ' Kelola Download Config', callback_data: 'admin_download_config_menu' }],
@@ -5612,7 +5635,7 @@ async function sendAdminToolsMenu(ctx) {
     [{ text: ' Setting Payment Gateway', callback_data: 'payment_gateway_settings_menu' }],
     [{ text: maintenanceLabel, callback_data: 'maintenance_menu' }],
     [{ text: ' Kontak Admin', callback_data: 'admin_contact_settings_menu' }],
-    [{ text: '🧪 Test Transaksi (Dry Run)', callback_data: 'admin_test_menu' }],
+    [{ text: testMenuLabel, callback_data: 'toggle_test_menu' }],
     [{ text: ' Kembali', callback_data: 'admin_menu' }]
   ];
 
@@ -7148,6 +7171,15 @@ bot.action('admin_menu_reseller', async (ctx) => {
 bot.action('admin_menu_tools', async (ctx) => {
   await ctx.answerCbQuery();
   delete userState[ctx.chat.id];
+  await sendAdminToolsMenu(ctx);
+});
+
+bot.action('toggle_test_menu', async (ctx) => {
+  await ctx.answerCbQuery();
+  if (!adminIds.includes(ctx.from.id)) return ctx.answerCbQuery('Akses ditolak.', { show_alert: true });
+  const current = loadTestMenuSetting();
+  const next = saveTestMenuSetting(!current);
+  await ctx.answerCbQuery(next ? '✅ Menu Test Transaksi diaktifkan' : '❌ Menu Test Transaksi dinonaktifkan', { show_alert: true });
   await sendAdminToolsMenu(ctx);
 });
 
