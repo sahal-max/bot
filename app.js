@@ -11940,8 +11940,52 @@ bot.action(/^akrab_grup_(v1|v2|circle)$/, async (ctx) => {
     const getNama = (p) => String(p.nama_produk || p.name || p.nama || '');
     const filtered = (products || []).filter((p) => getAkrabGroup(getKode(p), getNama(p)) === grup);
 
+    // Untuk V1/V2 — lengkapi daftar dari slot map untuk produk yang TIDAK ada di getProducts.
+    // Harga estimasi proporsional dari produk dengan ukuran GB terdekat.
+    if (grup === 'v1' || grup === 'v2') {
+      const slotKeys = Object.keys(stokMap).filter(k => {
+        if (grup === 'v1') return /^XLA[0-9]/.test(k);
+        if (grup === 'v2') return /^XDA[0-9]/.test(k);
+        return false;
+      });
+      const existingKodes = new Set(filtered.map(getKode));
+
+      const refList = filtered.map(p => {
+        const m = String(getKode(p)).match(/[A-Z]+([0-9]+)/);
+        return m ? { gb: Number(m[1]), harga: Number(p.harga_final || p.price || p.harga || 0), nama: getNama(p) } : null;
+      }).filter(Boolean).sort((a, b) => a.gb - b.gb);
+
+      slotKeys.forEach(kode => {
+        if (existingKodes.has(kode)) return;
+        const m = kode.match(/[A-Z]+([0-9]+)/);
+        if (!m) return;
+        const gb = Number(m[1]);
+        let ref = null;
+        let minDiff = Infinity;
+        refList.forEach(r => {
+          const diff = Math.abs(r.gb - gb);
+          if (diff < minDiff) { minDiff = diff; ref = r; }
+        });
+        const hargaEstimasi = ref && ref.gb > 0 ? Math.round(ref.harga * (gb / ref.gb)) : 0;
+        const namaEstimasi = ref ? ref.nama.replace(/[0-9]+\s*GB/i, gb + ' GB') : `${gb} GB`;
+        filtered.push({
+          kode_produk: kode,
+          nama_produk: namaEstimasi,
+          harga_final: hargaEstimasi,
+          kosong: 0,
+          _virtual: true,
+        });
+      });
+      // Sort by GB
+      filtered.sort((a, b) => {
+        const ga = Number((getKode(a).match(/[A-Z]+([0-9]+)/) || [0, 0])[1]);
+        const gb_ = Number((getKode(b).match(/[A-Z]+([0-9]+)/) || [0, 0])[1]);
+        return ga - gb_;
+      });
+    }
+
     userState[userId] = Object.assign({}, userState[userId], {
-      akrabProducts: products,
+      akrabProducts: [...(products || []), ...filtered.filter(p => p._virtual)],
       akrabStokMap: stokMap,
     });
 
@@ -11958,12 +12002,17 @@ bot.action(/^akrab_grup_(v1|v2|circle)$/, async (ctx) => {
     const markupGlobal = await dbH.getMarkup(db, 'global', 'akrab', null).catch(() => null);
     const markupReseller = await dbH.getMarkup(db, 'reseller', 'akrab', userId).catch(() => null);
 
-    // Helper: cek produk kosong — prioritas slot, fallback field kosong (TANPA gangguan)
+    // Helper: cek produk kosong
+    // Untuk V1/V2: hanya pakai slot map (karena field `kosong` getProducts tidak reliable)
+    // Untuk Circle: pakai field `kosong`/`status` (tidak ada endpoint stok)
     const isProdukKosong = (p) => {
       const code = String(p.kode_produk || p.code || '').toUpperCase();
-      const provider = String(p.kode_provider || '').toUpperCase();
-      if (stokMap[code] !== undefined) return stokMap[code] === 0;
-      if (stokMap[provider] !== undefined) return stokMap[provider] === 0;
+      if (grup === 'v1' || grup === 'v2') {
+        // SELALU pakai slot map. Jika tidak ada di slot map → dianggap kosong
+        if (stokMap[code] !== undefined) return stokMap[code] === 0;
+        return true; // tidak ada di endpoint stok = kosong
+      }
+      // Circle: pakai field kosong
       if (p.kosong == 1 || p.kosong === true) return true;
       if (String(p.status || '').toLowerCase() === 'kosong') return true;
       return false;
@@ -12107,13 +12156,16 @@ bot.action(/^akrab_beli_(.+)$/, async (ctx) => {
     p.kode_produk === produkCode || p.code === produkCode || p.produk === produkCode
   );
 
-  // Cek stok produk: prioritas sisa_slot dari endpoint, fallback field kosong (TANPA gangguan)
+  // Cek stok produk: andalkan slot map (data real-time). Untuk XLA/XDA, abaikan field kosong getProducts.
   const isKosong = (() => {
+    const code = String((product && (product.kode_produk || product.code)) || produkCode || '').toUpperCase();
+    // Untuk XLA/XDA: SELALU pakai slot map
+    if (/^XLA[0-9]/.test(code) || /^XDA[0-9]/.test(code)) {
+      if (stokMap[code] !== undefined) return stokMap[code] === 0;
+      return true; // tidak ada di slot map = kosong
+    }
+    // Produk lain (Circle, dll): pakai field kosong
     if (!product) return false;
-    const code = String(product.kode_produk || product.code || '').toUpperCase();
-    const provider = String(product.kode_provider || '').toUpperCase();
-    if (stokMap[code] !== undefined) return stokMap[code] === 0;
-    if (stokMap[provider] !== undefined) return stokMap[provider] === 0;
     if (product.kosong == 1 || product.kosong === true) return true;
     if (String(product.status || '').toLowerCase() === 'kosong') return true;
     return false;
