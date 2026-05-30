@@ -4006,6 +4006,9 @@ async function sendMainMenu(ctx) {
       { text: ' Suntik Followers', callback_data: 'menu_suntik' }
     ],
     [
+      { text: '🧪 Test Transaksi', callback_data: 'admin_test_menu' }
+    ],
+    [
       { text: ' Jadi Reseller harga lebih murah!!', callback_data: 'jadi_reseller' }
     ],
   ];
@@ -7153,7 +7156,6 @@ bot.action('admin_menu_tools', async (ctx) => {
 bot.action('admin_test_menu', async (ctx) => {
   await ctx.answerCbQuery();
   const userId = ctx.from.id;
-  if (!adminIds.includes(userId)) return ctx.answerCbQuery('Akses ditolak.', { show_alert: true });
 
   await ctx.editMessageText(
     `<blockquote><code>🧪 TEST TRANSAKSI (DRY RUN)</code>\n` +
@@ -7180,7 +7182,6 @@ bot.action('admin_test_menu', async (ctx) => {
 bot.action('test_smm_start', async (ctx) => {
   await ctx.answerCbQuery('Memuat layanan SMM...');
   const userId = ctx.from.id;
-  if (!adminIds.includes(userId)) return;
 
   if (!FAYU_API_ID || !FAYU_API_KEY) {
     return ctx.editMessageText(
@@ -7231,7 +7232,6 @@ bot.action('test_smm_start', async (ctx) => {
 bot.action('test_akrab_start', async (ctx) => {
   await ctx.answerCbQuery('Memuat produk Akrab...');
   const userId = ctx.from.id;
-  if (!adminIds.includes(userId)) return;
 
   if (!KHFY_API_KEY) {
     return ctx.editMessageText(
@@ -12523,7 +12523,6 @@ bot.on('text', async (ctx) => {
 
       // ── Test Akrab (dry run) ──────────────────────────
       if (akState.step === 'test_akrab_input_nomor') {
-        if (!adminIds.includes(userId)) { delete userState[ctx.chat.id]; return; }
         const nomor = text;
         const product = akState.testProduct || {};
         const kode = product.kode_produk || product.code || '-';
@@ -12645,7 +12644,6 @@ bot.on('text', async (ctx) => {
 
       // ── Test SMM (dry run) ────────────────────────────
       if (smmState.step === 'test_smm_input_target') {
-        if (!adminIds.includes(userId)) { delete userState[ctx.chat.id]; return; }
         const target = text;
         const service = smmState.testService || {};
         const finalPrice = Number(smmState.testFinalPrice || 0);
