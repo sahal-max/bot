@@ -11838,7 +11838,6 @@ bot.action('menu_akrab', async (ctx) => {
     '<code>│─────────────────────────</code>\n' +
     '<code>│</code> ✅ = Tersedia\n' +
     '<code>│</code> ❌ = Kosong\n' +
-    '<code>│</code> 🚫 = Gangguan\n' +
     '<code>└─────────────────────────┘</code>',
     { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } }
   );
@@ -11914,16 +11913,14 @@ bot.action(/^akrab_grup_(v1|v2|circle)$/, async (ctx) => {
     const markupGlobal = await dbH.getMarkup(db, 'global', 'akrab', null).catch(() => null);
     const markupReseller = await dbH.getMarkup(db, 'reseller', 'akrab', userId).catch(() => null);
 
-    // Helper: cek apakah produk kosong berdasarkan field 'kosong' produk + sisa_slot di stokMap
+    // Helper: cek produk kosong — prioritas slot, fallback field kosong (TANPA gangguan)
     const isProdukKosong = (p) => {
-      if ((p.kosong == 1 || p.kosong === true || String(p.status || '').toLowerCase() === 'kosong')) return true;
-      if ((p.gangguan == 1 || p.gangguan === true || String(p.status || '').toLowerCase() === 'gangguan')) return true;
-      // Cek sisa slot via mapping kode_produk → tipe (XLA14, XLA32, dll)
       const code = String(p.kode_produk || p.code || '').toUpperCase();
       const provider = String(p.kode_provider || '').toUpperCase();
-      // Beberapa kode produk = nama tipe stok (XLA*, XDA*, dll)
-      if (stokMap[code] !== undefined && stokMap[code] === 0) return true;
-      if (stokMap[provider] !== undefined && stokMap[provider] === 0) return true;
+      if (stokMap[code] !== undefined) return stokMap[code] === 0;
+      if (stokMap[provider] !== undefined) return stokMap[provider] === 0;
+      if (p.kosong == 1 || p.kosong === true) return true;
+      if (String(p.status || '').toLowerCase() === 'kosong') return true;
       return false;
     };
 
@@ -12022,7 +12019,7 @@ bot.action(/^akrab_kat_(.+)$/, async (ctx) => {
     const code = p.kode_produk || p.code || p.produk;
     const name = p.nama_produk || p.name || p.nama || code;
     const base = Number(p.harga_final || p.price || p.harga || 0);
-    const habis = (p.kosong == 1 || p.kosong === true || String(p.status || '').toLowerCase() === 'kosong') || (p.gangguan == 1 || p.gangguan === true || String(p.status || '').toLowerCase() === 'gangguan');
+    const habis = (p.kosong == 1 || p.kosong === true || String(p.status || '').toLowerCase() === 'kosong');
     const finalPrice = wallet.getEffectivePrice(base, markupGlobal, markupReseller);
     const labelHarga = base > 0 ? ' — Rp ' + finalPrice.toLocaleString('id-ID') : '';
     const labelStok = habis ? ' [KOSONG]' : '';
@@ -12040,8 +12037,7 @@ bot.action(/^akrab_kat_(.+)$/, async (ctx) => {
     const base = Number(p.harga_final || p.price || p.harga || 0);
     const finalPrice = wallet.getEffectivePrice(base, markupGlobal, markupReseller);
     const kosong = (p.kosong == 1 || p.kosong === true || String(p.status || '').toLowerCase() === 'kosong');
-    const gangguan = (p.gangguan == 1 || p.gangguan === true || String(p.status || '').toLowerCase() === 'gangguan');
-    const stokIcon = gangguan ? '🚫 Gangguan' : kosong ? '❌ Kosong' : '✅ Tersedia';
+    const stokIcon = kosong ? '❌ Kosong' : '✅ Tersedia';
     const hargaText = base > 0 ? `<code>│</code> Rp ${finalPrice.toLocaleString('id-ID')}\n` : '';
     return `<blockquote><code>┌─────────────────────────┐</code>\n` +
       `<code>│</code> <b>${i + 1}. ${name}</b> <code>${code}</code>\n` +
@@ -12066,15 +12062,15 @@ bot.action(/^akrab_beli_(.+)$/, async (ctx) => {
     p.kode_produk === produkCode || p.code === produkCode || p.produk === produkCode
   );
 
-  // Cek stok produk: gabungan field kosong/gangguan + sisa_slot dari endpoint stok
+  // Cek stok produk: prioritas sisa_slot dari endpoint, fallback field kosong (TANPA gangguan)
   const isKosong = (() => {
     if (!product) return false;
-    if (Number(product.kosong || 0) === 1) return true;
-    if (Number(product.gangguan || 0) === 1) return true;
     const code = String(product.kode_produk || product.code || '').toUpperCase();
     const provider = String(product.kode_provider || '').toUpperCase();
-    if (stokMap[code] !== undefined && stokMap[code] === 0) return true;
-    if (stokMap[provider] !== undefined && stokMap[provider] === 0) return true;
+    if (stokMap[code] !== undefined) return stokMap[code] === 0;
+    if (stokMap[provider] !== undefined) return stokMap[provider] === 0;
+    if (product.kosong == 1 || product.kosong === true) return true;
+    if (String(product.status || '').toLowerCase() === 'kosong') return true;
     return false;
   })();
 
@@ -12139,10 +12135,21 @@ bot.action('akrab_cek_status', async (ctx) => {
 bot.action('akrab_cek_stock_all', async (ctx) => {
   await ctx.answerCbQuery('Mengecek stok...');
   try {
-    const [products, stokV2Resp] = await Promise.all([
+    const [products, stokV1Resp, stokV2Resp] = await Promise.all([
       akrabModule.getProducts(KHFY_ENDPOINT, KHFY_API_KEY).catch(() => []),
+      akrabModule.cekStokAkrab(KHFY_ENDPOINT).catch(() => null),
       akrabModule.cekStokAkrabV2(KHFY_ENDPOINT).catch(() => null),
     ]);
+
+    // Build map slot XLA dari endpoint V1
+    const xlaSlotMap = {};
+    const itemsV1 = Array.isArray(stokV1Resp)
+      ? stokV1Resp
+      : (stokV1Resp && Array.isArray(stokV1Resp.data)) ? stokV1Resp.data : [];
+    itemsV1.forEach((it) => {
+      const tipe = String(it.type || it.kode || it.nama || '').toUpperCase();
+      if (tipe) xlaSlotMap[tipe] = Number(it.sisa_slot ?? it.stok ?? it.stock ?? 0);
+    });
 
     // Build map slot XDA dari endpoint V2
     const xdaSlotMap = {};
@@ -12164,11 +12171,11 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
       return !kode.startsWith('XLA') && !kode.startsWith('XLAP') && !kode.startsWith('XDA');
     });
 
-    const allProducts   = [...xlaProducts, ...xdaProducts, ...circleProducts];
-    const isUnavailable = (p) => p.kosong == 1 || p.kosong === true || p.gangguan == 1 || p.gangguan === true || String(p.status || '').toLowerCase() === 'gangguan' || String(p.status || '').toLowerCase() === 'kosong';
-    const totalTersedia = allProducts.filter(p => !isUnavailable(p)).length;
-    const totalKosong   = allProducts.filter(p => isUnavailable(p)).length;
     const now = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
+
+    // Field `gangguan` TIDAK dipakai (tidak reliable). Hanya field `kosong`/`status`.
+    const isKosongProduk = (p) =>
+      p.kosong == 1 || p.kosong === true || String(p.status || '').toLowerCase() === 'kosong';
 
     // Helper: singkat nama produk
     const shortName = (nama) => {
@@ -12187,9 +12194,9 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
       for (let i = 0; i < items.length; i += 2) {
         const a = items[i];
         const b = items[i + 1];
-        const lineA = `${a.icon} ${a.label} ${a.qty}`;
+        const lineA = `${a.icon} ${a.label}${a.qty ? ' ' + a.qty : ''}`;
         if (b) {
-          lines.push(`${lineA} • ${b.icon} ${b.label} ${b.qty}`);
+          lines.push(`${lineA} • ${b.icon} ${b.label}${b.qty ? ' ' + b.qty : ''}`);
         } else {
           lines.push(lineA);
         }
@@ -12197,49 +12204,52 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
       return lines.join('\n');
     };
 
+    let totalReady = 0, totalKosong = 0;
     let body = `<blockquote>📦 <b>STOK AKRAB</b>\n🕐 ${now}\n\n`;
 
-    // ── XLA ──
+    // ── XLA ── prioritas slot endpoint V1, fallback field kosong
     if (xlaProducts.length) {
       const items = [...xlaProducts.filter(p => !/^XLAP/i.test(p.kode_produk || '')), ...xlaProducts.filter(p => /^XLAP/i.test(p.kode_produk || ''))].map(p => {
         const kode = String(p.kode_produk || '').toUpperCase();
         const nama = shortName(p.nama_produk || p.name || kode);
-        const kosong = (p.kosong == 1 || p.kosong === true || String(p.status || '').toLowerCase() === 'kosong');
-        const gangguan = (p.gangguan == 1 || p.gangguan === true || String(p.status || '').toLowerCase() === 'gangguan');
-        const icon = gangguan ? '🚫' : kosong ? '❌' : '✅';
-        return { icon, label: nama, qty: kosong || gangguan ? '' : '' };
+        const slot = xlaSlotMap[kode];
+        const tersedia = (slot !== undefined) ? slot > 0 : !isKosongProduk(p);
+        const icon = tersedia ? '✅' : '❌';
+        const qty = (slot !== undefined && slot > 0) ? String(slot) : '';
+        if (tersedia) totalReady++; else totalKosong++;
+        return { icon, label: nama, qty };
       });
       body += `🔵 <b>XLA</b>\n${formatPair(items)}\n\n`;
     }
 
-    // ── XDA ──
+    // ── XDA ── prioritas slot endpoint V2, fallback field kosong
     if (xdaProducts.length) {
       const items = xdaProducts.map(p => {
         const kode = String(p.kode_produk || '').toUpperCase();
         const nama = shortName(p.nama_produk || p.name || kode);
         const slot = xdaSlotMap[kode];
-        const kosong = (p.kosong == 1 || p.kosong === true || String(p.status || '').toLowerCase() === 'kosong');
-        const gangguan = (p.gangguan == 1 || p.gangguan === true || String(p.status || '').toLowerCase() === 'gangguan');
-        const icon = gangguan ? '🚫' : (kosong || slot === 0) ? '❌' : '✅';
+        const tersedia = (slot !== undefined) ? slot > 0 : !isKosongProduk(p);
+        const icon = tersedia ? '✅' : '❌';
         const qty = (slot !== undefined && slot > 0) ? String(slot) : '';
+        if (tersedia) totalReady++; else totalKosong++;
         return { icon, label: nama, qty };
       });
       body += `🟢 <b>XDA</b>\n${formatPair(items)}\n\n`;
     }
 
-    // ── Circle ──
+    // ── Circle ── tidak ada endpoint stok, pakai field kosong
     if (circleProducts.length) {
       const items = circleProducts.map(p => {
         const nama = shortName(p.nama_produk || p.name || p.kode_produk || '-');
-        const kosong = (p.kosong == 1 || p.kosong === true || String(p.status || '').toLowerCase() === 'kosong');
-        const gangguan = (p.gangguan == 1 || p.gangguan === true || String(p.status || '').toLowerCase() === 'gangguan');
-        const icon = gangguan ? '🚫' : kosong ? '❌' : '✅';
+        const tersedia = !isKosongProduk(p);
+        const icon = tersedia ? '✅' : '❌';
+        if (tersedia) totalReady++; else totalKosong++;
         return { icon, label: nama, qty: '' };
       });
       body += `⭕ <b>Circle</b>\n${formatPair(items)}\n\n`;
     }
 
-    body += `📊 Ready ${totalTersedia} • Kosong ${totalKosong}</blockquote>`;
+    body += `📊 Ready ${totalReady} • Kosong ${totalKosong}</blockquote>`;
 
     await ctx.editMessageText(body, {
       parse_mode: 'HTML',
