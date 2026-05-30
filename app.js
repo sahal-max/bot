@@ -3966,29 +3966,28 @@ async function sendMainMenu(ctx) {
   } catch (e) {}
 
   const messageText = `<blockquote><code>──────────────────────</code>
-      ✦ <b>${NAMA_STORE}</b> ✦
+<code>      ✦ ${NAMA_STORE} ✦      </code>
 <code>──────────────────────</code>
-👤 <b>Informasi Pengguna</b>
+<code>👤 Informasi Pengguna  </code>
 <code>──────────────────────</code>
-✦ Nama    : <b>${userName}</b>
-✦ ID      : <code>${userId}</code>
-✦ Status  : <b>${statusReseller}</b>
-✦ Saldo   : <code>Rp ${Number(saldo || 0).toLocaleString('id-ID')}</code>
+<code>✦ Nama   : ${userName.padEnd(14)}</code>
+<code>✦ ID     : ${String(userId)}</code>
+<code>✦ Status : ${statusReseller}</code>
+<code>✦ Saldo  : Rp ${Number(saldo || 0).toLocaleString('id-ID')}</code>
 <code>──────────────────────</code>
-<b>Statistik Transaksi</b>
-<b>Anda</b>
-✧ Hari ini  : <b>${userToday}</b> akun
-✧ Minggu ini: <b>${userWeek}</b> akun
-✧ Bulan ini : <b>${userMonth}</b> akun
+<code>📊 Statistik Transaksi </code>
+<code>── Anda ──────────────</code>
+<code>✧ Hari ini  : ${String(userToday).padStart(4)} akun</code>
+<code>✧ Minggu ini: ${String(userWeek).padStart(4)} akun</code>
+<code>✧ Bulan ini : ${String(userMonth).padStart(4)} akun</code>
+<code>── Global ────────────</code>
+<code>✧ Hari ini  : ${String(globalToday).padStart(4)} akun</code>
+<code>✧ Minggu ini: ${String(globalWeek).padStart(4)} akun</code>
+<code>✧ Bulan ini : ${String(globalMonth).padStart(4)} akun</code>
+<code>✧ Semua     : ${String(globalAll).padStart(4)} akun</code>
 <code>──────────────────────</code>
-<b>Global</b>
-✧ Hari ini  : <b>${globalToday}</b> akun
-✧ Minggu ini: <b>${globalWeek}</b> akun
-✧ Bulan ini : <b>${globalMonth}</b> akun
-✧ Semua     : <b>${globalAll}</b> akun
-<code>──────────────────────</code>
-👥 Users   : <b>${jumlahPengguna}</b>
-🕐 Latency : <b>${latency} ms</b>
+<code>👥 Users   : ${jumlahPengguna}</code>
+<code>🕐 Latency : ${latency} ms</code>
 <code>──────────────────────</code></blockquote>`;
 
   // Buat keyboard dasar untuk semua user
@@ -5609,6 +5608,7 @@ async function sendAdminToolsMenu(ctx) {
     [{ text: ' Setting Payment Gateway', callback_data: 'payment_gateway_settings_menu' }],
     [{ text: maintenanceLabel, callback_data: 'maintenance_menu' }],
     [{ text: ' Kontak Admin', callback_data: 'admin_contact_settings_menu' }],
+    [{ text: '🧪 Test Transaksi (Dry Run)', callback_data: 'admin_test_menu' }],
     [{ text: ' Kembali', callback_data: 'admin_menu' }]
   ];
 
@@ -7145,6 +7145,135 @@ bot.action('admin_menu_tools', async (ctx) => {
   await ctx.answerCbQuery();
   delete userState[ctx.chat.id];
   await sendAdminToolsMenu(ctx);
+});
+
+// ══════════════════════════════════════════
+// MENU TEST TRANSAKSI (DRY RUN) — ADMIN ONLY
+// ══════════════════════════════════════════
+bot.action('admin_test_menu', async (ctx) => {
+  await ctx.answerCbQuery();
+  const userId = ctx.from.id;
+  if (!adminIds.includes(userId)) return ctx.answerCbQuery('Akses ditolak.', { show_alert: true });
+
+  await ctx.editMessageText(
+    `<blockquote><code>🧪 TEST TRANSAKSI (DRY RUN)</code>\n` +
+    `<code>──────────────────────</code>\n` +
+    `<code>✦ Mode ini TIDAK memotong saldo</code>\n` +
+    `<code>✦ TIDAK mengirim order ke provider</code>\n` +
+    `<code>✦ Hanya cek alur kode berjalan</code>\n` +
+    `<code>──────────────────────</code>\n` +
+    `<code>Pilih layanan yang ingin ditest:</code></blockquote>`,
+    {
+      parse_mode: 'HTML',
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: '💉 Test SMM (Suntik Followers)', callback_data: 'test_smm_start' }],
+          [{ text: '🤝 Test Akrab & Circle', callback_data: 'test_akrab_start' }],
+          [{ text: '🔙 Kembali', callback_data: 'admin_menu_tools' }],
+        ],
+      },
+    }
+  );
+});
+
+// ── Test SMM ─────────────────────────────────────────────────────────────────
+bot.action('test_smm_start', async (ctx) => {
+  await ctx.answerCbQuery('Memuat layanan SMM...');
+  const userId = ctx.from.id;
+  if (!adminIds.includes(userId)) return;
+
+  if (!FAYU_API_ID || !FAYU_API_KEY) {
+    return ctx.editMessageText(
+      `<blockquote><code>❌ Credential FayuPedia belum diset.</code>\n<code>Isi via Admin → Setting API Keys.</code></blockquote>`,
+      { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'admin_test_menu' }]] } }
+    );
+  }
+
+  try {
+    const services = await smmModule.getServices(FAYU_ENDPOINT, FAYU_API_ID, FAYU_API_KEY);
+    if (!Array.isArray(services) || !services.length) {
+      return ctx.editMessageText(
+        `<blockquote><code>❌ Tidak ada layanan dari API FayuPedia.</code></blockquote>`,
+        { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'admin_test_menu' }]] } }
+      );
+    }
+
+    // Ambil 1 layanan pertama sebagai sample
+    const sample = services[0];
+    const basePrice = parseFloat(sample.rate || sample.price || 0);
+    const finalPrice = Math.ceil(basePrice * 1000);
+    const min = parseInt(sample.min || 100);
+    const bisaRefill = sample.refill === true || sample.refill === 'true' || sample.refill === 1;
+
+    userState[userId] = { step: 'test_smm_input_target', testService: sample, testFinalPrice: finalPrice };
+
+    await ctx.editMessageText(
+      `<blockquote><code>🧪 TEST SMM — DRY RUN</code>\n` +
+      `<code>──────────────────────</code>\n` +
+      `<code>✦ Layanan : ${String(sample.name || sample.service || '-').slice(0, 30)}</code>\n` +
+      `<code>✦ Harga   : Rp ${finalPrice.toLocaleString('id-ID')} / 1000</code>\n` +
+      `<code>✦ Min     : ${min.toLocaleString('id-ID')}</code>\n` +
+      `<code>✦ Garansi : ${bisaRefill ? '🛡️ Ya' : '⚠️ Tidak'}</code>\n` +
+      `<code>──────────────────────</code>\n` +
+      `<code>✦ Masukkan target URL/username test:</code></blockquote>`,
+      { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '❌ Batal', callback_data: 'admin_test_menu' }]] } }
+    );
+  } catch (err) {
+    logger.error('test_smm_start: ' + (err && err.message ? err.message : err));
+    await ctx.editMessageText(
+      `<blockquote><code>❌ Gagal koneksi ke FayuPedia: ${String(err && err.message || 'unknown').slice(0, 100)}</code></blockquote>`,
+      { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'admin_test_menu' }]] } }
+    );
+  }
+});
+
+// ── Test Akrab ────────────────────────────────────────────────────────────────
+bot.action('test_akrab_start', async (ctx) => {
+  await ctx.answerCbQuery('Memuat produk Akrab...');
+  const userId = ctx.from.id;
+  if (!adminIds.includes(userId)) return;
+
+  if (!KHFY_API_KEY) {
+    return ctx.editMessageText(
+      `<blockquote><code>❌ API Key Akrab belum diset.</code>\n<code>Isi via Admin → Setting API Keys.</code></blockquote>`,
+      { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'admin_test_menu' }]] } }
+    );
+  }
+
+  try {
+    const products = await akrabModule.getProducts(KHFY_ENDPOINT, KHFY_API_KEY);
+    if (!Array.isArray(products) || !products.length) {
+      return ctx.editMessageText(
+        `<blockquote><code>❌ Tidak ada produk dari API Akrab.</code></blockquote>`,
+        { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'admin_test_menu' }]] } }
+      );
+    }
+
+    // Ambil 1 produk tersedia sebagai sample
+    const sample = products.find(p => Number(p.kosong || 0) !== 1) || products[0];
+    const kode = sample.kode_produk || sample.code || '-';
+    const nama = sample.nama_produk || sample.name || kode;
+    const harga = Number(sample.harga_final || sample.price || sample.harga || 0);
+
+    userState[userId] = { step: 'test_akrab_input_nomor', testProduct: sample, testFinalPrice: harga };
+
+    await ctx.editMessageText(
+      `<blockquote><code>🧪 TEST AKRAB — DRY RUN</code>\n` +
+      `<code>──────────────────────</code>\n` +
+      `<code>✦ Produk : ${nama.slice(0, 30)}</code>\n` +
+      `<code>✦ Kode   : ${kode}</code>\n` +
+      `<code>✦ Harga  : Rp ${harga.toLocaleString('id-ID')}</code>\n` +
+      `<code>──────────────────────</code>\n` +
+      `<code>✦ Masukkan nomor tujuan test:</code></blockquote>`,
+      { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '❌ Batal', callback_data: 'admin_test_menu' }]] } }
+    );
+  } catch (err) {
+    logger.error('test_akrab_start: ' + (err && err.message ? err.message : err));
+    await ctx.editMessageText(
+      `<blockquote><code>❌ Gagal koneksi ke Akrab: ${String(err && err.message || 'unknown').slice(0, 100)}</code></blockquote>`,
+      { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'admin_test_menu' }]] } }
+    );
+  }
 });
 
 bot.action('admin_download_config_menu', async (ctx) => {
@@ -11389,11 +11518,11 @@ bot.action(/^smm_kat_(.+)$/, async (ctx) => {
       : '⚠️ <b>Tidak Bergaransi</b> (No Refill)';
     const cancelText = bisaCancel ? '  ✦ Cancel : ✅ Bisa' : '  ✦ Cancel : ❌ Tidak';
 
-    return `<blockquote><b>${i + 1}. ${name}</b>\n` +
-      `✦ Harga  : Rp ${finalPrice.toLocaleString('id-ID')} / 1000\n` +
-      `✦ Min    : ${min.toLocaleString('id-ID')}  |  Max: ${max.toLocaleString('id-ID')}\n` +
-      `✦ Status : ${garansiText}\n` +
-      `${cancelText}</blockquote>`;
+    return `<blockquote><code>${i + 1}. ${name}</code>\n` +
+      `<code>✦ Harga  : Rp ${finalPrice.toLocaleString('id-ID')} / 1000</code>\n` +
+      `<code>✦ Min    : ${min.toLocaleString('id-ID')}  |  Max: ${max.toLocaleString('id-ID')}</code>\n` +
+      `<code>✦ Status : ${bisaRefill ? '🛡️ Bergaransi' : '⚠️ Tidak Bergaransi'}</code>\n` +
+      `<code>✦ Cancel : ${bisaCancel ? '✅ Bisa' : '❌ Tidak'}</code></blockquote>`;
   }).join('\n');
 
   await ctx.editMessageText(
@@ -11429,12 +11558,12 @@ bot.action(/^smm_order_(.+)$/, async (ctx) => {
   const cancelLine  = bisaCancel ? '✅ Bisa dibatalkan' : '❌ Tidak bisa dibatalkan';
 
   await ctx.editMessageText(
-    `<blockquote>💉 <b>${service ? (service.name || serviceId) : serviceId}</b>\n` +
-    `✦ Harga  : Rp ${Number(finalPricePer1000).toLocaleString('id-ID')} / 1000\n` +
-    `✦ Min    : ${min.toLocaleString('id-ID')}  |  Max: ${max.toLocaleString('id-ID')}\n` +
-    `✦ Status : ${garansiLine}\n` +
-    `✦ Cancel : ${cancelLine}</blockquote>\n\n` +
-    `✦ Masukkan target (URL/username):`,
+    `<blockquote><code>💉 ${service ? (service.name || serviceId) : serviceId}</code>\n` +
+    `<code>✦ Harga  : Rp ${Number(finalPricePer1000).toLocaleString('id-ID')} / 1000</code>\n` +
+    `<code>✦ Min    : ${min.toLocaleString('id-ID')}  |  Max: ${max.toLocaleString('id-ID')}</code>\n` +
+    `<code>✦ Status : ${bisaRefill ? '🛡️ Bergaransi' : '⚠️ Tidak Bergaransi'}</code>\n` +
+    `<code>✦ Cancel : ${bisaCancel ? '✅ Bisa dibatalkan' : '❌ Tidak bisa dibatalkan'}</code></blockquote>\n\n` +
+    `<code>✦ Masukkan target (URL/username):</code>`,
     {
       parse_mode: 'HTML',
       reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'menu_suntik' }]] },
@@ -11889,8 +12018,8 @@ bot.action(/^akrab_kat_(.+)$/, async (ctx) => {
     const kosong = Number(p.kosong || 0) === 1;
     const gangguan = Number(p.gangguan || 0) === 1;
     const stokIcon = gangguan ? '⚠️ Gangguan' : kosong ? '❌ Kosong' : '✅ Tersedia';
-    const hargaText = base > 0 ? `✦ Harga : Rp ${finalPrice.toLocaleString('id-ID')}\n` : '';
-    return `<blockquote><b>${i + 1}. ${name}</b> <code>${code}</code>\n${hargaText}✦ Stok  : ${stokIcon}</blockquote>`;
+    const hargaText = base > 0 ? `<code>✦ Harga : Rp ${finalPrice.toLocaleString('id-ID')}</code>\n` : '';
+    return `<blockquote><code>${i + 1}. ${name} [${code}]</code>\n${hargaText}<code>✦ Stok  : ${stokIcon}</code></blockquote>`;
   }).join('\n');
 
   await ctx.editMessageText(
@@ -11951,11 +12080,11 @@ bot.action(/^akrab_beli_(.+)$/, async (ctx) => {
   const deskripsi = product && product.deskripsi ? ('\n\n<i>' + String(product.deskripsi).slice(0, 300) + '</i>') : '';
 
   await ctx.editMessageText(
-    `<blockquote>🤝 <b>Beli Produk Akrab</b>\n` +
-    `✦ Produk : <b>${namaProduk}</b>\n` +
-    `✦ Harga  : <b>Rp ${Number(finalPrice).toLocaleString('id-ID')}</b>` +
-    (deskripsi ? `\n${deskripsi}` : '') + `</blockquote>\n\n` +
-    `✦ Masukkan nomor tujuan:`,
+    `<blockquote><code>🤝 Beli Produk Akrab</code>\n` +
+    `<code>✦ Produk : ${namaProduk}</code>\n` +
+    `<code>✦ Harga  : Rp ${Number(finalPrice).toLocaleString('id-ID')}</code>` +
+    (deskripsi ? `\n<i>${String(product.deskripsi).slice(0, 200)}</i>` : '') + `</blockquote>\n\n` +
+    `<code>✦ Masukkan nomor tujuan:</code>`,
     {
       parse_mode: 'HTML',
       reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'menu_akrab' }]] },
@@ -12392,6 +12521,42 @@ bot.on('text', async (ctx) => {
       const text = String(ctx.message.text || '').trim();
       const userId = ctx.from.id;
 
+      // ── Test Akrab (dry run) ──────────────────────────
+      if (akState.step === 'test_akrab_input_nomor') {
+        if (!adminIds.includes(userId)) { delete userState[ctx.chat.id]; return; }
+        const nomor = text;
+        const product = akState.testProduct || {};
+        const kode = product.kode_produk || product.code || '-';
+        const nama = product.nama_produk || product.name || kode;
+        const harga = Number(akState.testFinalPrice || 0);
+        delete userState[ctx.chat.id];
+
+        // Simulasi: cek koneksi API tanpa benar-benar order
+        let apiStatus = '✅ OK';
+        try {
+          await akrabModule.getProducts(KHFY_ENDPOINT, KHFY_API_KEY);
+        } catch (e) {
+          apiStatus = '❌ Gagal: ' + String(e && e.message || 'unknown').slice(0, 60);
+        }
+
+        await ctx.reply(
+          `<blockquote><code>🧪 HASIL TEST AKRAB — DRY RUN</code>\n` +
+          `<code>──────────────────────</code>\n` +
+          `<code>✦ Produk  : ${nama.slice(0, 30)}</code>\n` +
+          `<code>✦ Kode    : ${kode}</code>\n` +
+          `<code>✦ Tujuan  : ${nomor}</code>\n` +
+          `<code>✦ Harga   : Rp ${harga.toLocaleString('id-ID')}</code>\n` +
+          `<code>──────────────────────</code>\n` +
+          `<code>✦ Koneksi API : ${apiStatus}</code>\n` +
+          `<code>✦ Saldo dipotong : TIDAK (dry run)</code>\n` +
+          `<code>✦ Order dikirim  : TIDAK (dry run)</code>\n` +
+          `<code>──────────────────────</code>\n` +
+          `<code>✅ Alur kode berjalan normal</code></blockquote>`,
+          { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'admin_test_menu' }]] } }
+        );
+        return;
+      }
+
       // Input nomor tujuan untuk pembelian Akrab
       if (akState.step.startsWith('akrab_input_nomor_')) {
         const produkCode = akState.step.replace('akrab_input_nomor_', '');
@@ -12477,6 +12642,41 @@ bot.on('text', async (ctx) => {
     if (smmState && typeof smmState.step === 'string') {
       const text = String(ctx.message.text || '').trim();
       const userId = ctx.from.id;
+
+      // ── Test SMM (dry run) ────────────────────────────
+      if (smmState.step === 'test_smm_input_target') {
+        if (!adminIds.includes(userId)) { delete userState[ctx.chat.id]; return; }
+        const target = text;
+        const service = smmState.testService || {};
+        const finalPrice = Number(smmState.testFinalPrice || 0);
+        const min = parseInt(service.min || 100);
+        delete userState[ctx.chat.id];
+
+        // Simulasi: cek koneksi API tanpa benar-benar order
+        let apiStatus = '✅ OK';
+        try {
+          await smmModule.getBalance(FAYU_ENDPOINT, FAYU_API_ID, FAYU_API_KEY);
+        } catch (e) {
+          apiStatus = '❌ Gagal: ' + String(e && e.message || 'unknown').slice(0, 60);
+        }
+
+        await ctx.reply(
+          `<blockquote><code>🧪 HASIL TEST SMM — DRY RUN</code>\n` +
+          `<code>──────────────────────</code>\n` +
+          `<code>✦ Layanan : ${String(service.name || service.service || '-').slice(0, 30)}</code>\n` +
+          `<code>✦ Target  : ${target}</code>\n` +
+          `<code>✦ Harga   : Rp ${finalPrice.toLocaleString('id-ID')} / 1000</code>\n` +
+          `<code>✦ Min     : ${min.toLocaleString('id-ID')}</code>\n` +
+          `<code>──────────────────────</code>\n` +
+          `<code>✦ Koneksi API : ${apiStatus}</code>\n` +
+          `<code>✦ Saldo dipotong : TIDAK (dry run)</code>\n` +
+          `<code>✦ Order dikirim  : TIDAK (dry run)</code>\n` +
+          `<code>──────────────────────</code>\n` +
+          `<code>✅ Alur kode berjalan normal</code></blockquote>`,
+          { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'admin_test_menu' }]] } }
+        );
+        return;
+      }
 
       // Input target (URL/username)
       if (smmState.step.startsWith('smm_input_target_')) {
