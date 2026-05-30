@@ -7172,7 +7172,7 @@ bot.action('admin_test_menu', async (ctx) => {
         inline_keyboard: [
           [{ text: '💉 Test SMM (Suntik Followers)', callback_data: 'test_smm_start' }],
           [{ text: '🤝 Test Akrab & Circle', callback_data: 'test_akrab_start' }],
-          [{ text: '🔙 Kembali', callback_data: 'admin_menu_tools' }],
+          [{ text: '🔙 Kembali', callback_data: 'send_main_menu' }],
         ],
       },
     }
@@ -7187,7 +7187,7 @@ bot.action('test_smm_start', async (ctx) => {
   if (!FAYU_API_ID || !FAYU_API_KEY) {
     return ctx.editMessageText(
       `<blockquote><code>❌ Credential FayuPedia belum diset.</code>\n<code>Isi via Admin → Setting API Keys.</code></blockquote>`,
-      { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'admin_test_menu' }]] } }
+      { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Menu Utama', callback_data: 'send_main_menu' }]] } }
     );
   }
 
@@ -7196,7 +7196,7 @@ bot.action('test_smm_start', async (ctx) => {
     if (!Array.isArray(services) || !services.length) {
       return ctx.editMessageText(
         `<blockquote><code>❌ Tidak ada layanan dari API FayuPedia.</code></blockquote>`,
-        { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'admin_test_menu' }]] } }
+        { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Menu Utama', callback_data: 'send_main_menu' }]] } }
       );
     }
 
@@ -7218,13 +7218,13 @@ bot.action('test_smm_start', async (ctx) => {
       `<code>✦ Garansi : ${bisaRefill ? '🛡️ Ya' : '⚠️ Tidak'}</code>\n` +
       `<code>──────────────────────</code>\n` +
       `<code>✦ Masukkan target URL/username test:</code></blockquote>`,
-      { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '❌ Batal', callback_data: 'admin_test_menu' }]] } }
+      { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Menu Utama', callback_data: 'send_main_menu' }]] } }
     );
   } catch (err) {
     logger.error('test_smm_start: ' + (err && err.message ? err.message : err));
     await ctx.editMessageText(
       `<blockquote><code>❌ Gagal koneksi ke FayuPedia: ${String(err && err.message || 'unknown').slice(0, 100)}</code></blockquote>`,
-      { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'admin_test_menu' }]] } }
+      { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Menu Utama', callback_data: 'send_main_menu' }]] } }
     );
   }
 });
@@ -7237,7 +7237,7 @@ bot.action('test_akrab_start', async (ctx) => {
   if (!KHFY_API_KEY) {
     return ctx.editMessageText(
       `<blockquote><code>❌ API Key Akrab belum diset.</code>\n<code>Isi via Admin → Setting API Keys.</code></blockquote>`,
-      { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'admin_test_menu' }]] } }
+      { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Menu Utama', callback_data: 'send_main_menu' }]] } }
     );
   }
 
@@ -7246,7 +7246,7 @@ bot.action('test_akrab_start', async (ctx) => {
     if (!Array.isArray(products) || !products.length) {
       return ctx.editMessageText(
         `<blockquote><code>❌ Tidak ada produk dari API Akrab.</code></blockquote>`,
-        { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'admin_test_menu' }]] } }
+        { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Menu Utama', callback_data: 'send_main_menu' }]] } }
       );
     }
 
@@ -7266,13 +7266,13 @@ bot.action('test_akrab_start', async (ctx) => {
       `<code>✦ Harga  : Rp ${harga.toLocaleString('id-ID')}</code>\n` +
       `<code>──────────────────────</code>\n` +
       `<code>✦ Masukkan nomor tujuan test:</code></blockquote>`,
-      { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '❌ Batal', callback_data: 'admin_test_menu' }]] } }
+      { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Menu Utama', callback_data: 'send_main_menu' }]] } }
     );
   } catch (err) {
     logger.error('test_akrab_start: ' + (err && err.message ? err.message : err));
     await ctx.editMessageText(
       `<blockquote><code>❌ Gagal koneksi ke Akrab: ${String(err && err.message || 'unknown').slice(0, 100)}</code></blockquote>`,
-      { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'admin_test_menu' }]] } }
+      { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Menu Utama', callback_data: 'send_main_menu' }]] } }
     );
   }
 });
@@ -12554,7 +12554,7 @@ bot.on('text', async (ctx) => {
           `<code>✦ Order dikirim  : TIDAK (dry run)</code>\n` +
           `<code>──────────────────────</code>\n` +
           `<code>✅ Alur kode berjalan normal</code></blockquote>`,
-          { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'admin_test_menu' }]] } }
+          { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Menu Utama', callback_data: 'send_main_menu' }]] } }
         );
         return;
       }
@@ -12674,7 +12674,7 @@ bot.on('text', async (ctx) => {
           `<code>✦ Order dikirim  : TIDAK (dry run)</code>\n` +
           `<code>──────────────────────</code>\n` +
           `<code>✅ Alur kode berjalan normal</code></blockquote>`,
-          { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'admin_test_menu' }]] } }
+          { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Menu Utama', callback_data: 'send_main_menu' }]] } }
         );
         return;
       }
