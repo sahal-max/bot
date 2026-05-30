@@ -11374,9 +11374,20 @@ bot.action(/^smm_kat_(.+)$/, async (ctx) => {
     const name = String(s.name || s.service || '-');
     const min = parseInt(s.min || 100);
     const max = parseInt(s.max || 100000);
+
+    // Garansi: refill = bisa diisi ulang jika drop, cancel = bisa dibatalkan
+    const bisaRefill = s.refill === true || s.refill === 'true' || s.refill === 1;
+    const bisaCancel = s.cancel === true || s.cancel === 'true' || s.cancel === 1;
+    const garansiText = bisaRefill
+      ? '🛡️ <b>Bergaransi</b> (Refill tersedia)'
+      : '⚠️ <b>Tidak Bergaransi</b> (No Refill)';
+    const cancelText = bisaCancel ? '  ✦ Cancel : ✅ Bisa' : '  ✦ Cancel : ❌ Tidak';
+
     return `<blockquote><b>${i + 1}. ${name}</b>\n` +
-      `✦ Harga : Rp ${finalPrice.toLocaleString('id-ID')} / 1000\n` +
-      `✦ Min   : ${min.toLocaleString('id-ID')}  |  Max: ${max.toLocaleString('id-ID')}</blockquote>`;
+      `✦ Harga  : Rp ${finalPrice.toLocaleString('id-ID')} / 1000\n` +
+      `✦ Min    : ${min.toLocaleString('id-ID')}  |  Max: ${max.toLocaleString('id-ID')}\n` +
+      `✦ Status : ${garansiText}\n` +
+      `${cancelText}</blockquote>`;
   }).join('\n');
 
   await ctx.editMessageText(
@@ -11406,10 +11417,17 @@ bot.action(/^smm_order_(.+)$/, async (ctx) => {
     smmFinalPrice: finalPricePer1000,
   });
 
+  const bisaRefill = service && (service.refill === true || service.refill === 'true' || service.refill === 1);
+  const bisaCancel = service && (service.cancel === true || service.cancel === 'true' || service.cancel === 1);
+  const garansiLine = bisaRefill ? '🛡️ <b>Bergaransi</b> (Refill tersedia)' : '⚠️ <b>Tidak Bergaransi</b> (No Refill)';
+  const cancelLine  = bisaCancel ? '✅ Bisa dibatalkan' : '❌ Tidak bisa dibatalkan';
+
   await ctx.editMessageText(
     `<blockquote>💉 <b>${service ? (service.name || serviceId) : serviceId}</b>\n` +
-    `✦ Harga : Rp ${Number(finalPricePer1000).toLocaleString('id-ID')} / 1000\n` +
-    `✦ Min   : ${min.toLocaleString('id-ID')}  |  Max: ${max.toLocaleString('id-ID')}</blockquote>\n\n` +
+    `✦ Harga  : Rp ${Number(finalPricePer1000).toLocaleString('id-ID')} / 1000\n` +
+    `✦ Min    : ${min.toLocaleString('id-ID')}  |  Max: ${max.toLocaleString('id-ID')}\n` +
+    `✦ Status : ${garansiLine}\n` +
+    `✦ Cancel : ${cancelLine}</blockquote>\n\n` +
     `✦ Masukkan target (URL/username):`,
     {
       parse_mode: 'HTML',
