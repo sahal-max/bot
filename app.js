@@ -3965,7 +3965,8 @@ async function sendMainMenu(ctx) {
     });
   } catch (e) {}
 
-  const messageText = `✦ <b>${NAMA_STORE}</b> ✦
+  const messageText = `<code>──────────────────────</code>
+      ✦ <b>${NAMA_STORE}</b> ✦
 <code>──────────────────────</code>
 👤 <b>Informasi Pengguna</b>
 <code>──────────────────────</code>
