@@ -12165,13 +12165,10 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
       });
     }
 
-    // Pisahkan produk
-    const xlaProducts    = (products || []).filter(p => /^XLAP?[0-9]/i.test(p.kode_produk || ''));
+    // Pisahkan produk — hanya XLA, XDA, XCLP (Circle). Produk lain dibuang.
+    const xlaProducts    = (products || []).filter(p => /^XLA/i.test(p.kode_produk || '') && !/^XCLP/i.test(p.kode_produk || ''));
     const xdaProducts    = (products || []).filter(p => /^XDA/i.test(p.kode_produk || ''));
-    const circleProducts = (products || []).filter(p => {
-      const kode = String(p.kode_produk || '').toUpperCase();
-      return !kode.startsWith('XLA') && !kode.startsWith('XLAP') && !kode.startsWith('XDA');
-    });
+    const circleProducts = (products || []).filter(p => /^XCLP/i.test(p.kode_produk || ''));
 
     const now = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
 
@@ -12212,13 +12209,21 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
 <code>┗━━━━━━━━━━━━━━━━━━━━━┛</code>
 🕐 <i>${now}</i>\n\n`;
 
-    // ── XLA ── prioritas slot endpoint V1, fallback field kosong
-    if (xlaProducts.length) {
-      const items = [...xlaProducts.filter(p => !/^XLAP/i.test(p.kode_produk || '')), ...xlaProducts.filter(p => /^XLAP/i.test(p.kode_produk || ''))].map(p => {
-        const kode = String(p.kode_produk || '').toUpperCase();
-        const nama = shortName(p.nama_produk || p.name || kode);
+    // ── XLA ── gabung produk + slot map V1, render semua kode unik
+    if (xlaProducts.length || Object.keys(xlaSlotMap).length) {
+      const namaMapXla = {};
+      xlaProducts.forEach(p => {
+        namaMapXla[String(p.kode_produk || '').toUpperCase()] = shortName(p.nama_produk || p.name || p.kode_produk);
+      });
+      const kodeSetXla = new Set([
+        ...xlaProducts.map(p => String(p.kode_produk || '').toUpperCase()),
+        ...Object.keys(xlaSlotMap),
+      ]);
+      const items = [...kodeSetXla].sort().map(kode => {
+        const nama = namaMapXla[kode] || kode;
         const slot = xlaSlotMap[kode];
-        const tersedia = (slot !== undefined) ? slot > 0 : !isKosongProduk(p);
+        const prod = xlaProducts.find(p => String(p.kode_produk || '').toUpperCase() === kode);
+        const tersedia = (slot !== undefined) ? slot > 0 : (prod ? !isKosongProduk(prod) : false);
         const icon = tersedia ? '✅' : '❌';
         const qty = (slot !== undefined && slot > 0) ? String(slot) : '';
         if (tersedia) totalReady++; else totalKosong++;
@@ -12227,13 +12232,21 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
       body += `🔵 <b>XLA</b>\n<code>${formatPair(items)}</code>\n\n`;
     }
 
-    // ── XDA ── prioritas slot endpoint V2, fallback field kosong
-    if (xdaProducts.length) {
-      const items = xdaProducts.map(p => {
-        const kode = String(p.kode_produk || '').toUpperCase();
-        const nama = shortName(p.nama_produk || p.name || kode);
+    // ── XDA ── gabung produk + slot map V2, render semua kode unik
+    if (xdaProducts.length || Object.keys(xdaSlotMap).length) {
+      const namaMapXda = {};
+      xdaProducts.forEach(p => {
+        namaMapXda[String(p.kode_produk || '').toUpperCase()] = shortName(p.nama_produk || p.name || p.kode_produk);
+      });
+      const kodeSetXda = new Set([
+        ...xdaProducts.map(p => String(p.kode_produk || '').toUpperCase()),
+        ...Object.keys(xdaSlotMap),
+      ]);
+      const items = [...kodeSetXda].sort().map(kode => {
+        const nama = namaMapXda[kode] || kode;
         const slot = xdaSlotMap[kode];
-        const tersedia = (slot !== undefined) ? slot > 0 : !isKosongProduk(p);
+        const prod = xdaProducts.find(p => String(p.kode_produk || '').toUpperCase() === kode);
+        const tersedia = (slot !== undefined) ? slot > 0 : (prod ? !isKosongProduk(prod) : false);
         const icon = tersedia ? '✅' : '❌';
         const qty = (slot !== undefined && slot > 0) ? String(slot) : '';
         if (tersedia) totalReady++; else totalKosong++;
