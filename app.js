@@ -10895,14 +10895,14 @@ const serverBlocks = currentServers.map(server => {
   const isFullByManualLimit = !isManualUnlimited && Number(server.total_create_akun || 0) >= manualLimit;
 
   return (
-`🖥️ <b>${server.nama_server.toUpperCase()}</b>
+`<blockquote>🖥️ <b>${server.nama_server.toUpperCase()}</b>
 <code>──────────────────────</code>
 ${priceLines.join('\n')}
 <code>──────────────────────</code>
 ✦ Domain : <code>${server.domain}</code>
 ✦ Quota  : ${server.quota} GB
 ✦ Akun   : ${server.total_create_akun}/${akunLimitText}
-✦ Status : ${isFullByManualLimit ? 'Server Penuh ❌' : 'Tersedia ✅'}`
+✦ Status : ${isFullByManualLimit ? 'Server Penuh ❌' : 'Tersedia ✅'}</blockquote>`
   );
 });
     const title = `🖥️ <b>List Server (Halaman ${currentPage + 1} dari ${totalPages})</b>\n<code>──────────────────────</code>`;
@@ -11358,7 +11358,6 @@ bot.action(/^smm_kat_(.+)$/, async (ctx) => {
 
   const keyboard = catServices.map((s) => {
     const basePrice = parseFloat(s.rate || s.price || 0);
-    // Harga FayuPedia adalah per 1 unit, kita tampilkan per 1000 unit (umum di SMM)
     const finalPrice = wallet.getEffectivePrice(Math.ceil(basePrice * 1000), markupGlobal, markupReseller);
     const name = String(s.name || s.service || '').slice(0, 35);
     return [{
@@ -11368,8 +11367,20 @@ bot.action(/^smm_kat_(.+)$/, async (ctx) => {
   });
   keyboard.push([{ text: ' Kembali', callback_data: 'smm_list_layanan' }]);
 
+  // Buat list blockquote per layanan
+  const listText = catServices.map((s, i) => {
+    const basePrice = parseFloat(s.rate || s.price || 0);
+    const finalPrice = wallet.getEffectivePrice(Math.ceil(basePrice * 1000), markupGlobal, markupReseller);
+    const name = String(s.name || s.service || '-');
+    const min = parseInt(s.min || 100);
+    const max = parseInt(s.max || 100000);
+    return `<blockquote><b>${i + 1}. ${name}</b>\n` +
+      `✦ Harga : Rp ${finalPrice.toLocaleString('id-ID')} / 1000\n` +
+      `✦ Min   : ${min.toLocaleString('id-ID')}  |  Max: ${max.toLocaleString('id-ID')}</blockquote>`;
+  }).join('\n');
+
   await ctx.editMessageText(
-    ' <b>' + cat + '</b>\n\n' + catServices.length + ' layanan:',
+    `💉 <b>${cat}</b>\n<code>──────────────────────</code>\n${listText}`,
     { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } }
   );
 });
@@ -11396,10 +11407,10 @@ bot.action(/^smm_order_(.+)$/, async (ctx) => {
   });
 
   await ctx.editMessageText(
-    ' <b>' + (service ? (service.name || serviceId) : serviceId) + '</b>\n\n' +
-    ' Harga: Rp ' + Number(finalPricePer1000).toLocaleString('id-ID') + ' / 1000\n' +
-    ' Min: ' + min.toLocaleString('id-ID') + ' | Max: ' + max.toLocaleString('id-ID') + '\n\n' +
-    'Masukkan target (URL/username):',
+    `<blockquote>💉 <b>${service ? (service.name || serviceId) : serviceId}</b>\n` +
+    `✦ Harga : Rp ${Number(finalPricePer1000).toLocaleString('id-ID')} / 1000\n` +
+    `✦ Min   : ${min.toLocaleString('id-ID')}  |  Max: ${max.toLocaleString('id-ID')}</blockquote>\n\n` +
+    `✦ Masukkan target (URL/username):`,
     {
       parse_mode: 'HTML',
       reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'menu_suntik' }]] },
@@ -11829,20 +11840,34 @@ bot.action(/^akrab_kat_(.+)$/, async (ctx) => {
     const code = p.kode_produk || p.code || p.produk;
     const name = p.nama_produk || p.name || p.nama || code;
     const base = Number(p.harga_final || p.price || p.harga || 0);
-    const habis = Number(p.kosong || 0) === 1;
+    const habis = Number(p.kosong || 0) === 1 || Number(p.gangguan || 0) === 1;
     const finalPrice = wallet.getEffectivePrice(base, markupGlobal, markupReseller);
     const labelHarga = base > 0 ? ' — Rp ' + finalPrice.toLocaleString('id-ID') : '';
+    const labelStok = habis ? ' [KOSONG]' : '';
     return [{
-      text: (habis ? ' ' : '') + name + labelHarga,
+      text: name + labelHarga + labelStok,
       callback_data: 'akrab_beli_' + code,
     }];
   });
   keyboard.push([{ text: ' Kembali', callback_data: 'akrab_list_produk' }]);
 
-  await ctx.editMessageText(' <b>Produk: ' + category + '</b>\n\nPilih produk:', {
-    parse_mode: 'HTML',
-    reply_markup: { inline_keyboard: keyboard },
-  });
+  // List blockquote per produk
+  const listText = products.slice(0, 30).map((p, i) => {
+    const code = p.kode_produk || p.code || p.produk;
+    const name = p.nama_produk || p.name || p.nama || code;
+    const base = Number(p.harga_final || p.price || p.harga || 0);
+    const finalPrice = wallet.getEffectivePrice(base, markupGlobal, markupReseller);
+    const kosong = Number(p.kosong || 0) === 1;
+    const gangguan = Number(p.gangguan || 0) === 1;
+    const stokIcon = gangguan ? '⚠️ Gangguan' : kosong ? '❌ Kosong' : '✅ Tersedia';
+    const hargaText = base > 0 ? `✦ Harga : Rp ${finalPrice.toLocaleString('id-ID')}\n` : '';
+    return `<blockquote><b>${i + 1}. ${name}</b> <code>${code}</code>\n${hargaText}✦ Stok  : ${stokIcon}</blockquote>`;
+  }).join('\n');
+
+  await ctx.editMessageText(
+    `🤝 <b>Produk: ${category}</b>\n<code>──────────────────────</code>\n${listText}`,
+    { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } }
+  );
 });
 
 bot.action(/^akrab_beli_(.+)$/, async (ctx) => {
@@ -11897,11 +11922,11 @@ bot.action(/^akrab_beli_(.+)$/, async (ctx) => {
   const deskripsi = product && product.deskripsi ? ('\n\n<i>' + String(product.deskripsi).slice(0, 300) + '</i>') : '';
 
   await ctx.editMessageText(
-    ' <b>Beli Produk Akrab</b>\n\n' +
-    'Produk: <b>' + namaProduk + '</b>\n' +
-    'Harga: <b>Rp ' + Number(finalPrice).toLocaleString('id-ID') + '</b>' +
-    deskripsi + '\n\n' +
-    'Masukkan nomor tujuan:',
+    `<blockquote>🤝 <b>Beli Produk Akrab</b>\n` +
+    `✦ Produk : <b>${namaProduk}</b>\n` +
+    `✦ Harga  : <b>Rp ${Number(finalPrice).toLocaleString('id-ID')}</b>` +
+    (deskripsi ? `\n${deskripsi}` : '') + `</blockquote>\n\n` +
+    `✦ Masukkan nomor tujuan:`,
     {
       parse_mode: 'HTML',
       reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'menu_akrab' }]] },
@@ -12027,22 +12052,44 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
       }
     }
 
-    // Gabung semua, potong jika > 4096 karakter
-    const fullText = parts.join('\n');
-    const maxLen = 4000;
-    const finalText = fullText.length > maxLen
-      ? fullText.slice(0, maxLen) + '\n<i>... (terpotong, terlalu panjang)</i>'
-      : fullText;
+    // Gabung semua — kirim per bagian jika terlalu panjang
+    const CHUNK_MAX = 3800;
+    const chunks = [];
+    let current = '';
+    for (const part of parts) {
+      if ((current + '\n' + part).length > CHUNK_MAX) {
+        if (current) chunks.push(current);
+        current = part;
+      } else {
+        current = current ? current + '\n' + part : part;
+      }
+    }
+    if (current) chunks.push(current);
 
-    await ctx.editMessageText(finalText, {
+    // Edit pesan pertama
+    await ctx.editMessageText(chunks[0] || '❌ Tidak ada data.', {
       parse_mode: 'HTML',
-      reply_markup: {
+      reply_markup: chunks.length === 1 ? {
         inline_keyboard: [
           [{ text: '🔄 Refresh', callback_data: 'akrab_cek_stock_all' }],
           [{ text: '🔙 Kembali', callback_data: 'menu_akrab' }],
         ],
-      },
+      } : undefined,
     });
+
+    // Kirim sisa chunk sebagai pesan baru
+    for (let i = 1; i < chunks.length; i++) {
+      const isLast = i === chunks.length - 1;
+      await ctx.reply(chunks[i], {
+        parse_mode: 'HTML',
+        reply_markup: isLast ? {
+          inline_keyboard: [
+            [{ text: '🔄 Refresh', callback_data: 'akrab_cek_stock_all' }],
+            [{ text: '🔙 Kembali', callback_data: 'menu_akrab' }],
+          ],
+        } : undefined,
+      });
+    }
   } catch (err) {
     logger.error('akrab_cek_stock_all: ' + (err && err.message ? err.message : err));
     await ctx.editMessageText('❌ Gagal cek stok. Coba lagi nanti.', {
