@@ -11847,18 +11847,17 @@ bot.action('menu_akrab', async (ctx) => {
 
 // ── Grup Akrab V1 / V2 / Circle ─────────────────────────────────────────────
 // Pemetaan kode_provider khfy-store ke grup:
-//   v1     : KUBER, KUBERP        (produk XLA*)
-//   v2     : KUBERV2              (produk XDA*)
-//   circle : sisanya (BEKASAN*, IM, FMAX, PLN, dll)
-const AKRAB_GROUP_PROVIDERS = {
-  v1: ['KUBER', 'KUBERP'],
-  v2: ['KUBERV2'],
-};
-function getAkrabGroup(provider) {
-  const p = String(provider || '').toUpperCase();
-  if (AKRAB_GROUP_PROVIDERS.v1.includes(p)) return 'v1';
-  if (AKRAB_GROUP_PROVIDERS.v2.includes(p)) return 'v2';
-  return 'circle';
+// ── Grup Akrab V1 / V2 / Circle ─────────────────────────────────────────────
+// Pengelompokan berdasarkan PREFIX kode produk:
+//   v1     : XLA* (kecuali XCLP)  — Akrab V1
+//   v2     : XDA*                 — Akrab V2
+//   circle : XCLP*                — Circle
+function getAkrabGroup(kodeProduk) {
+  const k = String(kodeProduk || '').toUpperCase();
+  if (/^XCLP/.test(k)) return 'circle';
+  if (/^XDA/.test(k)) return 'v2';
+  if (/^XLA/.test(k)) return 'v1';
+  return 'other'; // produk lain (PLN, Bonus, dll) tidak masuk grup manapun
 }
 
 bot.action(/^akrab_grup_(v1|v2|circle)$/, async (ctx) => {
@@ -11895,7 +11894,9 @@ bot.action(/^akrab_grup_(v1|v2|circle)$/, async (ctx) => {
       }
     } catch (_) { /* stok endpoint optional */ }
 
-    const filtered = (products || []).filter((p) => getAkrabGroup(p.kode_provider) === grup);
+    // Filter berdasarkan prefix kode produk (bukan kode_provider)
+    const getKode = (p) => String(p.kode_produk || p.code || p.produk || '').toUpperCase();
+    const filtered = (products || []).filter((p) => getAkrabGroup(getKode(p)) === grup);
 
     userState[userId] = Object.assign({}, userState[userId], {
       akrabProducts: products,
