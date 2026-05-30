@@ -3993,40 +3993,38 @@ async function sendMainMenu(ctx) {
   // Buat keyboard dasar untuk semua user
   let keyboard = [
     [
-      { text: ' Akun VPN', callback_data: 'menu_vpn' }
+      { text: '🔑 Akun VPN', callback_data: 'menu_vpn' }
     ],
     [
-      { text: ' Tools', callback_data: 'menu_tools' },
-      { text: ' Hubungi Admin', callback_data: 'hubungi_admin' }
+      { text: '🔧 Tools', callback_data: 'menu_tools' },
+      { text: '📞 Hubungi Admin', callback_data: 'hubungi_admin' }
     ],
     [
-      { text: '🤝 Akrab & Circle', callback_data: 'menu_akrab' }
-    ],
-    [
-      { text: ' Suntik Followers', callback_data: 'menu_suntik' }
+      { text: '🤝 Akrab & Circle', callback_data: 'menu_akrab' },
+      { text: '💉 Suntik Followers', callback_data: 'menu_suntik' }
     ],
     [
       { text: '🧪 Test Transaksi', callback_data: 'admin_test_menu' }
     ],
     [
-      { text: ' Jadi Reseller harga lebih murah!!', callback_data: 'jadi_reseller' }
+      { text: '⭐ Jadi Reseller — Harga Lebih Murah!', callback_data: 'jadi_reseller' }
     ],
   ];
 
   // Satu tombol Top Up yang membuka submenu (VPN + Tembak Kuota)
-  keyboard.push([{ text: ' Top Up Saldo', callback_data: 'menu_topup' }]);
+  keyboard.push([{ text: '💳 Top Up Saldo', callback_data: 'menu_topup' }]);
 
   if (loadScNexusMenuSetting()) {
     keyboard.push([
-      { text: ' SC 1FORCR NEXUS', url: 'https://t.me/sc1forcrnexusbot' }
+      { text: '🚀 SC 1FORCR NEXUS', url: 'https://t.me/sc1forcrnexusbot' }
     ]);
   }
 
   // Jika user adalah reseller, tambahkan tombol khusus di bawah Akun VPN
   if (isReseller) {
     keyboard.splice(1, 0, [
-      { text: ' Statistik Saya', callback_data: 'reseller_stats' },
-      { text: ' Menu Reseller', callback_data: 'menu_join_reseller' }
+      { text: '📊 Statistik Saya', callback_data: 'reseller_stats' },
+      { text: '🏪 Menu Reseller', callback_data: 'menu_join_reseller' }
     ]);
     logger.info(' Menu reseller ditampilkan untuk user: ' + userId);
   }
