@@ -1,4 +1,4 @@
-﻿const os = require('os');
+const os = require('os');
 const sqlite3 = require('sqlite3').verbose();
 const express = require('express');
 const { Telegraf } = require('telegraf');
@@ -3710,34 +3710,55 @@ bot.command(['start', 'menu'], async (ctx) => {
   logger.info('Start or Menu command received');
   
   const userId = ctx.from.id;
-  // hapus pesan /start atau /menu agar tidak menumpuk
+  const userName = ctx.from.first_name || 'Pengguna';
+
+  // Hapus pesan /start atau /menu agar tidak menumpuk
   if (ctx.message && ctx.message.text && (ctx.message.text.startsWith('/start') || ctx.message.text.startsWith('/menu'))) {
-    try {
-      await ctx.deleteMessage();
-    } catch (e) {
-      // ignore jika tidak bisa dihapus
-    }
+    try { await ctx.deleteMessage(); } catch (e) {}
   }
+
   ctx.state = ctx.state || {};
   ctx.state.forceNewMenu = true;
-  db.get('SELECT * FROM users WHERE user_id = ?', [userId], (err, row) => {
-    if (err) {
-      logger.error('Kesalahan saat memeriksa user_id:', err.message);
-      return;
-    }
 
-    if (row) {
-      logger.info(`User ID ${userId} sudah ada di database`);
-    } else {
+  // Simpan user ke DB
+  db.get('SELECT * FROM users WHERE user_id = ?', [userId], (err, row) => {
+    if (err) { logger.error('Kesalahan saat memeriksa user_id:', err.message); return; }
+    if (!row) {
       db.run('INSERT INTO users (user_id) VALUES (?)', [userId], (err) => {
-        if (err) {
-          logger.error('Kesalahan saat menyimpan user_id:', err.message);
-        } else {
-          logger.info(`User ID ${userId} berhasil disimpan`);
-        }
+        if (err) logger.error('Kesalahan saat menyimpan user_id:', err.message);
+        else logger.info(`User ID ${userId} berhasil disimpan`);
       });
     }
   });
+
+  // ── Welcome animation ──────────────────────────────────────────────────────
+  const frames = [
+    '🔥',
+    '🔥🔥',
+    '🔥🔥🔥',
+    '🔥🔥🔥\n\n⚡ <b>Memuat...</b>',
+    `🔥🔥🔥\n\n⚡ <b>Selamat datang, ${userName}!</b>\n<i>Menyiapkan menu...</i>`,
+  ];
+
+  let welcomeMsg;
+  try {
+    welcomeMsg = await ctx.reply(frames[0], { parse_mode: 'HTML' });
+    for (let i = 1; i < frames.length; i++) {
+      await new Promise(r => setTimeout(r, 500));
+      try {
+        await ctx.telegram.editMessageText(
+          welcomeMsg.chat.id,
+          welcomeMsg.message_id,
+          undefined,
+          frames[i],
+          { parse_mode: 'HTML' }
+        );
+      } catch (_) {}
+    }
+    await new Promise(r => setTimeout(r, 800));
+    try { await ctx.telegram.deleteMessage(welcomeMsg.chat.id, welcomeMsg.message_id); } catch (_) {}
+  } catch (_) {}
+  // ──────────────────────────────────────────────────────────────────────────
 
   await sendMainMenu(ctx);
 });
@@ -3932,41 +3953,42 @@ async function sendMainMenu(ctx) {
   // Latency (dummy, bisa diubah sesuai kebutuhan)
   const latency = (Math.random() * 0.1 + 0.01).toFixed(2);
 
-  const messageText = `<blockquote expandable>
-<b> BOT VPN ${NAMA_STORE}</b>
+  // Hitung total transaksi global semua waktu
+  let globalAll = 0;
+  try {
+    globalAll = await new Promise((resolve) => {
+      db.get(
+        'SELECT COUNT(*) as count FROM transactions WHERE type IN ("ssh","vmess","vless","trojan","shadowsocks","udp_http","zivpn") AND reference_id NOT LIKE "account-trial-%"',
+        [],
+        (err, row) => resolve(row ? row.count : 0)
+      );
+    });
+  } catch (e) {}
+
+  const messageText = `✦ <b>${NAMA_STORE}</b> ✦
 <code>━━━━━━━━━━━━━━━━━━━━━━</code>
-
-<b> INFORMASI PENGGUNA</b>
+👤 <b>Informasi Pengguna</b>
 <code>──────────────────────</code>
-┃  Nama   : <b>${userName}</b>
-┃ 🆔 ID     : <code>${userId}</code>
-┃  Status : <b>${statusReseller}</b>
-
-<b> DOMPET SALDO</b>
+✦ Nama    : <b>${userName}</b>
+✦ ID      : <code>${userId}</code>
+✦ Status  : <b>${statusReseller}</b>
+✦ Saldo   : <code>Rp ${Number(saldo || 0).toLocaleString('id-ID')}</code>
 <code>──────────────────────</code>
-┃  Saldo VPN         : <code>Rp ${Number(saldo || 0).toLocaleString('id-ID')}</code>
-┃  Saldo Tembak Kuota : <code>Rp ${Number(saldoAkrab || 0).toLocaleString('id-ID')}</code>
-
-<b> STATISTIK ANDA</b>
+📊 <b>Statistik Transaksi</b>
+🏅 <b>Anda</b>
+✧ Hari ini  : <b>${userToday}</b> akun
+✧ Minggu ini: <b>${userWeek}</b> akun
+✧ Bulan ini : <b>${userMonth}</b> akun
 <code>──────────────────────</code>
-┃  Hari Ini   : <b>${userToday}</b> akun
-┃  Minggu Ini : <b>${userWeek}</b> akun
-┃  Bulan Ini  : <b>${userMonth}</b> akun
-
-<b> STATISTIK GLOBAL</b>
+🏅 <b>Global</b>
+✧ Hari ini  : <b>${globalToday}</b> akun
+✧ Minggu ini: <b>${globalWeek}</b> akun
+✧ Bulan ini : <b>${globalMonth}</b> akun
+✧ Semua     : <b>${globalAll}</b> akun
 <code>──────────────────────</code>
-┃  Hari Ini   : <b>${globalToday}</b> akun
-┃  Minggu Ini : <b>${globalWeek}</b> akun
-┃  Bulan Ini  : <b>${globalMonth}</b> akun
-
-<b> STATUS SISTEM</b>
-<code>──────────────────────</code>
-┃  Total Users : <b>${jumlahPengguna}</b>
-┃  Latency     : <b>${latency} ms</b>
-┃  Edited by    : <b>RetriVPN</b>
-<code>━━━━━━━━━━━━━━━━━━━━━━</code>
-<i>Pilih menu di bawah untuk mulai </i>
-</blockquote>`;
+👥 Users   : <b>${jumlahPengguna}</b>
+🕐 Latency : <b>${latency} ms</b>
+<code>──────────────────────</code>`;
 
   // Buat keyboard dasar untuk semua user
   let keyboard = [
@@ -3978,8 +4000,7 @@ async function sendMainMenu(ctx) {
       { text: ' Hubungi Admin', callback_data: 'hubungi_admin' }
     ],
     [
-      { text: ' PPOB', callback_data: 'menu_ppob' },
-      { text: ' Akrab & Circle', callback_data: 'menu_akrab' }
+      { text: '🤝 Akrab & Circle', callback_data: 'menu_akrab' }
     ],
     [
       { text: ' Suntik Followers', callback_data: 'menu_suntik' }
@@ -5166,6 +5187,7 @@ async function sendAdminMenu(ctx) {
     [{ text: ' Tools', callback_data: 'admin_menu_tools' }],
     [{ text: ' Setting API Keys', callback_data: 'admin_setting_api' }],
     [{ text: ' Markup Global Produk', callback_data: 'admin_markup_global_menu' }],
+    [{ text: '💾 Backup & Restore Saldo', callback_data: 'menu_backup_saldo' }],
     [{ text: ' Kembali', callback_data: 'send_main_menu' }]
   ];
 
@@ -7601,6 +7623,74 @@ bot.on('document', async (ctx) => {
     );
   }
 
+  // ── Restore Saldo dari file JSON ──────────────────────────────────────────
+  if (state.step === 'restore_saldo_upload') {
+    if (!adminIds.includes(adminId)) return ctx.reply('Akses ditolak.');
+
+    const doc = ctx.message.document;
+    const fileName = String(doc.file_name || '');
+    if (!fileName.endsWith('.json')) {
+      return ctx.reply('❌ File harus berformat <b>.json</b>. Kirim ulang file yang benar.', { parse_mode: 'HTML' });
+    }
+
+    try {
+      const fileLink = await ctx.telegram.getFileLink(doc.file_id);
+      const axios = require('axios');
+      const resp = await axios.get(fileLink.href, { responseType: 'text', timeout: 15000 });
+      const backupData = JSON.parse(resp.data);
+
+      if (!backupData.users || !Array.isArray(backupData.users)) {
+        return ctx.reply('❌ Format file tidak valid. Pastikan file adalah hasil backup saldo bot ini.');
+      }
+
+      let updatedUsers = 0;
+      let restoredResellers = 0;
+
+      // Restore saldo per user
+      for (const u of backupData.users) {
+        if (!u.user_id) continue;
+        await new Promise((resolve) =>
+          db.run(
+            'UPDATE users SET saldo = ?, saldo_akrab = ? WHERE user_id = ?',
+            [Number(u.saldo_vpn || 0), Number(u.saldo_akrab || 0), u.user_id],
+            () => resolve()
+          )
+        );
+        updatedUsers++;
+      }
+
+      // Restore daftar reseller
+      if (Array.isArray(backupData.resellers) && backupData.resellers.length > 0) {
+        const lines = backupData.resellers.map(id => String(id).trim()).filter(Boolean);
+        fs.writeFileSync(resselFilePath, lines.join('\n') + '\n', 'utf8');
+        restoredResellers = lines.length;
+      }
+
+      delete userState[adminId];
+
+      await ctx.reply(
+        '✅ <b>Restore Saldo Berhasil!</b>\n' +
+        '<code>──────────────────────</code>\n' +
+        `✦ User diperbarui  : <b>${updatedUsers}</b>\n` +
+        `✦ Reseller dipulihkan : <b>${restoredResellers}</b>\n` +
+        `✦ Sumber backup    : <code>${backupData.timestamp || '-'}</code>\n` +
+        '<code>──────────────────────</code>',
+        {
+          parse_mode: 'HTML',
+          reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'menu_backup_saldo' }]] },
+        }
+      );
+    } catch (err) {
+      logger.error('restore_saldo_upload: ' + (err && err.message ? err.message : err));
+      await ctx.reply(
+        '❌ Restore gagal: ' + (err && err.message ? err.message : 'unknown'),
+        { reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'menu_backup_saldo' }]] } }
+      );
+    }
+    return;
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+
   if (state.step !== 'restore_db_upload') return;
 
   if (!adminIds.includes(adminId)) {
@@ -7657,6 +7747,136 @@ bot.on('document', async (ctx) => {
   }
 });
 
+// ══════════════════════════════════════════
+// MENU BACKUP & RESTORE SALDO
+// ══════════════════════════════════════════
+bot.action('menu_backup_saldo', async (ctx) => {
+  await ctx.answerCbQuery();
+  const userId = ctx.from.id;
+  const isAdminUser = Array.isArray(adminIds) ? adminIds.includes(userId) : Number(adminIds) === userId;
+  if (!isAdminUser) return ctx.answerCbQuery('Akses ditolak.', { show_alert: true });
+
+  await ctx.editMessageText(
+    '💾 <b>BACKUP &amp; RESTORE SALDO</b>\n' +
+    '<code>──────────────────────</code>\n' +
+    '✦ Backup : ekspor semua saldo member &amp; reseller ke file JSON\n' +
+    '✦ Restore : impor saldo dari file backup\n' +
+    '<code>──────────────────────</code>\n' +
+    '<i>Backup mencakup: saldo VPN, saldo tembak kuota, dan daftar reseller.</i>',
+    {
+      parse_mode: 'HTML',
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: '📤 Backup Saldo Sekarang', callback_data: 'backup_saldo_now' }],
+          [{ text: '📥 Restore Saldo dari File', callback_data: 'restore_saldo_prompt' }],
+          [{ text: '🔙 Kembali', callback_data: 'admin_menu' }],
+        ],
+      },
+    }
+  );
+});
+
+bot.action('backup_saldo_now', async (ctx) => {
+  await ctx.answerCbQuery('Memproses backup...');
+  const userId = ctx.from.id;
+  const isAdminUser = Array.isArray(adminIds) ? adminIds.includes(userId) : Number(adminIds) === userId;
+  if (!isAdminUser) return;
+
+  try {
+    // Ambil semua data saldo user dari DB
+    const users = await new Promise((resolve, reject) =>
+      db.all('SELECT user_id, saldo, saldo_akrab FROM users', [], (err, rows) => err ? reject(err) : resolve(rows || []))
+    );
+
+    // Ambil daftar reseller
+    let resellerList = [];
+    try {
+      resellerList = listResellersSync();
+    } catch (_) {}
+
+    const backupData = {
+      timestamp: new Date().toISOString(),
+      generated_by: userId,
+      total_users: users.length,
+      total_resellers: resellerList.length,
+      users: users.map(u => ({
+        user_id: u.user_id,
+        saldo_vpn: u.saldo || 0,
+        saldo_akrab: u.saldo_akrab || 0,
+      })),
+      resellers: resellerList,
+    };
+
+    const json = JSON.stringify(backupData, null, 2);
+    const now = new Date();
+    const ts = now.toISOString().replace(/[:.]/g, '-').replace('T', '_').slice(0, 19);
+    const fileName = `backup_saldo_${ts}.json`;
+    const filePath = path.join(__dirname, fileName);
+
+    fs.writeFileSync(filePath, json, 'utf8');
+
+    await ctx.telegram.sendDocument(
+      userId,
+      { source: filePath, filename: fileName },
+      {
+        caption:
+          `💾 <b>Backup Saldo Berhasil</b>\n` +
+          `<code>──────────────────────</code>\n` +
+          `✦ Tanggal  : ${now.toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' })}\n` +
+          `✦ Jam      : ${now.toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta' })}\n` +
+          `✦ Total User     : ${users.length}\n` +
+          `✦ Total Reseller : ${resellerList.length}\n` +
+          `<code>──────────────────────</code>\n` +
+          `<i>Simpan file ini untuk restore saldo.</i>`,
+        parse_mode: 'HTML',
+      }
+    );
+
+    // Hapus file temp
+    try { fs.unlinkSync(filePath); } catch (_) {}
+
+    await ctx.editMessageText(
+      '✅ <b>Backup selesai!</b>\n\nFile dikirim ke chat Anda.',
+      {
+        parse_mode: 'HTML',
+        reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'menu_backup_saldo' }]] },
+      }
+    );
+  } catch (err) {
+    logger.error('backup_saldo_now: ' + (err && err.message ? err.message : err));
+    await ctx.editMessageText(
+      '❌ Backup gagal: ' + (err && err.message ? err.message : 'unknown'),
+      {
+        parse_mode: 'HTML',
+        reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'menu_backup_saldo' }]] },
+      }
+    );
+  }
+});
+
+bot.action('restore_saldo_prompt', async (ctx) => {
+  await ctx.answerCbQuery();
+  const userId = ctx.from.id;
+  const isAdminUser = Array.isArray(adminIds) ? adminIds.includes(userId) : Number(adminIds) === userId;
+  if (!isAdminUser) return;
+
+  userState[userId] = { step: 'restore_saldo_upload' };
+
+  await ctx.editMessageText(
+    '📥 <b>Restore Saldo</b>\n' +
+    '<code>──────────────────────</code>\n' +
+    '✦ Kirim file <b>.json</b> hasil backup ke chat ini.\n' +
+    '✦ Saldo VPN dan tembak kuota semua member akan diperbarui.\n' +
+    '✦ Daftar reseller juga akan dipulihkan.\n' +
+    '<code>──────────────────────</code>\n' +
+    '<i>⚠️ Proses ini akan menimpa saldo yang ada sekarang.</i>',
+    {
+      parse_mode: 'HTML',
+      reply_markup: { inline_keyboard: [[{ text: '❌ Batal', callback_data: 'menu_backup_saldo' }]] },
+    }
+  );
+});
+
 // ── Submenu Top Up (gabungan: VPN + Tembak Kuota) ──────────────────────────
 bot.action('menu_topup', async (ctx) => {
   await ctx.answerCbQuery().catch(() => {});
@@ -7678,14 +7898,14 @@ bot.action('menu_topup', async (ctx) => {
   keyboard.push([{ text: ' Menu Utama', callback_data: 'send_main_menu' }]);
 
   const msgText =
-    '<blockquote> TOP UP SALDO\n' +
-    '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
-    '┃  Saldo VPN          : <code>Rp ' + Number(saldoVpn || 0).toLocaleString('id-ID') + '</code>\n' +
-    '┃  Saldo Tembak Kuota : <code>Rp ' + Number(saldoAkrab || 0).toLocaleString('id-ID') + '</code>\n' +
-    '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
+    '💳 <b>TOP UP SALDO</b>\n' +
+    '<code>──────────────────────</code>\n' +
+    '✦ Saldo VPN          : <code>Rp ' + Number(saldoVpn || 0).toLocaleString('id-ID') + '</code>\n' +
+    '✦ Saldo Tembak Kuota : <code>Rp ' + Number(saldoAkrab || 0).toLocaleString('id-ID') + '</code>\n' +
+    '<code>──────────────────────</code>\n' +
     '<i>VPN: Akun VPN + Suntik Followers</i>\n' +
-    '<i>Tembak Kuota: PPOB + Akrab & Circle</i>\n\n' +
-    'Pilih jenis saldo yang ingin di-top up:</blockquote>';
+    '<i>Tembak Kuota: PPOB + Akrab &amp; Circle</i>\n\n' +
+    '✦ Pilih jenis saldo yang ingin di-top up:';
 
   await ctx.editMessageText(msgText, { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } })
     .catch(async () => { await ctx.reply(msgText, { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } }); });
@@ -10650,15 +10870,15 @@ const serverBlocks = currentServers.map(server => {
   const monthlyEnabled = isServerMonthlyPriceEnabled(server);
   const priceLines = [];
   if (dailyEnabled) {
-    priceLines.push(` *Harga/Hari 1IP:* Rp${hargaPerHari1.toLocaleString('id-ID')}`);
-    priceLines.push(` *Harga/Hari 2IP:* Rp${hargaPerHari2.toLocaleString('id-ID')}`);
+    priceLines.push(`✦ Harga/Hari 1IP  : Rp ${hargaPerHari1.toLocaleString('id-ID')}`);
+    priceLines.push(`✦ Harga/Hari 2IP  : Rp ${hargaPerHari2.toLocaleString('id-ID')}`);
   }
   if (monthlyEnabled) {
-    priceLines.push(` *Harga/30 Hari 1IP:* Rp${hargaPer30Hari1.toLocaleString('id-ID')}`);
-    priceLines.push(` *Harga/30 Hari 2IP:* Rp${hargaPer30Hari2.toLocaleString('id-ID')}`);
+    priceLines.push(`✦ Harga/30 Hari 1IP : Rp ${hargaPer30Hari1.toLocaleString('id-ID')}`);
+    priceLines.push(`✦ Harga/30 Hari 2IP : Rp ${hargaPer30Hari2.toLocaleString('id-ID')}`);
   }
   if (!priceLines.length) {
-    priceLines.push(' *Harga:* Nonaktif');
+    priceLines.push('✦ Harga: Nonaktif');
   }
   const capacity = calculateServerEffectiveCapacity({
     usedAccounts: server.total_create_akun,
@@ -10674,19 +10894,17 @@ const serverBlocks = currentServers.map(server => {
   const isFullByManualLimit = !isManualUnlimited && Number(server.total_create_akun || 0) >= manualLimit;
 
   return (
-`╔══════════════════╗
-*${server.nama_server.toUpperCase()}*
-╚══════════════════╝
-╔══════════════════╗
+`🖥️ <b>${server.nama_server.toUpperCase()}</b>
+<code>──────────────────────</code>
 ${priceLines.join('\n')}
-╚══════════════════╝
- *Domain:* \`${server.domain}\`
- *Quota:* ${server.quota} GB
- *Akun Terpakai:* ${server.total_create_akun}/${akunLimitText}
- *Status:* ${isFullByManualLimit ? " Server Penuh" : " Tersedia"}`
+<code>──────────────────────</code>
+✦ Domain : <code>${server.domain}</code>
+✦ Quota  : ${server.quota} GB
+✦ Akun   : ${server.total_create_akun}/${akunLimitText}
+✦ Status : ${isFullByManualLimit ? 'Server Penuh ❌' : 'Tersedia ✅'}`
   );
 });
-    const title = ` *List Server (Halaman ${currentPage + 1} dari ${totalPages})*`;
+    const title = `🖥️ <b>List Server (Halaman ${currentPage + 1} dari ${totalPages})</b>\n<code>──────────────────────</code>`;
     const maxLen = 3800;
     const chunks = [];
     let chunk = `${title}\n\n`;
@@ -10704,18 +10922,18 @@ ${priceLines.join('\n')}
     if (ctx.updateType === 'callback_query') {
       await ctx.editMessageText(chunks[0], {
         reply_markup: { inline_keyboard: keyboard },
-        parse_mode: 'Markdown'
+        parse_mode: 'HTML'
       });
     } else {
       await ctx.reply(chunks[0], {
         reply_markup: { inline_keyboard: keyboard },
-        parse_mode: 'Markdown'
+        parse_mode: 'HTML'
       });
     }
 
     if (chunks.length > 1) {
       for (let i = 1; i < chunks.length; i += 1) {
-        await ctx.reply(chunks[i], { parse_mode: 'Markdown' });
+        await ctx.reply(chunks[i], { parse_mode: 'HTML' });
       }
     }
 
@@ -10790,12 +11008,12 @@ bot.action(/(create|renew)_username_(vmess|vless|trojan|shadowsocks|ssh|zivpn|ud
 
       const packageLines = [];
       packageLines.push(
-        `- Paket 1IP: ${dailyEnabled ? `Harian Rp ${harga1.toLocaleString('id-ID')}` : ''}` +
+        `✦ Paket 1IP: ${dailyEnabled ? `Harian Rp ${harga1.toLocaleString('id-ID')}` : ''}` +
         `${dailyEnabled && monthlyEnabled ? ' | ' : ''}` +
         `${monthlyEnabled ? `30 Hari Rp ${harga30_1.toLocaleString('id-ID')}` : ''}`
       );
       packageLines.push(
-        `- Paket 2IP: ${dailyEnabled ? `Harian Rp ${harga2.toLocaleString('id-ID')}` : ''}` +
+        `✦ Paket 2IP: ${dailyEnabled ? `Harian Rp ${harga2.toLocaleString('id-ID')}` : ''}` +
         `${dailyEnabled && monthlyEnabled ? ' | ' : ''}` +
         `${monthlyEnabled ? `30 Hari Rp ${harga30_2.toLocaleString('id-ID')}` : ''}`
       );
@@ -10807,13 +11025,15 @@ bot.action(/(create|renew)_username_(vmess|vless|trojan|shadowsocks|ssh|zivpn|ud
       ];
 
       await ctx.reply(
-        `Pilih paket IP untuk server:\n`+
-        `*${server.nama_server || server.domain}*:\n\n` +
-        `${packageLines[0]}\n`+
-        `Maksimal dipake 1 orang atau 1 device(hp), lebih dari itu akun akan *otomatis expired dan disconnect*!!\n\n` +
-        `${packageLines[1]}\n`+
-        `Maksimal dipake 2 orang atau 2 device(hp), lebih dari itu akun akan *otomatis expired dan disconnect*!!\n\n`,
-        { parse_mode: 'Markdown', reply_markup: { inline_keyboard: keyboard } }
+        `📦 <b>Pilih Paket IP</b>\n` +
+        `<code>──────────────────────</code>\n` +
+        `✦ Server : <b>${server.nama_server || server.domain}</b>\n` +
+        `<code>──────────────────────</code>\n` +
+        `${packageLines[0]}\n` +
+        `<i>Maks. 1 orang / 1 device — lebih dari itu akun otomatis expired.</i>\n\n` +
+        `${packageLines[1]}\n` +
+        `<i>Maks. 2 orang / 2 device — lebih dari itu akun otomatis expired.</i>`,
+        { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } }
       );
     } else {
       await ctx.reply(' *Masukkan username:*', { parse_mode: 'Markdown' });
@@ -10850,15 +11070,16 @@ bot.action(/create_pkg_(vmess|vless|trojan|shadowsocks|ssh|zivpn|udp_http)_(\d+)
     const dailyPrice = getEffectiveServerPackagePrice(server, isReseller, ipPkg);
     const monthlyPrice = getEffectiveServerMonthlyPackagePrice(server, isReseller, ipPkg);
     await ctx.reply(
-      `Pilih masa aktif untuk paket ${ipPkg}IP:\n` +
-      `- Harian: Rp ${dailyPrice.toLocaleString('id-ID')} / hari\n` +
-      `- 30 Hari: Rp ${monthlyPrice.toLocaleString('id-ID')} / 30 hari`,
+      `⏱️ <b>Pilih Masa Aktif — Paket ${ipPkg}IP</b>\n` +
+      `<code>──────────────────────</code>\n` +
+      `✦ Harian  : Rp ${dailyPrice.toLocaleString('id-ID')} / hari\n` +
+      `✦ 30 Hari : Rp ${monthlyPrice.toLocaleString('id-ID')} / 30 hari`,
       {
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML',
         reply_markup: {
           inline_keyboard: [
-            [{ text: `Harian - Rp ${dailyPrice.toLocaleString('id-ID')}/hari`, callback_data: `create_price_mode_${type}_${serverId}_${ipPkg}_daily` }],
-            [{ text: `30 Hari - Rp ${monthlyPrice.toLocaleString('id-ID')}`, callback_data: `create_price_mode_${type}_${serverId}_${ipPkg}_30hari` }],
+            [{ text: `Harian — Rp ${dailyPrice.toLocaleString('id-ID')}/hari`, callback_data: `create_price_mode_${type}_${serverId}_${ipPkg}_daily` }],
+            [{ text: `30 Hari — Rp ${monthlyPrice.toLocaleString('id-ID')}`, callback_data: `create_price_mode_${type}_${serverId}_${ipPkg}_30hari` }],
             [{ text: '⬅ Kembali', callback_data: `create_${type}` }]
           ]
         }
@@ -10987,323 +11208,6 @@ bot.action(/(lock)_username_(vmess|vless|trojan|shadowsocks|ssh|udp_http)_(.+)/,
 });
 
 // ══════════════════════════════════════════
-// MENU PPOB
-// ══════════════════════════════════════════
-bot.action('menu_ppob', async (ctx) => {
-  await ctx.answerCbQuery();
-  const userId = ctx.from.id;
-  const saldoAkrab = await dbH.getSaldoAkrab(db, userId).catch(() => 0);
-
-  await ctx.editMessageText(
-    '<blockquote> PPOB — Bayar Tagihan & Produk Digital\n' +
-    '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
-    '┃  Saldo Tembak Kuota : <code>Rp ' + Number(saldoAkrab || 0).toLocaleString('id-ID') + '</code>\n' +
-    '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
-    '<i>Saldo ini juga dipakai untuk Akrab & Circle.</i>\n\n' +
-    'Pilih menu:</blockquote>',
-    {
-      parse_mode: 'HTML',
-      reply_markup: {
-        inline_keyboard: [
-          [
-            { text: ' Cek Saldo', callback_data: 'cek_saldo_akrab' },
-            { text: ' Top Up', callback_data: 'topup_akrab' },
-          ],
-          [
-            { text: ' Daftar & Beli Produk', callback_data: 'ppob_list_produk' },
-          ],
-          [
-            { text: ' Riwayat', callback_data: 'ppob_riwayat' },
-            { text: ' Cek Status', callback_data: 'ppob_cek_status' },
-          ],
-          [{ text: ' Menu Utama', callback_data: 'send_main_menu' }],
-        ],
-      },
-    }
-  );
-});
-
-bot.action('cek_saldo_akrab', async (ctx) => {
-  await ctx.answerCbQuery();
-  const userId = ctx.from.id;
-  const saldo = await dbH.getSaldoAkrab(db, userId).catch(() => 0);
-  await ctx.editMessageText(
-    '<blockquote> SALDO TEMBAK KUOTA\n' +
-    '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
-    '┃ Nominal : <code>Rp ' + Number(saldo || 0).toLocaleString('id-ID') + '</code>\n' +
-    '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
-    '<i>Dipakai untuk PPOB + Akrab & Circle.</i></blockquote>',
-    {
-      parse_mode: 'HTML',
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: ' Top Up', callback_data: 'topup_akrab' }],
-          [{ text: ' Kembali', callback_data: 'menu_ppob' }],
-        ],
-      },
-    }
-  );
-});
-
-bot.action('ppob_list_produk', async (ctx) => {
-  await ctx.answerCbQuery('Memuat produk...');
-  const userId = ctx.from.id;
-  try {
-    if (!HIDEPULSA_API_KEY) {
-      await ctx.editMessageText(
-        ' API Key HidePulsa belum diset oleh admin. Hubungi admin.',
-        {
-          parse_mode: 'HTML',
-          reply_markup: {
-            inline_keyboard: [
-              [{ text: ' Kembali', callback_data: 'menu_ppob' }],
-            ],
-          },
-        }
-      );
-      return;
-    }
-    const products = await ppobModule.getProducts(HIDEPULSA_API_KEY, HIDEPULSA_BASE_URL, HIDEPULSA_PASSWORD);
-    const items = Array.isArray(products) ? products : (products && products.data) || [];
-
-    const grouped = {};
-    items.forEach((p) => {
-      const cat = p.category || p.type || 'Lainnya';
-      if (!grouped[cat]) grouped[cat] = [];
-      grouped[cat].push(p);
-    });
-
-    const keyboard = [];
-    Object.entries(grouped).slice(0, 10).forEach(([cat, prods]) => {
-      keyboard.push([
-        {
-          text: ' ' + cat + ' (' + prods.length + ')',
-          callback_data: 'ppob_kat_' + encodeURIComponent(cat).slice(0, 30),
-        },
-      ]);
-    });
-    keyboard.push([{ text: ' Kembali', callback_data: 'menu_ppob' }]);
-
-    userState[userId] = Object.assign({}, userState[userId], { ppobProducts: items });
-
-    await ctx.editMessageText(' <b>Daftar Produk PPOB</b>\n\nPilih kategori:', {
-      parse_mode: 'HTML',
-      reply_markup: { inline_keyboard: keyboard },
-    });
-  } catch (err) {
-    logger.error('ppob_list_produk error: ' + (err && err.message ? err.message : err));
-    await ctx.editMessageText(' Gagal memuat produk. Coba lagi nanti.', {
-      parse_mode: 'HTML',
-      reply_markup: { inline_keyboard: [[{ text: ' Kembali', callback_data: 'menu_ppob' }]] },
-    });
-  }
-});
-
-bot.action(/^ppob_kat_(.+)$/, async (ctx) => {
-  await ctx.answerCbQuery();
-  const userId = ctx.from.id;
-  let category;
-  try { category = decodeURIComponent(ctx.match[1]); } catch (_) { category = ctx.match[1]; }
-  const state = userState[userId] || {};
-  const products = (state.ppobProducts || []).filter((p) => {
-    const cat = p.category || p.type || 'Lainnya';
-    return cat === category;
-  });
-
-  if (!products.length) {
-    await ctx.editMessageText('Tidak ada produk pada kategori ini.', {
-      parse_mode: 'HTML',
-      reply_markup: { inline_keyboard: [[{ text: 'Kembali', callback_data: 'ppob_list_produk' }]] },
-    });
-    return;
-  }
-
-  const markupGlobal = await dbH.getMarkup(db, 'global', 'ppob', null).catch(() => null);
-  const markupReseller = await dbH.getMarkup(db, 'reseller', 'ppob', userId).catch(() => null);
-
-  const keyboard = products.slice(0, 30).map((p) => {
-    const code = p.code || p.product_code || p.kode_produk;
-    const name = p.name || p.product_name || p.nama_produk || code;
-    const base = Number(p.price || p.harga || p.harga_final || 0);
-    const finalPrice = wallet.getEffectivePrice(base, markupGlobal, markupReseller);
-    const habis = Number(p.kosong || 0) === 1 || Number(p.gangguan || 0) === 1;
-    const labelHarga = base > 0 ? ' - Rp ' + finalPrice.toLocaleString('id-ID') : '';
-    const labelStok = habis ? ' [KOSONG]' : '';
-    return [{
-      text: name + labelHarga + labelStok,
-      callback_data: 'ppob_beli_' + code,
-    }];
-  });
-  keyboard.push([{ text: 'Kembali', callback_data: 'ppob_list_produk' }]);
-
-  await ctx.editMessageText(
-    '<blockquote>Produk PPOB: ' + category + '\n\nPilih produk. Tanda <b>[KOSONG]</b> berarti stok habis.</blockquote>',
-    { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } }
-  );
-});
-
-bot.action('ppob_pilih_kategori', async (ctx) => {
-  // alias ke list produk untuk mempertahankan UX
-  return bot.handleUpdate({ ...ctx.update, callback_query: { ...ctx.update.callback_query, data: 'ppob_list_produk' } });
-});
-
-bot.action(/^ppob_beli_(.+)$/, async (ctx) => {
-  await ctx.answerCbQuery();
-  const userId = ctx.from.id;
-  const productCode = ctx.match[1];
-  const state = userState[userId] || {};
-  const products = state.ppobProducts || [];
-  const product = products.find((p) =>
-    p.code === productCode || p.product_code === productCode || p.kode_produk === productCode
-  );
-
-  // Cek stok kosong / gangguan
-  if (product && (Number(product.kosong || 0) === 1 || Number(product.gangguan || 0) === 1)) {
-    await ctx.editMessageText(
-      '<blockquote>PRODUK KOSONG\n\nProduk ini sedang habis atau gangguan. Silakan pilih produk lain.</blockquote>',
-      {
-        parse_mode: 'HTML',
-        reply_markup: { inline_keyboard: [[{ text: 'Kembali', callback_data: 'ppob_list_produk' }]] },
-      }
-    );
-    return;
-  }
-
-  const markupGlobal = await dbH.getMarkup(db, 'global', 'ppob', null).catch(() => null);
-  const markupReseller = await dbH.getMarkup(db, 'reseller', 'ppob', userId).catch(() => null);
-  const basePrice = product ? Number(product.price || product.harga || product.harga_final || 0) : 0;
-  const finalPrice = wallet.getEffectivePrice(basePrice, markupGlobal, markupReseller);
-
-  userState[userId] = Object.assign({}, state, {
-    step: 'ppob_input_target_' + productCode,
-    ppobProduct: product,
-    ppobFinalPrice: finalPrice,
-  });
-
-  const namaProduk = product ? (product.name || product.product_name || product.nama_produk || productCode) : productCode;
-  const harga = 'Rp ' + finalPrice.toLocaleString('id-ID');
-
-  await ctx.editMessageText(
-    '<blockquote>BELI PRODUK PPOB\n\n' +
-    'Produk: <b>' + namaProduk + '</b>\n' +
-    'Harga : <b>' + harga + '</b>\n\n' +
-    'Masukkan nomor/ID tujuan:</blockquote>',
-    {
-      parse_mode: 'HTML',
-      reply_markup: { inline_keyboard: [[{ text: 'Batal', callback_data: 'menu_ppob' }]] },
-    }
-  );
-});
-
-bot.action('ppob_riwayat', async (ctx) => {
-  await ctx.answerCbQuery();
-  const userId = ctx.from.id;
-  const orders = await dbH.getPpobOrders(db, userId, 10);
-
-  if (!orders.length) {
-    await ctx.editMessageText(' Belum ada riwayat transaksi PPOB.', {
-      parse_mode: 'HTML',
-      reply_markup: { inline_keyboard: [[{ text: ' Kembali', callback_data: 'menu_ppob' }]] },
-    });
-    return;
-  }
-
-  let text = ' <b>Riwayat Transaksi PPOB</b>\n\n';
-  orders.forEach((o, i) => {
-    const tgl = new Date(o.created_at || Date.now()).toLocaleDateString('id-ID');
-    text += (i + 1) + '. ' + o.product_code + ' → ' + o.target + '\n';
-    text += '   Rp ' + Number(o.amount || 0).toLocaleString('id-ID') + ' | ' + o.status + ' | ' + tgl + '\n\n';
-  });
-
-  await ctx.editMessageText(text, {
-    parse_mode: 'HTML',
-    reply_markup: { inline_keyboard: [[{ text: ' Kembali', callback_data: 'menu_ppob' }]] },
-  });
-});
-
-bot.action('ppob_cek_status', async (ctx) => {
-  await ctx.answerCbQuery();
-  const userId = ctx.from.id;
-  userState[userId] = { step: 'ppob_input_order_id' };
-  await ctx.editMessageText(
-    ' <b>Cek Status Transaksi PPOB</b>\n\nMasukkan Order ID:',
-    {
-      parse_mode: 'HTML',
-      reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'menu_ppob' }]] },
-    }
-  );
-});
-
-bot.action(/^ppob_konfirmasi_(.+)$/, async (ctx) => {
-  await ctx.answerCbQuery();
-  const userId = ctx.from.id;
-  const state = userState[userId] || {};
-  const confirm = state.ppobConfirm || {};
-  const productCode = confirm.productCode || ctx.match[1];
-  const target = confirm.target || '';
-  const amount = Number(confirm.amount || 0);
-
-  if (!productCode || !target || !amount) {
-    await ctx.editMessageText(' Sesi konfirmasi tidak ditemukan. Silakan ulangi dari menu.', {
-      parse_mode: 'HTML',
-      reply_markup: { inline_keyboard: [[{ text: ' Kembali', callback_data: 'menu_ppob' }]] },
-    });
-    return;
-  }
-
-  try {
-    const saldo = await dbH.getSaldoAkrab(db, userId);
-    if (saldo < amount) {
-      await ctx.editMessageText(
-        ' Saldo Akrab tidak cukup.\n\n' +
-        'Saldo: Rp ' + Number(saldo).toLocaleString('id-ID') + '\n' +
-        'Dibutuhkan: Rp ' + amount.toLocaleString('id-ID') + '\n' +
-        'Kekurangan: Rp ' + Number(amount - saldo).toLocaleString('id-ID'),
-        {
-          parse_mode: 'HTML',
-          reply_markup: {
-            inline_keyboard: [
-              [{ text: ' Top Up Akrab', callback_data: 'topup_akrab' }],
-              [{ text: ' Kembali', callback_data: 'menu_ppob' }],
-            ],
-          },
-        }
-      );
-      return;
-    }
-
-    const result = await ppobModule.createTransaction(HIDEPULSA_API_KEY, HIDEPULSA_BASE_URL, productCode, target, HIDEPULSA_PASSWORD);
-    const orderId = (result && (result.order_id || result.id)) || ('ppob-' + Date.now());
-
-    await wallet.potongSaldoAkrab(db, userId, amount, 'ppob-' + orderId, 'ppob');
-    await dbH.savePpobOrder(db, userId, orderId, productCode, target, amount);
-    delete userState[userId];
-
-    await ctx.editMessageText(
-      ' <b>Transaksi PPOB Berhasil!</b>\n\n' +
-      'Order ID: <code>' + orderId + '</code>\n' +
-      'Produk: ' + productCode + '\nTujuan: ' + target + '\n' +
-      'Nominal: Rp ' + amount.toLocaleString('id-ID') + '\n' +
-      'Status: ' + ((result && result.status) || 'pending') + '\n\n' +
-      'Simpan Order ID untuk cek status.',
-      {
-        parse_mode: 'HTML',
-        reply_markup: { inline_keyboard: [[{ text: ' Menu PPOB', callback_data: 'menu_ppob' }]] },
-      }
-    );
-  } catch (err) {
-    logger.error('ppob_konfirmasi error: ' + (err && err.message ? err.message : err));
-    await ctx.editMessageText(
-      ' Transaksi gagal: ' + (err && err.message ? err.message : 'unknown') + '\n\nSaldo tidak terpotong.',
-      {
-        parse_mode: 'HTML',
-        reply_markup: { inline_keyboard: [[{ text: ' Kembali', callback_data: 'menu_ppob' }]] },
-      }
-    );
-  }
-});
-
-// ══════════════════════════════════════════
 // MENU SUNTIK FOLLOWERS (SMM)
 // ══════════════════════════════════════════
 bot.action('menu_suntik', async (ctx) => {
@@ -11328,11 +11232,11 @@ bot.action('menu_suntik', async (ctx) => {
   keyboard.push([{ text: ' Menu Utama', callback_data: 'send_main_menu' }]);
 
   await ctx.editMessageText(
-    '<blockquote> SUNTIK FOLLOWERS\n' +
-    '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
-    '┃  Saldo VPN : <code>Rp ' + Number(saldo || 0).toLocaleString('id-ID') + '</code>\n' +
-    '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
-    '<i>Saldo VPN dipakai untuk layanan SMM.</i></blockquote>',
+    '💉 <b>SUNTIK FOLLOWERS</b>\n' +
+    '<code>──────────────────────</code>\n' +
+    '✦ Saldo VPN : <code>Rp ' + Number(saldo || 0).toLocaleString('id-ID') + '</code>\n' +
+    '<code>──────────────────────</code>\n' +
+    '<i>Saldo VPN dipakai untuk layanan SMM.</i>',
     { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } }
   );
 });
@@ -11342,11 +11246,11 @@ bot.action('smm_cek_saldo', async (ctx) => {
   const userId = ctx.from.id;
   const saldo = await dbH.getSaldo(db, userId).catch(() => 0);
   await ctx.editMessageText(
-    '<blockquote> SALDO VPN\n' +
-    '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
-    '┃ Nominal : <code>Rp ' + Number(saldo || 0).toLocaleString('id-ID') + '</code>\n' +
-    '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
-    '<i>Dipakai untuk Akun VPN + Suntik Followers.</i></blockquote>',
+    '💳 <b>SALDO VPN</b>\n' +
+    '<code>──────────────────────</code>\n' +
+    '✦ Nominal : <code>Rp ' + Number(saldo || 0).toLocaleString('id-ID') + '</code>\n' +
+    '<code>──────────────────────</code>\n' +
+    '<i>Dipakai untuk Akun VPN + Suntik Followers.</i>',
     {
       parse_mode: 'HTML',
       reply_markup: {
@@ -11409,11 +11313,11 @@ bot.action('smm_list_layanan', async (ctx) => {
       : '';
 
     await ctx.editMessageText(
-      ' <b>Layanan Suntik Followers</b>\n' +
-      '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
-      '┃ Total : <b>' + services.length + '</b> layanan' + markupLine + '\n' +
-      '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n\n' +
-      'Pilih kategori:',
+      '💉 <b>Layanan Suntik Followers</b>\n' +
+      '<code>──────────────────────</code>\n' +
+      '✦ Total : <b>' + services.length + '</b> layanan' + markupLine + '\n' +
+      '<code>──────────────────────</code>\n\n' +
+      '✦ Pilih kategori:',
       { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } }
     );
   } catch (err) {
@@ -11687,12 +11591,12 @@ bot.action('menu_vpn', async (ctx) => {
   keyboard.push([{ text: ' Menu Utama', callback_data: 'send_main_menu' }]);
 
   const msgText =
-    '<blockquote> AKUN VPN\n' +
-    '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
-    '┃  Saldo VPN : <code>Rp ' + Number(saldo || 0).toLocaleString('id-ID') + '</code>\n' +
-    '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
-    '<i>Saldo ini dipakai untuk Akun VPN + Suntik Followers.</i>\n\n' +
-    'Pilih layanan:</blockquote>';
+    '🔑 <b>AKUN VPN</b>\n' +
+    '<code>──────────────────────</code>\n' +
+    '✦ Saldo VPN : <code>Rp ' + Number(saldo || 0).toLocaleString('id-ID') + '</code>\n' +
+    '<code>──────────────────────</code>\n' +
+    '<i>Saldo dipakai untuk Akun VPN + Suntik Followers.</i>\n\n' +
+    '✦ Pilih layanan di bawah:';
 
   await ctx.editMessageText(msgText, { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } })
     .catch(async () => { await ctx.reply(msgText, { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } }); });
@@ -11721,7 +11625,9 @@ bot.action('menu_akrab', async (ctx) => {
     ],
     [
       { text: ' Cek Status', callback_data: 'akrab_cek_status' },
-      { text: ' Cek Stok XL/Axis', callback_data: 'akrab_cek_stock' },
+    ],
+    [
+      { text: '📦 Cek Stok XLA / XDA / Circle', callback_data: 'akrab_cek_stock_all' },
     ],
   ];
   if (isAdminUser) {
@@ -11730,16 +11636,16 @@ bot.action('menu_akrab', async (ctx) => {
   keyboard.push([{ text: ' Menu Utama', callback_data: 'send_main_menu' }]);
 
   await ctx.editMessageText(
-    '<blockquote> AKRAB & CIRCLE\n' +
-    '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
-    '┃  Saldo Tembak Kuota : <code>Rp ' + Number(saldoAkrab || 0).toLocaleString('id-ID') + '</code>\n' +
-    '<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n' +
-    '<i>Pilih kategori layanan:</i>' +
+    '🤝 <b>AKRAB &amp; CIRCLE</b>\n' +
+    '<code>──────────────────────</code>\n' +
+    '✦ Saldo Tembak Kuota : <code>Rp ' + Number(saldoAkrab || 0).toLocaleString('id-ID') + '</code>\n' +
+    '<code>──────────────────────</code>\n' +
+    '✦ Pilih kategori layanan:' +
     (isAdminUser
-      ? '\n\n<b>Admin:</b>\n' +
-        '┃ Reseller ID : <code>' + (KHFY_RESELLER_ID || '-') + '</code>\n' +
-        '┃ Portal      : ' + (KHFY_PORTAL || '-')
-      : '') + '</blockquote>',
+      ? '\n\n👤 <b>Admin</b>\n' +
+        '✦ Reseller ID : <code>' + (KHFY_RESELLER_ID || '-') + '</code>\n' +
+        '✦ Portal      : ' + (KHFY_PORTAL || '-')
+      : ''),
     { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } }
   );
 });
@@ -11803,7 +11709,9 @@ bot.action(/^akrab_grup_(v1|v2|circle)$/, async (ctx) => {
 
     if (!filtered.length) {
       await ctx.editMessageText(
-        '<blockquote>' + grupLabel + '\n\nBelum ada produk pada kategori ini.</blockquote>',
+        '📦 <b>' + grupLabel + '</b>\n' +
+        '<code>──────────────────────</code>\n' +
+        '✦ Belum ada produk pada kategori ini.',
         { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: 'Kembali', callback_data: 'menu_akrab' }]] } }
       );
       return;
@@ -11841,8 +11749,9 @@ bot.action(/^akrab_grup_(v1|v2|circle)$/, async (ctx) => {
     keyboard.push([{ text: 'Kembali', callback_data: 'menu_akrab' }]);
 
     await ctx.editMessageText(
-      '<blockquote>' + grupLabel + '\n\n' +
-      'Pilih produk. Tanda <b>[KOSONG]</b> berarti stok habis.</blockquote>',
+      '📦 <b>' + grupLabel + '</b>\n' +
+      '<code>──────────────────────</code>\n' +
+      '✦ Pilih produk. Tanda <b>[KOSONG]</b> berarti stok habis.',
       { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } }
     );
   } catch (err) {
@@ -11960,7 +11869,10 @@ bot.action(/^akrab_beli_(.+)$/, async (ctx) => {
 
   if (isKosong) {
     await ctx.editMessageText(
-      '<blockquote>PRODUK KOSONG\n\nProduk ini sedang habis/tidak tersedia. Silakan pilih produk lain.</blockquote>',
+      '❌ <b>Produk Kosong</b>\n' +
+      '<code>──────────────────────</code>\n' +
+      '✦ Produk ini sedang habis/tidak tersedia.\n' +
+      '✦ Silakan pilih produk lain.',
       {
         parse_mode: 'HTML',
         reply_markup: { inline_keyboard: [[{ text: 'Kembali', callback_data: 'menu_akrab' }]] },
@@ -12009,23 +11921,40 @@ bot.action('akrab_cek_status', async (ctx) => {
   );
 });
 
-bot.action('akrab_cek_stock', async (ctx) => {
+// ── Cek Stok XLA / XDA / Circle (gabungan) ──────────────────────────────────
+bot.action('akrab_cek_stock_all', async (ctx) => {
   await ctx.answerCbQuery('Mengecek stok...');
   try {
-    // Fetch stok V1 (XLA*) dan V2 (XDA*) paralel
-    const [stokV1Resp, stokV2Resp] = await Promise.all([
+    // Fetch paralel: stok V1 (XLA), stok V2 (XDA), dan daftar produk (Circle)
+    const [stokV1Resp, stokV2Resp, products] = await Promise.all([
       akrabModule.cekStokAkrab(KHFY_ENDPOINT).catch(() => null),
       akrabModule.cekStokAkrabV2(KHFY_ENDPOINT).catch(() => null),
+      akrabModule.getProducts(KHFY_ENDPOINT, KHFY_API_KEY).catch(() => []),
     ]);
 
-    // Parse data V1
+    const now = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
+    let body = `📦 <b>STOK AKRAB &amp; CIRCLE</b>\n`;
+    body += `<code>──────────────────────</code>\n`;
+    body += `🕐 <i>${now} WIB</i>\n`;
+
+    // ── XLA (V1) ──────────────────────────────────────────────────────────────
     const itemsV1 = Array.isArray(stokV1Resp)
       ? stokV1Resp
-      : (stokV1Resp && Array.isArray(stokV1Resp.data))
-        ? stokV1Resp.data
-        : [];
+      : (stokV1Resp && Array.isArray(stokV1Resp.data)) ? stokV1Resp.data : [];
 
-    // Parse data V2 (format string multi-line)
+    body += `\n<b>🔵 XLA — Akrab V1</b>\n`;
+    if (itemsV1.length) {
+      itemsV1.forEach((it) => {
+        const tipe = String(it.type || it.kode || '-').toUpperCase();
+        const slot = Number(it.sisa_slot ?? it.stok ?? it.stock ?? 0);
+        const icon = slot > 0 ? '✅' : '❌';
+        body += `${icon} <code>${tipe}</code> — ${slot > 0 ? `<b>${slot}</b> slot` : '<b>KOSONG</b>'}\n`;
+      });
+    } else {
+      body += `<i>Data tidak tersedia.</i>\n`;
+    }
+
+    // ── XDA (V2) ──────────────────────────────────────────────────────────────
     let itemsV2 = [];
     if (stokV2Resp && stokV2Resp.message) {
       itemsV2 = akrabModule.parseStokV2Message(stokV2Resp.message);
@@ -12033,47 +11962,71 @@ bot.action('akrab_cek_stock', async (ctx) => {
       itemsV2 = stokV2Resp.data;
     }
 
-    const formatItem = (it) => {
-      const nama = it.nama || it.name || it.type || '-';
-      const tipe = it.type || it.kode || '';
-      const slot = Number(it.sisa_slot ?? it.stok ?? it.stock ?? 0);
-      const status = slot > 0 ? '[OK]' : '[KOSONG]';
-      const tipeText = tipe ? ' <code>' + tipe + '</code>' : '';
-      return status + ' <b>' + nama + '</b>' + tipeText + ' - sisa slot: <b>' + slot + '</b>';
-    };
-
-    let body = '';
-
-    if (itemsV1.length) {
-      body += '<b>AKRAB V1 (XLA)</b>\n' + itemsV1.map(formatItem).join('\n');
-    } else {
-      body += '<b>AKRAB V1 (XLA)</b>\nData stok tidak tersedia.';
-    }
-
-    body += '\n\n';
-
+    body += `\n<b>🟢 XDA — Akrab V2</b>\n`;
     if (itemsV2.length) {
-      body += '<b>AKRAB V2 (XDA)</b>\n' + itemsV2.map(formatItem).join('\n');
+      itemsV2.forEach((it) => {
+        const tipe = String(it.type || it.kode || '-').toUpperCase();
+        const slot = Number(it.sisa_slot ?? it.stok ?? it.stock ?? 0);
+        const icon = slot > 0 ? '✅' : '❌';
+        body += `${icon} <code>${tipe}</code> — ${slot > 0 ? `<b>${slot}</b> slot` : '<b>KOSONG</b>'}\n`;
+      });
     } else {
-      body += '<b>AKRAB V2 (XDA)</b>\nData stok tidak tersedia.';
+      body += `<i>Data tidak tersedia.</i>\n`;
     }
 
-    body += '\n\n<b>CIRCLE</b>\n' +
-      '<i>Provider khfy-store tidak menyediakan endpoint stok terpisah untuk Circle. ' +
-      'Status stok ditandai per produk di menu list (lihat tanda [KOSONG] saat memilih produk).</i>';
-
-    await ctx.editMessageText(
-      '<blockquote expandable>STOK AKRAB & CIRCLE\n\n' + body + '\n\n[OK] = tersedia, [KOSONG] = habis</blockquote>',
-      {
-        parse_mode: 'HTML',
-        reply_markup: { inline_keyboard: [[{ text: 'Kembali', callback_data: 'menu_akrab' }]] },
-      }
+    // ── Circle ────────────────────────────────────────────────────────────────
+    const circleProducts = (products || []).filter(
+      (p) => getAkrabGroup(p.kode_provider) === 'circle'
     );
-  } catch (err) {
-    logger.error('akrab_cek_stock: ' + (err && err.message ? err.message : err));
-    await ctx.editMessageText('Gagal cek stok. Coba lagi nanti.', {
+
+    body += `\n<b>⭕ Circle</b>\n`;
+    if (circleProducts.length) {
+      // Kelompokkan per kode_provider
+      const grouped = {};
+      circleProducts.forEach((p) => {
+        const cat = String(p.kode_provider || 'Lainnya').toUpperCase();
+        if (!grouped[cat]) grouped[cat] = [];
+        grouped[cat].push(p);
+      });
+
+      for (const [cat, prods] of Object.entries(grouped)) {
+        body += `<b>  📂 ${cat}</b>\n`;
+        prods.forEach((p) => {
+          const nama = p.nama_produk || p.name || p.nama || p.kode_produk || '-';
+          const kode = p.kode_produk || p.code || '';
+          const kosong = Number(p.kosong || 0) === 1;
+          const gangguan = Number(p.gangguan || 0) === 1;
+          const harga = Number(p.harga_final || p.price || p.harga || 0);
+          const hargaText = harga > 0 ? ` — Rp ${harga.toLocaleString('id-ID')}` : '';
+          const kodeText = kode ? ` <code>${kode}</code>` : '';
+          let icon;
+          if (gangguan) icon = '⚠️';
+          else if (kosong) icon = '❌';
+          else icon = '✅';
+          body += `  ${icon} ${nama}${kodeText}${hargaText}\n`;
+        });
+      }
+    } else {
+      body += `<i>Tidak ada produk Circle.</i>\n`;
+    }
+
+    body += `\n<code>──────────────────────</code>\n`;
+    body += `✅ tersedia  ❌ kosong  ⚠️ gangguan`;
+
+    await ctx.editMessageText(body, {
       parse_mode: 'HTML',
-      reply_markup: { inline_keyboard: [[{ text: 'Kembali', callback_data: 'menu_akrab' }]] },
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: '🔄 Refresh', callback_data: 'akrab_cek_stock_all' }],
+          [{ text: '🔙 Kembali', callback_data: 'menu_akrab' }],
+        ],
+      },
+    });
+  } catch (err) {
+    logger.error('akrab_cek_stock_all: ' + (err && err.message ? err.message : err));
+    await ctx.editMessageText('❌ Gagal cek stok. Coba lagi nanti.', {
+      parse_mode: 'HTML',
+      reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'menu_akrab' }]] },
     });
   }
 });
@@ -12299,7 +12252,7 @@ bot.on('text', async (ctx) => {
             reply_markup: {
               inline_keyboard: [
                 [{ text: ' Konfirmasi', callback_data: 'ppob_konfirmasi_' + productCode }],
-                [{ text: ' Batal', callback_data: 'menu_ppob' }],
+                [{ text: ' Batal', callback_data: 'menu_akrab' }],
               ],
             },
           }
