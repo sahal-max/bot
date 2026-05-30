@@ -3910,6 +3910,27 @@ bot.command('debugcekstok', async (ctx) => {
   }
 });
 
+bot.command('debugcircle', async (ctx) => {
+  if (!adminIds.includes(ctx.from.id)) return;
+  try {
+    const products = await akrabModule.getProducts(KHFY_ENDPOINT, KHFY_API_KEY);
+    // Tampilkan 20 produk pertama dengan semua field penting
+    const sample = (products || []).slice(0, 20).map(p => {
+      const kode = p.kode_produk || p.code || p.produk || '-';
+      const nama = (p.nama_produk || p.name || p.nama || '-').slice(0, 25);
+      const prov = p.kode_provider || '-';
+      const kosong = p.kosong ?? '-';
+      return `<code>${kode}</code> | ${nama} | prov:${prov} | k:${kosong}`;
+    });
+    await ctx.reply(
+      `<b>Debug getProducts() — 20 pertama</b>\nTotal: ${(products||[]).length}\n\n${sample.join('\n')}`,
+      { parse_mode: 'HTML' }
+    );
+  } catch (err) {
+    await ctx.reply('Error: ' + err.message);
+  }
+});
+
 bot.command('debugakrab', async (ctx) => {
   if (!adminIds.includes(ctx.from.id)) return;
   try {
