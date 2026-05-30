@@ -11060,11 +11060,11 @@ const serverBlocks = currentServers.map(server => {
 
   return (
 `<code>┌─────────────────────────┐</code>
-<code>│</code> 🖥️ <b>${server.nama_server.toUpperCase()}</b>
+<code>│</code> <b>${server.nama_server.toUpperCase()}</b>
 <code>│─────────────────────────</code>
-<code>│</code> 💰 1IP <code>Rp ${hargaPerHari1.toLocaleString('id-ID')}</code> • 2IP <code>Rp ${hargaPerHari2.toLocaleString('id-ID')}</code>${monthlyEnabled ? `\n<code>│</code> 📅 30H: <code>Rp ${hargaPer30Hari1.toLocaleString('id-ID')}</code> / <code>Rp ${hargaPer30Hari2.toLocaleString('id-ID')}</code>` : ''}
-<code>│</code> 🌐 <code>${server.domain}</code>
-<code>│</code> 📊 ${server.total_create_akun}/${akunLimitText} ${isFullByManualLimit ? '❌' : '✅'}
+<code>│</code> 1IP <code>Rp ${hargaPerHari1.toLocaleString('id-ID')}</code> • 2IP <code>Rp ${hargaPerHari2.toLocaleString('id-ID')}</code>${monthlyEnabled ? `\n<code>│</code> 30H: <code>Rp ${hargaPer30Hari1.toLocaleString('id-ID')}</code> / <code>Rp ${hargaPer30Hari2.toLocaleString('id-ID')}</code>` : ''}
+<code>│</code> <code>${server.domain}</code>
+<code>│</code> ${server.total_create_akun}/${akunLimitText} ${isFullByManualLimit ? '❌' : '✅'}
 <code>└─────────────────────────┘</code>`
   );
 });
@@ -11759,30 +11759,30 @@ bot.action('menu_vpn', async (ctx) => {
 
   const keyboard = [
     [
-      { text: ' Buat Akun', callback_data: 'service_create' },
-      { text: ' Trial Akun', callback_data: 'service_trial' }
+      { text: '➕ Buat Akun', callback_data: 'service_create' },
+      { text: '🆓 Trial', callback_data: 'service_trial' }
     ],
     [
-      { text: ' Perpanjang Akun', callback_data: 'service_renew' },
-      { text: ' Lihat Akun Saya', callback_data: 'view_accounts' }
+      { text: '🔄 Perpanjang', callback_data: 'service_renew' },
+      { text: '📋 Akun Saya', callback_data: 'view_accounts' }
     ],
     [
-      { text: ' Hapus Akun Saya', callback_data: 'delete_my_account_intro' },
-      { text: ' Cek Masa Aktif', callback_data: 'check_expiry_account' }
+      { text: '🗑️ Hapus Akun', callback_data: 'delete_my_account_intro' },
+      { text: '⏱️ Masa Aktif', callback_data: 'check_expiry_account' }
     ],
     [
-      { text: ' Download Config', callback_data: 'download_config_menu' }
+      { text: '📥 Config', callback_data: 'download_config_menu' }
     ],
   ];
 
   if (isReseller) {
     keyboard.push([
-      { text: ' Buka Kunci Akun', callback_data: 'service_unlock' },
-      { text: ' Kunci Akun', callback_data: 'service_lock' }
+      { text: '🔓 Unlock', callback_data: 'service_unlock' },
+      { text: '🔒 Lock', callback_data: 'service_lock' }
     ]);
   }
 
-  keyboard.push([{ text: ' Menu Utama', callback_data: 'send_main_menu' }]);
+  keyboard.push([{ text: '🔙 Kembali', callback_data: 'send_main_menu' }]);
 
   const msgText =
     '<code>┌─────────────────────────┐</code>\n' +
