@@ -11233,11 +11233,17 @@ bot.action('menu_suntik', async (ctx) => {
   keyboard.push([{ text: ' Menu Utama', callback_data: 'send_main_menu' }]);
 
   await ctx.editMessageText(
-    '💉 <b>SUNTIK FOLLOWERS</b>\n' +
+    '<blockquote>💉 <b>SUNTIK FOLLOWERS</b>\n' +
     '<code>──────────────────────</code>\n' +
     '✦ Saldo VPN : <code>Rp ' + Number(saldo || 0).toLocaleString('id-ID') + '</code>\n' +
     '<code>──────────────────────</code>\n' +
-    '<i>Saldo VPN dipakai untuk layanan SMM.</i>',
+    '<b>Keterangan Ikon:</b>\n' +
+    '🛡️ = Bergaransi (refill jika drop)\n' +
+    '⚠️ = Tidak bergaransi (no refill)\n' +
+    '✅ = Bisa dibatalkan\n' +
+    '❌ = Tidak bisa dibatalkan\n' +
+    '<code>──────────────────────</code>\n' +
+    '<i>Saldo VPN dipakai untuk layanan SMM.</i></blockquote>',
     { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } }
   );
 });
