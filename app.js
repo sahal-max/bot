@@ -11848,13 +11848,14 @@ bot.action('menu_akrab', async (ctx) => {
 // ── Grup Akrab V1 / V2 / Circle ─────────────────────────────────────────────
 // Pemetaan kode_provider khfy-store ke grup:
 // ── Grup Akrab V1 / V2 / Circle ─────────────────────────────────────────────
-// Pengelompokan berdasarkan PREFIX kode produk:
-//   v1     : XLA* (kecuali XCLP)  — Akrab V1
+// Pengelompokan berdasarkan kode produk + nama:
+//   v1     : XLA* (kecuali XCL)   — Akrab V1
 //   v2     : XDA*                 — Akrab V2
-//   circle : XCLP*                — Circle
-function getAkrabGroup(kodeProduk) {
+//   circle : XCL* atau nama mengandung "circle"
+function getAkrabGroup(kodeProduk, namaProduk) {
   const k = String(kodeProduk || '').toUpperCase();
-  if (/^XCLP/.test(k)) return 'circle';
+  const n = String(namaProduk || '').toUpperCase();
+  if (/^XCL/.test(k) || n.includes('CIRCLE')) return 'circle';
   if (/^XDA/.test(k)) return 'v2';
   if (/^XLA/.test(k)) return 'v1';
   return 'other'; // produk lain (PLN, Bonus, dll) tidak masuk grup manapun
@@ -11894,9 +11895,10 @@ bot.action(/^akrab_grup_(v1|v2|circle)$/, async (ctx) => {
       }
     } catch (_) { /* stok endpoint optional */ }
 
-    // Filter berdasarkan prefix kode produk (bukan kode_provider)
+    // Filter berdasarkan kode produk + nama (bukan kode_provider)
     const getKode = (p) => String(p.kode_produk || p.code || p.produk || '').toUpperCase();
-    const filtered = (products || []).filter((p) => getAkrabGroup(getKode(p)) === grup);
+    const getNama = (p) => String(p.nama_produk || p.name || p.nama || '');
+    const filtered = (products || []).filter((p) => getAkrabGroup(getKode(p), getNama(p)) === grup);
 
     userState[userId] = Object.assign({}, userState[userId], {
       akrabProducts: products,
@@ -12168,11 +12170,12 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
 
     // Helper: ambil kode produk dari berbagai kemungkinan field
     const getKode = (p) => String(p.kode_produk || p.code || p.produk || '').toUpperCase();
+    const getNama = (p) => String(p.nama_produk || p.name || p.nama || '');
 
-    // Pisahkan produk — hanya XLA, XDA, XCLP (Circle). Produk lain dibuang.
-    const xlaProducts    = (products || []).filter(p => /^XLA/i.test(getKode(p)) && !/^XCLP/i.test(getKode(p)));
+    // Pisahkan produk — hanya XLA, XDA, Circle. Produk lain dibuang.
+    const xlaProducts    = (products || []).filter(p => /^XLA/i.test(getKode(p)) && !/^XCL/i.test(getKode(p)) && !getNama(p).toUpperCase().includes('CIRCLE'));
     const xdaProducts    = (products || []).filter(p => /^XDA/i.test(getKode(p)));
-    const circleProducts = (products || []).filter(p => /^XCLP/i.test(getKode(p)));
+    const circleProducts = (products || []).filter(p => /^XCL/i.test(getKode(p)) || getNama(p).toUpperCase().includes('CIRCLE'));
 
     const now = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
 
