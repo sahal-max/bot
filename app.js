@@ -11388,7 +11388,6 @@ bot.action('menu_suntik', async (ctx) => {
 
   const keyboard = [
     [
-      { text: ' Cek Saldo VPN', callback_data: 'smm_cek_saldo' },
       { text: ' Daftar & Pesan Layanan', callback_data: 'smm_list_layanan' },
     ],
     [
@@ -11819,8 +11818,7 @@ bot.action('menu_akrab', async (ctx) => {
 
   const keyboard = [
     [
-      { text: ' Cek Saldo Tembak Kuota', callback_data: 'cek_saldo_akrab' },
-      { text: ' Top Up', callback_data: 'topup_akrab' },
+      { text: ' Top Up Saldo Tembak Kuota', callback_data: 'topup_akrab' },
     ],
     [
       { text: ' Akrab V1', callback_data: 'akrab_grup_v1' },
