@@ -3965,7 +3965,7 @@ async function sendMainMenu(ctx) {
     });
   } catch (e) {}
 
-  const messageText = `<code>──────────────────────</code>
+  const messageText = `<blockquote><code>──────────────────────</code>
       ✦ <b>${NAMA_STORE}</b> ✦
 <code>──────────────────────</code>
 👤 <b>Informasi Pengguna</b>
@@ -3989,7 +3989,7 @@ async function sendMainMenu(ctx) {
 <code>──────────────────────</code>
 👥 Users   : <b>${jumlahPengguna}</b>
 🕐 Latency : <b>${latency} ms</b>
-<code>──────────────────────</code>`;
+<code>──────────────────────</code></blockquote>`;
 
   // Buat keyboard dasar untuk semua user
   let keyboard = [
