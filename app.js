@@ -3966,25 +3966,25 @@ async function sendMainMenu(ctx) {
   } catch (e) {}
 
   const messageText = `<blockquote><code>──────────────────────</code>
-<code>      ✦ ${NAMA_STORE} ✦      </code>
+<code>      ✦ ${NAMA_STORE} ✦</code>
 <code>──────────────────────</code>
-<code>👤 Informasi Pengguna  </code>
+<code>👤 Informasi Pengguna</code>
 <code>──────────────────────</code>
-<code>✦ Nama   : ${userName.padEnd(14)}</code>
+<code>✦ Nama   : ${userName}</code>
 <code>✦ ID     : ${String(userId)}</code>
 <code>✦ Status : ${statusReseller}</code>
 <code>✦ Saldo  : Rp ${Number(saldo || 0).toLocaleString('id-ID')}</code>
 <code>──────────────────────</code>
-<code>📊 Statistik Transaksi </code>
+<code>📊 Statistik Transaksi</code>
 <code>── Anda ──────────────</code>
-<code>✧ Hari ini  : ${String(userToday).padStart(4)} akun</code>
-<code>✧ Minggu ini: ${String(userWeek).padStart(4)} akun</code>
-<code>✧ Bulan ini : ${String(userMonth).padStart(4)} akun</code>
+<code>✧ Hari ini   : ${userToday} akun</code>
+<code>✧ Minggu ini : ${userWeek} akun</code>
+<code>✧ Bulan ini  : ${userMonth} akun</code>
 <code>── Global ────────────</code>
-<code>✧ Hari ini  : ${String(globalToday).padStart(4)} akun</code>
-<code>✧ Minggu ini: ${String(globalWeek).padStart(4)} akun</code>
-<code>✧ Bulan ini : ${String(globalMonth).padStart(4)} akun</code>
-<code>✧ Semua     : ${String(globalAll).padStart(4)} akun</code>
+<code>✧ Hari ini   : ${globalToday} akun</code>
+<code>✧ Minggu ini : ${globalWeek} akun</code>
+<code>✧ Bulan ini  : ${globalMonth} akun</code>
+<code>✧ Semua      : ${globalAll} akun</code>
 <code>──────────────────────</code>
 <code>👥 Users   : ${jumlahPengguna}</code>
 <code>🕐 Latency : ${latency} ms</code>
@@ -3996,23 +3996,26 @@ async function sendMainMenu(ctx) {
       { text: '🔑 Akun VPN', callback_data: 'menu_vpn' }
     ],
     [
-      { text: '🔧 Tools', callback_data: 'menu_tools' },
-      { text: '📞 Hubungi Admin', callback_data: 'hubungi_admin' }
-    ],
-    [
       { text: '🤝 Akrab & Circle', callback_data: 'menu_akrab' },
       { text: '💉 Suntik Followers', callback_data: 'menu_suntik' }
     ],
     [
-      { text: '🧪 Test Transaksi', callback_data: 'admin_test_menu' }
+      { text: '💳 Top Up Saldo', callback_data: 'menu_topup' }
+    ],
+    [
+      { text: '🧪 Test Transaksi', callback_data: 'admin_test_menu' },
+      { text: '🔧 Tools', callback_data: 'menu_tools' }
     ],
     [
       { text: '⭐ Jadi Reseller — Harga Lebih Murah!', callback_data: 'jadi_reseller' }
     ],
+    [
+      { text: '📞 Hubungi Admin', callback_data: 'hubungi_admin' }
+    ],
   ];
 
   // Satu tombol Top Up yang membuka submenu (VPN + Tembak Kuota)
-  keyboard.push([{ text: '💳 Top Up Saldo', callback_data: 'menu_topup' }]);
+  // (sudah ada di keyboard di atas)
 
   if (loadScNexusMenuSetting()) {
     keyboard.push([
@@ -10998,15 +11001,15 @@ const serverBlocks = currentServers.map(server => {
   const monthlyEnabled = isServerMonthlyPriceEnabled(server);
   const priceLines = [];
   if (dailyEnabled) {
-    priceLines.push(`✦ Harga/Hari 1IP  : Rp ${hargaPerHari1.toLocaleString('id-ID')}`);
-    priceLines.push(`✦ Harga/Hari 2IP  : Rp ${hargaPerHari2.toLocaleString('id-ID')}`);
+    priceLines.push(`✦ Harian 1IP  : <code>Rp ${hargaPerHari1.toLocaleString('id-ID')}</code>`);
+    priceLines.push(`✦ Harian 2IP  : <code>Rp ${hargaPerHari2.toLocaleString('id-ID')}</code>`);
   }
   if (monthlyEnabled) {
-    priceLines.push(`✦ Harga/30 Hari 1IP : Rp ${hargaPer30Hari1.toLocaleString('id-ID')}`);
-    priceLines.push(`✦ Harga/30 Hari 2IP : Rp ${hargaPer30Hari2.toLocaleString('id-ID')}`);
+    priceLines.push(`✦ 30 Hari 1IP : <code>Rp ${hargaPer30Hari1.toLocaleString('id-ID')}</code>`);
+    priceLines.push(`✦ 30 Hari 2IP : <code>Rp ${hargaPer30Hari2.toLocaleString('id-ID')}</code>`);
   }
   if (!priceLines.length) {
-    priceLines.push('✦ Harga: Nonaktif');
+    priceLines.push('✦ Harga: <i>Nonaktif</i>');
   }
   const capacity = calculateServerEffectiveCapacity({
     usedAccounts: server.total_create_akun,
@@ -11027,8 +11030,8 @@ const serverBlocks = currentServers.map(server => {
 ${priceLines.join('\n')}
 <code>──────────────────────</code>
 ✦ Domain : <code>${server.domain}</code>
-✦ Quota  : ${server.quota} GB
-✦ Akun   : ${server.total_create_akun}/${akunLimitText}
+✦ Quota  : <code>${server.quota} GB</code>
+✦ Akun   : <code>${server.total_create_akun}/${akunLimitText}</code>
 ✦ Status : ${isFullByManualLimit ? 'Server Penuh ❌' : 'Tersedia ✅'}</blockquote>`
   );
 });
@@ -11516,11 +11519,11 @@ bot.action(/^smm_kat_(.+)$/, async (ctx) => {
       : '⚠️ <b>Tidak Bergaransi</b> (No Refill)';
     const cancelText = bisaCancel ? '  ✦ Cancel : ✅ Bisa' : '  ✦ Cancel : ❌ Tidak';
 
-    return `<blockquote><code>${i + 1}. ${name}</code>\n` +
-      `<code>✦ Harga  : Rp ${finalPrice.toLocaleString('id-ID')} / 1000</code>\n` +
-      `<code>✦ Min    : ${min.toLocaleString('id-ID')}  |  Max: ${max.toLocaleString('id-ID')}</code>\n` +
-      `<code>✦ Status : ${bisaRefill ? '🛡️ Bergaransi' : '⚠️ Tidak Bergaransi'}</code>\n` +
-      `<code>✦ Cancel : ${bisaCancel ? '✅ Bisa' : '❌ Tidak'}</code></blockquote>`;
+    return `<blockquote><b>${i + 1}. ${name}</b>\n` +
+      `✦ Harga  : <code>Rp ${finalPrice.toLocaleString('id-ID')} / 1000</code>\n` +
+      `✦ Min    : <code>${min.toLocaleString('id-ID')}</code>  |  Max: <code>${max.toLocaleString('id-ID')}</code>\n` +
+      `✦ Status : ${bisaRefill ? '🛡️ Bergaransi' : '⚠️ Tidak Bergaransi'}\n` +
+      `✦ Cancel : ${bisaCancel ? '✅ Bisa' : '❌ Tidak'}</blockquote>`;
   }).join('\n');
 
   await ctx.editMessageText(
@@ -11556,12 +11559,13 @@ bot.action(/^smm_order_(.+)$/, async (ctx) => {
   const cancelLine  = bisaCancel ? '✅ Bisa dibatalkan' : '❌ Tidak bisa dibatalkan';
 
   await ctx.editMessageText(
-    `<blockquote><code>💉 ${service ? (service.name || serviceId) : serviceId}</code>\n` +
-    `<code>✦ Harga  : Rp ${Number(finalPricePer1000).toLocaleString('id-ID')} / 1000</code>\n` +
-    `<code>✦ Min    : ${min.toLocaleString('id-ID')}  |  Max: ${max.toLocaleString('id-ID')}</code>\n` +
-    `<code>✦ Status : ${bisaRefill ? '🛡️ Bergaransi' : '⚠️ Tidak Bergaransi'}</code>\n` +
-    `<code>✦ Cancel : ${bisaCancel ? '✅ Bisa dibatalkan' : '❌ Tidak bisa dibatalkan'}</code></blockquote>\n\n` +
-    `<code>✦ Masukkan target (URL/username):</code>`,
+    `<blockquote>💉 <b>${service ? (service.name || serviceId) : serviceId}</b>\n` +
+    `<code>──────────────────────</code>\n` +
+    `✦ Harga  : <code>Rp ${Number(finalPricePer1000).toLocaleString('id-ID')} / 1000</code>\n` +
+    `✦ Min    : <code>${min.toLocaleString('id-ID')}</code>  |  Max: <code>${max.toLocaleString('id-ID')}</code>\n` +
+    `✦ Status : ${bisaRefill ? '🛡️ Bergaransi' : '⚠️ Tidak Bergaransi'}\n` +
+    `✦ Cancel : ${bisaCancel ? '✅ Bisa dibatalkan' : '❌ Tidak bisa dibatalkan'}</blockquote>\n\n` +
+    `✦ Masukkan target (URL/username):`,
     {
       parse_mode: 'HTML',
       reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'menu_suntik' }]] },
@@ -12016,8 +12020,8 @@ bot.action(/^akrab_kat_(.+)$/, async (ctx) => {
     const kosong = Number(p.kosong || 0) === 1;
     const gangguan = Number(p.gangguan || 0) === 1;
     const stokIcon = gangguan ? '⚠️ Gangguan' : kosong ? '❌ Kosong' : '✅ Tersedia';
-    const hargaText = base > 0 ? `<code>✦ Harga : Rp ${finalPrice.toLocaleString('id-ID')}</code>\n` : '';
-    return `<blockquote><code>${i + 1}. ${name} [${code}]</code>\n${hargaText}<code>✦ Stok  : ${stokIcon}</code></blockquote>`;
+    const hargaText = base > 0 ? `✦ Harga : <code>Rp ${finalPrice.toLocaleString('id-ID')}</code>\n` : '';
+    return `<blockquote><b>${i + 1}. ${name}</b> <code>${code}</code>\n${hargaText}✦ Stok  : ${stokIcon}</blockquote>`;
   }).join('\n');
 
   await ctx.editMessageText(
@@ -12078,11 +12082,12 @@ bot.action(/^akrab_beli_(.+)$/, async (ctx) => {
   const deskripsi = product && product.deskripsi ? ('\n\n<i>' + String(product.deskripsi).slice(0, 300) + '</i>') : '';
 
   await ctx.editMessageText(
-    `<blockquote><code>🤝 Beli Produk Akrab</code>\n` +
-    `<code>✦ Produk : ${namaProduk}</code>\n` +
-    `<code>✦ Harga  : Rp ${Number(finalPrice).toLocaleString('id-ID')}</code>` +
+    `<blockquote>🤝 <b>Beli Produk Akrab</b>\n` +
+    `<code>──────────────────────</code>\n` +
+    `✦ Produk : <b>${namaProduk}</b>\n` +
+    `✦ Harga  : <code>Rp ${Number(finalPrice).toLocaleString('id-ID')}</code>` +
     (deskripsi ? `\n<i>${String(product.deskripsi).slice(0, 200)}</i>` : '') + `</blockquote>\n\n` +
-    `<code>✦ Masukkan nomor tujuan:</code>`,
+    `✦ Masukkan nomor tujuan:`,
     {
       parse_mode: 'HTML',
       reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'menu_akrab' }]] },
