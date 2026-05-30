@@ -1866,6 +1866,16 @@ db.run(`CREATE TABLE IF NOT EXISTS akrab_orders (
   if (err) logger.error('Kesalahan membuat tabel akrab_orders:', err.message);
 });
 
+// ── Tabel Baru: akrab_preorders ──────────────────────────
+db.run(`CREATE TABLE IF NOT EXISTS akrab_preorders (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  tipe TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+)`, (err) => {
+  if (err) logger.error('Kesalahan membuat tabel akrab_preorders:', err.message);
+});
+
 // ── Tabel Baru: smm_orders ───────────────────────────────
 db.run(`CREATE TABLE IF NOT EXISTS smm_orders (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -11828,6 +11838,10 @@ bot.action('menu_akrab', async (ctx) => {
     [
       { text: '📦 Cek Stok XLA / XDA / Circle', callback_data: 'akrab_cek_stock_all' },
     ],
+    [
+      { text: '🔔 Pre-Order Akrab V1 (XLA)', callback_data: 'preorder_xla' },
+      { text: '🔔 Pre-Order Akrab V2 (XDA)', callback_data: 'preorder_xda' },
+    ],
   ];
   if (isAdminUser) {
     keyboard.push([{ text: ' Markup Produk Akrab', callback_data: 'akrab_markup_menu' }]);
@@ -12292,13 +12306,140 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
   }
 });
 
-bot.action(/^akrab_konfirmasi_(.+)$/, async (ctx) => {
+// ══════════════════════════════════════════
+// PRE-ORDER AKRAB V1 (XLA) & V2 (XDA)
+// ══════════════════════════════════════════
+
+// Helper DB preorder
+function dbGetPreorderCount(tipe, userId) {
+  return new Promise((resolve) =>
+    db.get('SELECT COUNT(*) as c FROM akrab_preorders WHERE tipe = ? AND user_id = ?',
+      [tipe, userId], (err, row) => resolve(row ? row.c : 0))
+  );
+}
+function dbAddPreorder(tipe, userId) {
+  return new Promise((resolve, reject) =>
+    db.run('INSERT INTO akrab_preorders (user_id, tipe, created_at) VALUES (?,?,?)',
+      [userId, tipe, Date.now()], (err) => err ? reject(err) : resolve())
+  );
+}
+function dbRemovePreorder(tipe, userId) {
+  return new Promise((resolve) =>
+    db.run('DELETE FROM akrab_preorders WHERE tipe = ? AND user_id = ?',
+      [tipe, userId], () => resolve())
+  );
+}
+function dbGetAllPreorderUsers(tipe) {
+  return new Promise((resolve) =>
+    db.all('SELECT DISTINCT user_id FROM akrab_preorders WHERE tipe = ?',
+      [tipe], (err, rows) => resolve(rows || []))
+  );
+}
+function dbClearPreorders(tipe) {
+  return new Promise((resolve) =>
+    db.run('DELETE FROM akrab_preorders WHERE tipe = ?', [tipe], () => resolve())
+  );
+}
+
+async function showPreorderMenu(ctx, tipe) {
+  const userId = ctx.from.id;
+  const label = tipe === 'xla' ? 'Akrab V1 (XLA)' : 'Akrab V2 (XDA)';
+  const emoji = tipe === 'xla' ? '🔵' : '🟢';
+  const sudahDaftar = (await dbGetPreorderCount(tipe, userId)) > 0;
+  const totalDaftar = await new Promise((resolve) =>
+    db.get('SELECT COUNT(DISTINCT user_id) as c FROM akrab_preorders WHERE tipe = ?',
+      [tipe], (err, row) => resolve(row ? row.c : 0))
+  );
+
+  await ctx.editMessageText(
+    `<blockquote>${emoji} <b>Pre-Order ${label}</b>\n` +
+    `<code>──────────────────────</code>\n` +
+    `✦ Status kamu : ${sudahDaftar ? '🔔 Sudah daftar' : '🔕 Belum daftar'}\n` +
+    `✦ Total antrian : <code>${totalDaftar}</code> user\n` +
+    `<code>──────────────────────</code>\n` +
+    `<i>Saat stok ${label} tersedia kembali, kamu akan otomatis mendapat notifikasi broadcast.</i></blockquote>`,
+    {
+      parse_mode: 'HTML',
+      reply_markup: {
+        inline_keyboard: [
+          sudahDaftar
+            ? [{ text: '🔕 Batalkan Pre-Order', callback_data: `preorder_cancel_${tipe}` }]
+            : [{ text: '🔔 Daftar Pre-Order', callback_data: `preorder_daftar_${tipe}` }],
+          [{ text: '🔙 Kembali', callback_data: 'menu_akrab' }],
+        ],
+      },
+    }
+  );
+}
+
+bot.action('preorder_xla', async (ctx) => {
+  await ctx.answerCbQuery();
+  await showPreorderMenu(ctx, 'xla');
+});
+
+bot.action('preorder_xda', async (ctx) => {
+  await ctx.answerCbQuery();
+  await showPreorderMenu(ctx, 'xda');
+});
+
+bot.action(/^preorder_daftar_(xla|xda)$/, async (ctx) => {
   await ctx.answerCbQuery();
   const userId = ctx.from.id;
-  const state = userState[userId] || {};
-  const confirm = state.akrabConfirm || {};
-  const produkCode = confirm.produkCode || ctx.match[1];
-  const tujuan = confirm.tujuan || '';
+  const tipe = ctx.match[1];
+  const sudah = (await dbGetPreorderCount(tipe, userId)) > 0;
+  if (sudah) {
+    await ctx.answerCbQuery('Kamu sudah terdaftar.', { show_alert: true });
+    return showPreorderMenu(ctx, tipe);
+  }
+  await dbAddPreorder(tipe, userId);
+  await ctx.answerCbQuery('✅ Berhasil daftar pre-order!', { show_alert: true });
+  await showPreorderMenu(ctx, tipe);
+});
+
+bot.action(/^preorder_cancel_(xla|xda)$/, async (ctx) => {
+  await ctx.answerCbQuery();
+  const userId = ctx.from.id;
+  const tipe = ctx.match[1];
+  await dbRemovePreorder(tipe, userId);
+  await ctx.answerCbQuery('🔕 Pre-order dibatalkan.', { show_alert: true });
+  await showPreorderMenu(ctx, tipe);
+});
+
+// ── Fungsi broadcast restok ke user preorder ──────────────────────────────────
+async function broadcastRestok(tipe, stokItems) {
+  const label = tipe === 'xla' ? 'Akrab V1 (XLA)' : 'Akrab V2 (XDA)';
+  const emoji = tipe === 'xla' ? '🔵' : '🟢';
+  const users = await dbGetAllPreorderUsers(tipe);
+  if (!users.length) return;
+
+  const stokText = stokItems.length
+    ? stokItems.map(it => `✦ <code>${it.type}</code> — <b>${it.sisa_slot}</b> unit`).join('\n')
+    : '✦ Stok tersedia';
+
+  const msg =
+    `${emoji} <b>RESTOK ${label.toUpperCase()}</b>\n` +
+    `<code>──────────────────────</code>\n` +
+    `${stokText}\n` +
+    `<code>──────────────────────</code>\n` +
+    `<i>Segera beli sebelum habis!</i>`;
+
+  let ok = 0, fail = 0;
+  for (const row of users) {
+    try {
+      await bot.telegram.sendMessage(row.user_id, msg, { parse_mode: 'HTML' });
+      ok++;
+    } catch (e) {
+      fail++;
+      logger.warn(`broadcastRestok ${tipe} gagal ke ${row.user_id}: ${e.message}`);
+    }
+  }
+
+  // Hapus semua preorder setelah broadcast
+  await dbClearPreorders(tipe);
+  logger.info(`broadcastRestok ${tipe}: ${ok} berhasil, ${fail} gagal, list dihapus`);
+}
+
+bot.action(/^akrab_konfirmasi_(.+)$/, async (ctx) => {
   const amount = Number(confirm.amount || 0);
 
   if (!produkCode || !tujuan || !amount) {
@@ -18650,6 +18791,72 @@ setInterval(pollSmmOrders, 3 * 60 * 1000);
 // Jalankan sekali setelah startup (delay 15 detik)
 setTimeout(pollAkrabOrders, 15000);
 setTimeout(pollSmmOrders, 20000);
+
+// ── Auto-detect restok Akrab & broadcast ke preorder ─────────────────────────
+// Simpan snapshot stok terakhir untuk deteksi perubahan
+let lastStokSnapshot = { xla: {}, xda: {} };
+
+async function checkAkrabRestok() {
+  try {
+    const [stokV1Resp, stokV2Resp] = await Promise.all([
+      akrabModule.cekStokAkrab(KHFY_ENDPOINT).catch(() => null),
+      akrabModule.cekStokAkrabV2(KHFY_ENDPOINT).catch(() => null),
+    ]);
+
+    // Parse XLA
+    const itemsV1 = Array.isArray(stokV1Resp)
+      ? stokV1Resp
+      : (stokV1Resp && Array.isArray(stokV1Resp.data)) ? stokV1Resp.data : [];
+
+    // Parse XDA
+    let itemsV2 = [];
+    if (stokV2Resp && stokV2Resp.message) {
+      itemsV2 = akrabModule.parseStokV2Message(stokV2Resp.message);
+    } else if (stokV2Resp && Array.isArray(stokV2Resp.data)) {
+      itemsV2 = stokV2Resp.data;
+    }
+
+    // Cek XLA — ada yang dari 0 jadi > 0?
+    const restokXla = [];
+    for (const it of itemsV1) {
+      const tipe = String(it.type || it.kode || '').toUpperCase();
+      const slot = Number(it.sisa_slot ?? it.stok ?? it.stock ?? 0);
+      const prev = lastStokSnapshot.xla[tipe] ?? null;
+      if (prev !== null && prev === 0 && slot > 0) {
+        restokXla.push({ type: tipe, sisa_slot: slot });
+      }
+      lastStokSnapshot.xla[tipe] = slot;
+    }
+
+    // Cek XDA — ada yang dari 0 jadi > 0?
+    const restokXda = [];
+    for (const it of itemsV2) {
+      const tipe = String(it.type || it.kode || '').toUpperCase();
+      const slot = Number(it.sisa_slot ?? it.stok ?? 0);
+      const prev = lastStokSnapshot.xda[tipe] ?? null;
+      if (prev !== null && prev === 0 && slot > 0) {
+        restokXda.push({ type: tipe, sisa_slot: slot });
+      }
+      lastStokSnapshot.xda[tipe] = slot;
+    }
+
+    if (restokXla.length > 0) {
+      logger.info(`Restok XLA terdeteksi: ${restokXla.map(i => i.type).join(', ')}`);
+      await broadcastRestok('xla', restokXla);
+    }
+    if (restokXda.length > 0) {
+      logger.info(`Restok XDA terdeteksi: ${restokXda.map(i => i.type).join(', ')}`);
+      await broadcastRestok('xda', restokXda);
+    }
+  } catch (err) {
+    logger.error('checkAkrabRestok error: ' + (err && err.message ? err.message : err));
+  }
+}
+
+// Cek restok setiap 10 menit
+setInterval(checkAkrabRestok, 10 * 60 * 1000);
+// Jalankan sekali setelah startup (delay 30 detik) untuk isi snapshot awal
+setTimeout(checkAkrabRestok, 30000);
 
 
 //  FUNGSI UNTUK GENERATE RANDOM FEE YANG UNIK
