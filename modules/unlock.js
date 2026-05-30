@@ -260,8 +260,8 @@ async function unlocktrojan(username, exp, quota, limitip, serverId) {
    *Informasi Akun*
   ┌─────────────────────────────
   │ Username: \`${username}\`
-  │ Kadaluarsa: \`${vmessData.exp}\`
-  │ Kuota: \`${vmessData.quota}\`
+  │ Kadaluarsa: \`${shadowsocksData.exp}\`
+  │ Kuota: \`${shadowsocksData.quota}\`
   │ Batas IP: \`${shadowsocksData.limitip} IP\`
   └─────────────────────────────
    Akun ${username} berhasil diperbarui

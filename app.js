@@ -3904,107 +3904,49 @@ bot.command('admin', async (ctx) => {
 });
 
 async function sendMainMenu(ctx) {
-  // Ambil data user
   const userId = ctx.from.id;
   const userName = ctx.from.first_name || '-';
-  let saldo = 0;
-  try {
-    const row = await new Promise((resolve, reject) => {
-      db.get('SELECT saldo FROM users WHERE user_id = ?', [userId], (err, row) => {
-        if (err) reject(err); else resolve(row);
-      });
-    });
-    saldo = row ? row.saldo : 0;
-  } catch (e) { saldo = 0; }
-
-  // Ambil saldo_akrab
-  let saldoAkrab = 0;
-  try { saldoAkrab = await dbH.getSaldoAkrab(db, userId); } catch (e) { saldoAkrab = 0; }
-
-  // Statistik user
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-  const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay()).getTime();
+  const weekStart  = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay()).getTime();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-  let userToday = 0, userWeek = 0, userMonth = 0;
-  let globalToday = 0, globalWeek = 0, globalMonth = 0;
-  try {
-    userToday = await new Promise((resolve) => {
-      db.get(
-        'SELECT COUNT(*) as count FROM transactions WHERE user_id = ? AND timestamp >= ? AND type IN ("ssh","vmess","vless","trojan","shadowsocks","udp_http","zivpn") AND reference_id NOT LIKE "account-trial-%"',
-        [userId, todayStart],
-        (err, row) => resolve(row ? row.count : 0)
-      );
-    });
-    userWeek = await new Promise((resolve) => {
-      db.get(
-        'SELECT COUNT(*) as count FROM transactions WHERE user_id = ? AND timestamp >= ? AND type IN ("ssh","vmess","vless","trojan","shadowsocks","udp_http","zivpn") AND reference_id NOT LIKE "account-trial-%"',
-        [userId, weekStart],
-        (err, row) => resolve(row ? row.count : 0)
-      );
-    });
-    userMonth = await new Promise((resolve) => {
-      db.get(
-        'SELECT COUNT(*) as count FROM transactions WHERE user_id = ? AND timestamp >= ? AND type IN ("ssh","vmess","vless","trojan","shadowsocks","udp_http","zivpn") AND reference_id NOT LIKE "account-trial-%"',
-        [userId, monthStart],
-        (err, row) => resolve(row ? row.count : 0)
-      );
-    });
-    globalToday = await new Promise((resolve) => {
-      db.get(
-        'SELECT COUNT(*) as count FROM transactions WHERE timestamp >= ? AND type IN ("ssh","vmess","vless","trojan","shadowsocks","udp_http","zivpn") AND reference_id NOT LIKE "account-trial-%"',
-        [todayStart],
-        (err, row) => resolve(row ? row.count : 0)
-      );
-    });
-    globalWeek = await new Promise((resolve) => {
-      db.get(
-        'SELECT COUNT(*) as count FROM transactions WHERE timestamp >= ? AND type IN ("ssh","vmess","vless","trojan","shadowsocks","udp_http","zivpn") AND reference_id NOT LIKE "account-trial-%"',
-        [weekStart],
-        (err, row) => resolve(row ? row.count : 0)
-      );
-    });
-    globalMonth = await new Promise((resolve) => {
-      db.get(
-        'SELECT COUNT(*) as count FROM transactions WHERE timestamp >= ? AND type IN ("ssh","vmess","vless","trojan","shadowsocks","udp_http","zivpn") AND reference_id NOT LIKE "account-trial-%"',
-        [monthStart],
-        (err, row) => resolve(row ? row.count : 0)
-      );
-    });
-  } catch (e) {}
 
-  // Jumlah pengguna bot
-  let jumlahPengguna = 0;
-  
-  // Cek status reseller - GUNAKAN VARIABLE YANG SUDAH ADA
-  let isReseller = false;
-  if (fs.existsSync(resselFilePath)) {
-    const resellerList = fs.readFileSync(resselFilePath, 'utf8').split('\n').map(x => x.trim());
-    isReseller = resellerList.includes(userId.toString());
-  }
+  const VPN_TYPES = '"ssh","vmess","vless","trojan","shadowsocks","udp_http","zivpn"';
+  const NOT_TRIAL = 'reference_id NOT LIKE "account-trial-%"';
+
+  // ── Semua query DB jalan paralel ──────────────────────────────────────────
+  const [
+    saldoRow, saldoAkrabVal, isResellerVal,
+    userTodayRow, userWeekRow, userMonthRow,
+    globalTodayRow, globalWeekRow, globalMonthRow,
+    globalAllRow, jumlahPenggunaRow
+  ] = await Promise.all([
+    new Promise(r => db.get('SELECT saldo FROM users WHERE user_id = ?', [userId], (e, row) => r(row))),
+    dbH.getSaldoAkrab(db, userId).catch(() => 0),
+    isUserReseller(userId).catch(() => false),
+    new Promise(r => db.get(`SELECT COUNT(*) as c FROM transactions WHERE user_id=? AND timestamp>=? AND type IN (${VPN_TYPES}) AND ${NOT_TRIAL}`, [userId, todayStart], (e, row) => r(row))),
+    new Promise(r => db.get(`SELECT COUNT(*) as c FROM transactions WHERE user_id=? AND timestamp>=? AND type IN (${VPN_TYPES}) AND ${NOT_TRIAL}`, [userId, weekStart],  (e, row) => r(row))),
+    new Promise(r => db.get(`SELECT COUNT(*) as c FROM transactions WHERE user_id=? AND timestamp>=? AND type IN (${VPN_TYPES}) AND ${NOT_TRIAL}`, [userId, monthStart], (e, row) => r(row))),
+    new Promise(r => db.get(`SELECT COUNT(*) as c FROM transactions WHERE timestamp>=? AND type IN (${VPN_TYPES}) AND ${NOT_TRIAL}`, [todayStart], (e, row) => r(row))),
+    new Promise(r => db.get(`SELECT COUNT(*) as c FROM transactions WHERE timestamp>=? AND type IN (${VPN_TYPES}) AND ${NOT_TRIAL}`, [weekStart],  (e, row) => r(row))),
+    new Promise(r => db.get(`SELECT COUNT(*) as c FROM transactions WHERE timestamp>=? AND type IN (${VPN_TYPES}) AND ${NOT_TRIAL}`, [monthStart], (e, row) => r(row))),
+    new Promise(r => db.get(`SELECT COUNT(*) as c FROM transactions WHERE type IN (${VPN_TYPES}) AND ${NOT_TRIAL}`, [], (e, row) => r(row))),
+    new Promise(r => db.get('SELECT COUNT(*) AS c FROM users', [], (e, row) => r(row))),
+  ]).catch(() => Array(11).fill(null));
+
+  const saldo        = saldoRow ? (saldoRow.saldo || 0) : 0;
+  const saldoAkrab   = saldoAkrabVal || 0;
+  const isReseller   = !!isResellerVal;
+  const userToday    = userTodayRow  ? (userTodayRow.c  || 0) : 0;
+  const userWeek     = userWeekRow   ? (userWeekRow.c   || 0) : 0;
+  const userMonth    = userMonthRow  ? (userMonthRow.c  || 0) : 0;
+  const globalToday  = globalTodayRow ? (globalTodayRow.c || 0) : 0;
+  const globalWeek   = globalWeekRow  ? (globalWeekRow.c  || 0) : 0;
+  const globalMonth  = globalMonthRow ? (globalMonthRow.c || 0) : 0;
+  const globalAll    = globalAllRow   ? (globalAllRow.c   || 0) : 0;
+  const jumlahPengguna = jumlahPenggunaRow ? (jumlahPenggunaRow.c || 0) : 0;
   const statusReseller = isReseller ? 'Reseller' : 'Bukan Reseller';
-  
-  try {
-    const row = await new Promise((resolve, reject) => {
-      db.get('SELECT COUNT(*) AS count FROM users', (err, row) => { if (err) reject(err); else resolve(row); });
-    });
-    jumlahPengguna = row.count;
-  } catch (e) { jumlahPengguna = 0; }
-
-  // Latency (dummy, bisa diubah sesuai kebutuhan)
   const latency = (Math.random() * 0.1 + 0.01).toFixed(2);
-
-  // Hitung total transaksi global semua waktu
-  let globalAll = 0;
-  try {
-    globalAll = await new Promise((resolve) => {
-      db.get(
-        'SELECT COUNT(*) as count FROM transactions WHERE type IN ("ssh","vmess","vless","trojan","shadowsocks","udp_http","zivpn") AND reference_id NOT LIKE "account-trial-%"',
-        [],
-        (err, row) => resolve(row ? row.count : 0)
-      );
-    });
-  } catch (e) {}
 
   const messageText = `<blockquote><code>──────────────────────</code>
 <code>      ✦ ${NAMA_STORE} ✦</code>
@@ -4325,6 +4267,7 @@ async function broadcastToAllUsers(payload) {
 
       let ok = 0;
       let fail = 0;
+      const DELAY_MS = 35; // ~28 msg/detik, aman di bawah limit Telegram 30/detik
 
       for (const row of rows || []) {
         try {
@@ -4333,13 +4276,24 @@ async function broadcastToAllUsers(payload) {
             if (payload.caption) options.caption = payload.caption;
             await bot.telegram.sendPhoto(row.user_id, payload.fileId, options);
           } else {
-            await bot.telegram.sendMessage(row.user_id, String(payload?.text || ''));
+            await bot.telegram.sendMessage(row.user_id, String(payload?.text || ''), { parse_mode: payload?.parse_mode || undefined });
           }
           ok++;
         } catch (e) {
-          fail++;
-          logger.warn('Gagal kirim broadcast ke ' + row.user_id + ': ' + (e.message || e));
+          // Retry sekali jika rate limit (429)
+          if (e.response && e.response.error_code === 429) {
+            const retryAfter = (e.response.parameters && e.response.parameters.retry_after) || 5;
+            await new Promise(r => setTimeout(r, retryAfter * 1000));
+            try {
+              await bot.telegram.sendMessage(row.user_id, String(payload?.text || ''), { parse_mode: payload?.parse_mode || undefined });
+              ok++;
+            } catch (_) { fail++; }
+          } else {
+            fail++;
+            logger.warn('Gagal kirim broadcast ke ' + row.user_id + ': ' + (e.message || e));
+          }
         }
+        await new Promise(r => setTimeout(r, DELAY_MS));
       }
 
       resolve({ ok, fail });
@@ -5659,6 +5613,7 @@ async function sendAdminToolsMenu(ctx) {
     [{ text: maintenanceLabel, callback_data: 'maintenance_menu' }],
     [{ text: ' Kontak Admin', callback_data: 'admin_contact_settings_menu' }],
     [{ text: testMenuLabel, callback_data: 'toggle_test_menu' }],
+    [{ text: '📋 Lihat Antrian Pre-Order', callback_data: 'admin_preorder_list' }],
     [{ text: ' Kembali', callback_data: 'admin_menu' }]
   ];
 
@@ -7204,6 +7159,35 @@ bot.action('toggle_test_menu', async (ctx) => {
   const next = saveTestMenuSetting(!current);
   await ctx.answerCbQuery(next ? '✅ Menu Test Transaksi diaktifkan' : '❌ Menu Test Transaksi dinonaktifkan', { show_alert: true });
   await sendAdminToolsMenu(ctx);
+});
+
+bot.action('admin_preorder_list', async (ctx) => {
+  await ctx.answerCbQuery();
+  if (!adminIds.includes(ctx.from.id)) return ctx.answerCbQuery('Akses ditolak.', { show_alert: true });
+
+  const [ordersXla, ordersXda] = await Promise.all([
+    dbGetAllPreorders('xla'),
+    dbGetAllPreorders('xda'),
+  ]);
+
+  const formatList = (orders, label) => {
+    if (!orders.length) return `<b>${label}</b>\n<i>Tidak ada antrian.</i>`;
+    const lines = orders.map((o, i) =>
+      `${i + 1}. <code>${o.user_id}</code> → <code>${o.produk_kode || '-'}</code> | ${o.tujuan || '-'} | Rp ${Number(o.harga || 0).toLocaleString('id-ID')}`
+    ).join('\n');
+    return `<b>${label}</b> (${orders.length} antrian)\n${lines}`;
+  };
+
+  const text =
+    `📋 <b>Antrian Pre-Order Aktif</b>\n` +
+    `<code>──────────────────────</code>\n` +
+    formatList(ordersXla, '🔵 XLA — Akrab V1') + '\n\n' +
+    formatList(ordersXda, '🟢 XDA — Akrab V2');
+
+  await ctx.editMessageText(text, {
+    parse_mode: 'HTML',
+    reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'admin_menu_tools' }]] },
+  });
 });
 
 // ══════════════════════════════════════════
@@ -12508,7 +12492,23 @@ bot.action(/^preorder_cancel_(xla|xda)$/, async (ctx) => {
 });
 
 // ── Fungsi auto-beli saat restok ──────────────────────────────────────────────
+// Lock untuk mencegah double-run jika bot restart atau interval overlap
+const _autoBuyLock = new Set();
+
 async function autoBuyPreorders(tipe, stokItems) {
+  if (_autoBuyLock.has(tipe)) {
+    logger.warn(`autoBuyPreorders ${tipe}: sudah berjalan, skip`);
+    return;
+  }
+  _autoBuyLock.add(tipe);
+  try {
+    await _autoBuyPreordersInner(tipe, stokItems);
+  } finally {
+    _autoBuyLock.delete(tipe);
+  }
+}
+
+async function _autoBuyPreordersInner(tipe, stokItems) {
   const label = tipe === 'xla' ? 'Akrab V1 (XLA)' : 'Akrab V2 (XDA)';
   const emoji = tipe === 'xla' ? '🔵' : '🟢';
   const orders = await dbGetAllPreorders(tipe);
@@ -12560,6 +12560,22 @@ async function autoBuyPreorders(tipe, stokItems) {
       // Potong saldo
       await wallet.potongSaldoAkrab(db, userId, harga, 'akrab-' + reffId, 'akrab');
       await dbH.saveAkrabOrder(db, userId, reffId, produkKode, tujuan, harga);
+
+      // Cek saldo setelah potong — notif jika hampir habis
+      const saldoSisa = await dbH.getSaldoAkrab(db, userId).catch(() => 0);
+      const SALDO_WARNING = 10000;
+      if (saldoSisa < SALDO_WARNING && saldoSisa >= 0) {
+        try {
+          await bot.telegram.sendMessage(userId,
+            `⚠️ <b>Saldo Tembak Kuota Hampir Habis</b>\n` +
+            `<code>──────────────────────</code>\n` +
+            `✦ Sisa saldo : <code>Rp ${saldoSisa.toLocaleString('id-ID')}</code>\n` +
+            `<code>──────────────────────</code>\n` +
+            `<i>Segera top up agar pre-order berikutnya bisa diproses.</i>`,
+            { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '💳 Top Up', callback_data: 'topup_akrab' }]] } }
+          );
+        } catch (_) {}
+      }
 
       // Hapus preorder
       await dbRemovePreorder(tipe, userId);
@@ -12919,7 +12935,12 @@ bot.on('text', async (ctx) => {
       // ── Input nomor tujuan pre-order ─────────────────
       if (akState.step === 'preorder_input_tujuan') {
         const tujuan = text;
+        // Validasi: tidak kosong, hanya angka/huruf/strip/titik, panjang 5-20
         if (!tujuan) { await ctx.reply('Nomor tujuan tidak boleh kosong.'); return; }
+        if (!/^[0-9a-zA-Z.\-_@+]{5,30}$/.test(tujuan)) {
+          await ctx.reply('❌ Format nomor tidak valid.\nGunakan angka/huruf, panjang 5-30 karakter.');
+          return;
+        }
         const { tipe, produkKode, harga } = akState;
         delete userState[ctx.chat.id];
 
@@ -19054,6 +19075,39 @@ setTimeout(pollSmmOrders, 20000);
 // ── Auto-detect restok Akrab & broadcast ke preorder ─────────────────────────
 // Simpan snapshot stok terakhir untuk deteksi perubahan
 let lastStokSnapshot = { xla: {}, xda: {} };
+
+// ── TTL cleanup userState (hapus state > 1 jam) ───────────────────────────────
+const _userStateTimestamps = new Map();
+const _origUserStateSet = (userId, state) => {
+  _userStateTimestamps.set(String(userId), Date.now());
+};
+// Patch userState agar catat timestamp saat set
+const _userStateProxy = new Proxy(userState, {
+  set(target, key, value) {
+    _userStateTimestamps.set(String(key), Date.now());
+    target[key] = value;
+    return true;
+  },
+  deleteProperty(target, key) {
+    _userStateTimestamps.delete(String(key));
+    delete target[key];
+    return true;
+  }
+});
+
+setInterval(() => {
+  const now = Date.now();
+  const TTL = 60 * 60 * 1000; // 1 jam
+  let cleaned = 0;
+  for (const [key, ts] of _userStateTimestamps.entries()) {
+    if (now - ts > TTL) {
+      delete userState[key];
+      _userStateTimestamps.delete(key);
+      cleaned++;
+    }
+  }
+  if (cleaned > 0) logger.info(`userState TTL cleanup: ${cleaned} state dihapus`);
+}, 30 * 60 * 1000); // cek setiap 30 menit
 
 async function checkAkrabRestok() {
   try {
