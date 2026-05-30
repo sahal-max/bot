@@ -11059,13 +11059,13 @@ const serverBlocks = currentServers.map(server => {
   const isFullByManualLimit = !isManualUnlimited && Number(server.total_create_akun || 0) >= manualLimit;
 
   return (
-`<code>┌─────────────────────────┐</code>
+`<blockquote><code>┌─────────────────────────┐</code>
 <code>│</code> <b>${server.nama_server.toUpperCase()}</b>
 <code>│─────────────────────────</code>
 <code>│</code> 1IP <code>Rp ${hargaPerHari1.toLocaleString('id-ID')}</code> • 2IP <code>Rp ${hargaPerHari2.toLocaleString('id-ID')}</code>${monthlyEnabled ? `\n<code>│</code> 30H: <code>Rp ${hargaPer30Hari1.toLocaleString('id-ID')}</code> / <code>Rp ${hargaPer30Hari2.toLocaleString('id-ID')}</code>` : ''}
 <code>│</code> <code>${server.domain}</code>
 <code>│</code> ${server.total_create_akun}/${akunLimitText} ${isFullByManualLimit ? '❌' : '✅'}
-<code>└─────────────────────────┘</code>`
+<code>└─────────────────────────┘</code></blockquote>`
   );
 });
     const title = `🖥️ <b>List Server (Halaman ${currentPage + 1} dari ${totalPages})</b>\n<code>──────────────────────</code>`;
@@ -11398,8 +11398,10 @@ bot.action('menu_suntik', async (ctx) => {
     '<code>│─────────────────────────</code>\n' +
     '<code>│</code> Saldo : <code>Rp ' + Number(saldo || 0).toLocaleString('id-ID') + '</code>\n' +
     '<code>│─────────────────────────</code>\n' +
-    '<code>│</code> 🛡️ Garansi • ⚠️ No Refill\n' +
-    '<code>│</code> ✅ Cancel • ❌ No Cancel\n' +
+    '<code>│</code> 🛡️ = Bergaransi (refill)\n' +
+    '<code>│</code> ⚠️ = Tidak bergaransi\n' +
+    '<code>│</code> ✅ = Bisa cancel\n' +
+    '<code>│</code> ❌ = Tidak bisa cancel\n' +
     '<code>└─────────────────────────┘</code>',
     { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } }
   );
@@ -11546,10 +11548,10 @@ bot.action(/^smm_kat_(.+)$/, async (ctx) => {
       : '⚠️ <b>Tidak Bergaransi</b> (No Refill)';
     const cancelText = bisaCancel ? '  ✦ Cancel : ✅ Bisa' : '  ✦ Cancel : ❌ Tidak';
 
-    return `<code>┌─────────────────────────┐</code>\n` +
+    return `<blockquote><code>┌─────────────────────────┐</code>\n` +
       `<code>│</code> <b>${i + 1}. ${name}</b>\n` +
       `<code>│</code> Rp ${finalPrice.toLocaleString('id-ID')}/1K • ${min.toLocaleString('id-ID')}-${max.toLocaleString('id-ID')} • ${bisaRefill ? '🛡️' : '⚠️'} ${bisaCancel ? '✅' : '❌'}\n` +
-      `<code>└─────────────────────────┘</code>`;
+      `<code>└─────────────────────────┘</code></blockquote>`;
   }).join('\n');
 
   await ctx.editMessageText(
@@ -11833,6 +11835,10 @@ bot.action('menu_akrab', async (ctx) => {
     '<code>│</code> 🤝 <b>AKRAB &amp; CIRCLE</b>\n' +
     '<code>│─────────────────────────</code>\n' +
     '<code>│</code> Saldo : <code>Rp ' + Number(saldoAkrab || 0).toLocaleString('id-ID') + '</code>\n' +
+    '<code>│─────────────────────────</code>\n' +
+    '<code>│</code> ✅ = Tersedia\n' +
+    '<code>│</code> ❌ = Kosong\n' +
+    '<code>│</code> 🚫 = Gangguan\n' +
     '<code>└─────────────────────────┘</code>',
     { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } }
   );
@@ -12037,10 +12043,10 @@ bot.action(/^akrab_kat_(.+)$/, async (ctx) => {
     const gangguan = Number(p.gangguan || 0) === 1;
     const stokIcon = gangguan ? '🚫 Gangguan' : kosong ? '❌ Kosong' : '✅ Tersedia';
     const hargaText = base > 0 ? `<code>│</code> Rp ${finalPrice.toLocaleString('id-ID')}\n` : '';
-    return `<code>┌─────────────────────────┐</code>\n` +
+    return `<blockquote><code>┌─────────────────────────┐</code>\n` +
       `<code>│</code> <b>${i + 1}. ${name}</b> <code>${code}</code>\n` +
       `${hargaText}<code>│</code> ${stokIcon}\n` +
-      `<code>└─────────────────────────┘</code>`;
+      `<code>└─────────────────────────┘</code></blockquote>`;
   }).join('\n');
 
   await ctx.editMessageText(
@@ -12190,7 +12196,7 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
       return lines.join('\n');
     };
 
-    let body = `📦 <b>STOK AKRAB</b>\n🕐 ${now}\n\n`;
+    let body = `<blockquote>📦 <b>STOK AKRAB</b>\n🕐 ${now}\n\n`;
 
     // ── XLA ──
     if (xlaProducts.length) {
@@ -12232,7 +12238,7 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
       body += `⭕ <b>Circle</b>\n${formatPair(items)}\n\n`;
     }
 
-    body += `📊 Ready ${totalTersedia} • Kosong ${totalKosong}`;
+    body += `📊 Ready ${totalTersedia} • Kosong ${totalKosong}</blockquote>`;
 
     await ctx.editMessageText(body, {
       parse_mode: 'HTML',
