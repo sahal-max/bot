@@ -3942,9 +3942,9 @@ async function sendMainMenu(ctx) {
   if (activeAccounts > 0 && nearestExpiry > 0) {
     const sisaHari = Math.ceil((nearestExpiry - Date.now()) / (24 * 60 * 60 * 1000));
     const expiryWarn = sisaHari <= 3 ? ' ⚠️' : '';
-    expiryLine = `\n<code>└ Akun aktif : ${activeAccounts} (exp terdekat: ${sisaHari} hari${expiryWarn})</code>`;
+    expiryLine = `\n<code>├ Akun aktif : ${activeAccounts} (exp terdekat: ${sisaHari} hari${expiryWarn})</code>`;
   } else if (activeAccounts > 0) {
-    expiryLine = `\n<code>└ Akun aktif : ${activeAccounts}</code>`;
+    expiryLine = `\n<code>├ Akun aktif : ${activeAccounts}</code>`;
   }
 
   const messageText = `<code>┏━━━━━━━━━━━━━━━━━━━━━┓</code>
@@ -3952,11 +3952,11 @@ async function sendMainMenu(ctx) {
 <code>┗━━━━━━━━━━━━━━━━━━━━━┛</code>
 
 👤 <b>Informasi Akun</b>
-<code>├ Nama   : ${userName}</code>
+<code>├ Nama   : ${userName}</code>${expiryLine}
 <code>├ ID     : ${userId}</code>
 <code>├ Status : ${statusReseller}</code>
 <code>├ Saldo VPN        : Rp ${Number(saldo || 0).toLocaleString('id-ID')}</code>
-<code>├ Saldo Tembak Kuota: Rp ${Number(saldoAkrab || 0).toLocaleString('id-ID')}</code>${expiryLine}
+<code>└ Saldo Tembak Kuota: Rp ${Number(saldoAkrab || 0).toLocaleString('id-ID')}</code>
 
 📊 <b>Transaksi Kamu</b>
 <code>├ 📅 Hari ini   : ${userToday}</code>
@@ -7628,6 +7628,7 @@ bot.action('auto_backup_now', async (ctx) => {
     return ctx.reply(' Anda tidak memiliki izin untuk menjalankan backup.');
   }
 
+  // 1. Backup database files (sellvpn.db + ressel.db)
   const files = [
     path.join(__dirname, 'sellvpn.db'),
     path.join(__dirname, 'ressel.db')
@@ -7641,7 +7642,10 @@ bot.action('auto_backup_now', async (ctx) => {
     }
   }
 
-  await ctx.reply(' Backup otomatis telah dikirim.');
+  // 2. Backup saldo JSON (terpisah dari DB)
+  await runAutoBackupSaldo();
+
+  await ctx.reply('✅ Backup database dan backup saldo telah dikirim.');
 });
 bot.action('admin_sync_server_now', async (ctx) => {
   await ctx.answerCbQuery();
