@@ -19600,6 +19600,88 @@ function restartBandwidthReportScheduler() {
 }
 
 restartBandwidthReportScheduler();
+
+// ── Auto Backup Saldo Harian (setiap hari jam 02:00 WIB) ────────────────────
+async function runAutoBackupSaldo() {
+  try {
+    const admins = getNormalizedAdminIds();
+    if (admins.length === 0) {
+      logger.warn('[AutoBackupSaldo] Tidak ada admin ID, skip.');
+      return;
+    }
+
+    // Ambil semua saldo user
+    const users = await new Promise((resolve, reject) =>
+      db.all('SELECT user_id, saldo, saldo_akrab FROM users', [], (err, rows) =>
+        err ? reject(err) : resolve(rows || [])
+      )
+    );
+
+    // Ambil daftar reseller
+    let resellerList = [];
+    try { resellerList = listResellersSync(); } catch (_) {}
+
+    const now = new Date();
+    const backupData = {
+      timestamp: now.toISOString(),
+      generated_by: 'auto',
+      total_users: users.length,
+      total_resellers: resellerList.length,
+      users: users.map(u => ({
+        user_id: u.user_id,
+        saldo_vpn: u.saldo || 0,
+        saldo_akrab: u.saldo_akrab || 0,
+      })),
+      resellers: resellerList,
+    };
+
+    const ts = now.toISOString().replace(/[:.]/g, '-').replace('T', '_').slice(0, 19);
+    const fileName = `backup_saldo_auto_${ts}.json`;
+    const filePath = path.join(__dirname, fileName);
+
+    fs.writeFileSync(filePath, JSON.stringify(backupData, null, 2), 'utf8');
+
+    const caption =
+      `💾 <b>Auto Backup Saldo Harian</b>\n` +
+      `<code>──────────────────────</code>\n` +
+      `✦ Waktu    : ${now.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })}\n` +
+      `✦ Total User     : ${users.length}\n` +
+      `✦ Total Reseller : ${resellerList.length}\n` +
+      `<code>──────────────────────</code>\n` +
+      `<i>Backup otomatis harian. Simpan untuk restore saldo.</i>`;
+
+    for (const adminId of admins) {
+      try {
+        await bot.telegram.sendDocument(
+          adminId,
+          { source: filePath, filename: fileName },
+          { caption, parse_mode: 'HTML' }
+        );
+      } catch (e) {
+        logger.warn(`[AutoBackupSaldo] Gagal kirim ke admin ${adminId}: ${e.message}`);
+      }
+    }
+
+    try { fs.unlinkSync(filePath); } catch (_) {}
+    logger.info(`[AutoBackupSaldo] Selesai — ${users.length} user, ${resellerList.length} reseller`);
+  } catch (err) {
+    logger.error('[AutoBackupSaldo] Error: ' + (err && err.message ? err.message : err));
+  }
+}
+
+const autoBackupSaldoRule = new schedule.RecurrenceRule();
+autoBackupSaldoRule.tz = 'Asia/Jakarta';
+autoBackupSaldoRule.hour = 2;
+autoBackupSaldoRule.minute = 0;
+
+schedule.scheduleJob('auto_backup_saldo_daily', autoBackupSaldoRule, () => {
+  runAutoBackupSaldo().catch((err) => {
+    logger.error('[AutoBackupSaldo] Uncaught: ' + (err && err.message ? err.message : err));
+  });
+});
+
+logger.info('[AutoBackupSaldo] Scheduler aktif — setiap hari jam 02:00 WIB');
+
 const dbFile = path.join(__dirname, "sellvpn.db");
 const autoBackupDir = path.join(__dirname, "auto_backup");
 
