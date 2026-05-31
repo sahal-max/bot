@@ -12769,21 +12769,14 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
 <code>┗━━━━━━━━━━━━━━━━━━━━━┛</code>
 🕐 <i>${now}</i>\n\n`;
 
-    // ── XLA ── sumber utama: slot map endpoint V1 (data stok real-time)
-    if (Object.keys(xlaSlotMap).length || xlaProducts.length) {
-      const namaMapXla = {};
-      xlaProducts.forEach(p => {
-        namaMapXla[getKode(p)] = shortName(p.nama_produk || p.name || getKode(p));
-      });
-      const kodeFromSlot = Object.keys(xlaSlotMap);
-      const kodeFromProd = xlaProducts.map(getKode).filter(k => !xlaSlotMap.hasOwnProperty(k));
-      const allKode = [...kodeFromSlot, ...kodeFromProd];
-
-      const items = allKode.map(kode => {
-        const nama = namaMapXla[kode] || kode;
+    // ── XLA ── hanya tampilkan produk yang DIJUAL di bot (ada di getProducts).
+    // Status stok diambil dari slot map (data real-time).
+    if (xlaProducts.length) {
+      const items = xlaProducts.map(p => {
+        const kode = getKode(p);
+        const nama = shortName(p.nama_produk || p.name || kode);
         const slot = xlaSlotMap[kode];
-        const prod = xlaProducts.find(p => getKode(p) === kode);
-        const tersedia = (slot !== undefined) ? slot > 0 : (prod ? !isKosongProduk(prod) : false);
+        const tersedia = (slot !== undefined) ? slot > 0 : !isKosongProduk(p);
         const icon = tersedia ? '✅' : '❌';
         const qty = (slot !== undefined && slot > 0) ? String(slot) : '';
         if (tersedia) totalReady++; else totalKosong++;
@@ -12792,21 +12785,13 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
       body += `🔵 <b>XLA</b>\n<code>${formatPair(items)}</code>\n\n`;
     }
 
-    // ── XDA ── sumber utama: slot map endpoint V2 (data stok real-time)
-    if (Object.keys(xdaSlotMap).length || xdaProducts.length) {
-      const namaMapXda = {};
-      xdaProducts.forEach(p => {
-        namaMapXda[getKode(p)] = shortName(p.nama_produk || p.name || getKode(p));
-      });
-      const kodeFromSlot = Object.keys(xdaSlotMap);
-      const kodeFromProd = xdaProducts.map(getKode).filter(k => !xdaSlotMap.hasOwnProperty(k));
-      const allKode = [...kodeFromSlot, ...kodeFromProd];
-
-      const items = allKode.map(kode => {
-        const nama = namaMapXda[kode] || kode;
+    // ── XDA ── hanya tampilkan produk yang DIJUAL di bot (ada di getProducts).
+    if (xdaProducts.length) {
+      const items = xdaProducts.map(p => {
+        const kode = getKode(p);
+        const nama = shortName(p.nama_produk || p.name || kode);
         const slot = xdaSlotMap[kode];
-        const prod = xdaProducts.find(p => getKode(p) === kode);
-        const tersedia = (slot !== undefined) ? slot > 0 : (prod ? !isKosongProduk(prod) : false);
+        const tersedia = (slot !== undefined) ? slot > 0 : !isKosongProduk(p);
         const icon = tersedia ? '✅' : '❌';
         const qty = (slot !== undefined && slot > 0) ? String(slot) : '';
         if (tersedia) totalReady++; else totalKosong++;
