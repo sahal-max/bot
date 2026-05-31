@@ -3900,7 +3900,8 @@ async function sendMainMenu(ctx) {
     saldoRow, saldoAkrabVal, isResellerVal,
     userTodayRow, userWeekRow, userMonthRow,
     globalTodayRow, globalWeekRow, globalMonthRow,
-    globalAllRow, jumlahPenggunaRow
+    globalAllRow, jumlahPenggunaRow,
+    activeAccountRow, nearestExpiryRow
   ] = await Promise.all([
     new Promise(r => db.get('SELECT saldo FROM users WHERE user_id = ?', [userId], (e, row) => r(row))),
     dbH.getSaldoAkrab(db, userId).catch(() => 0),
@@ -3913,7 +3914,9 @@ async function sendMainMenu(ctx) {
     new Promise(r => db.get(`SELECT COUNT(*) as c FROM transactions WHERE timestamp>=? AND type IN (${VPN_TYPES}) AND ${NOT_TRIAL}`, [monthStart], (e, row) => r(row))),
     new Promise(r => db.get(`SELECT COUNT(*) as c FROM transactions WHERE type IN (${VPN_TYPES}) AND ${NOT_TRIAL}`, [], (e, row) => r(row))),
     new Promise(r => db.get('SELECT COUNT(*) AS c FROM users', [], (e, row) => r(row))),
-  ]).catch(() => Array(11).fill(null));
+    new Promise(r => db.get('SELECT COUNT(*) as c FROM accounts WHERE user_id = ? AND (expires_at IS NULL OR expires_at > ?)', [userId, Date.now()], (e, row) => r(row))),
+    new Promise(r => db.get('SELECT MIN(expires_at) as nearest FROM accounts WHERE user_id = ? AND expires_at > ?', [userId, Date.now()], (e, row) => r(row))),
+  ]).catch(() => Array(13).fill(null));
 
   const saldo        = saldoRow ? (saldoRow.saldo || 0) : 0;
   const saldoAkrab   = saldoAkrabVal || 0;
@@ -3926,8 +3929,20 @@ async function sendMainMenu(ctx) {
   const globalMonth  = globalMonthRow ? (globalMonthRow.c || 0) : 0;
   const globalAll    = globalAllRow   ? (globalAllRow.c   || 0) : 0;
   const jumlahPengguna = jumlahPenggunaRow ? (jumlahPenggunaRow.c || 0) : 0;
+  const activeAccounts = activeAccountRow ? (activeAccountRow.c || 0) : 0;
+  const nearestExpiry  = nearestExpiryRow ? (nearestExpiryRow.nearest || 0) : 0;
   const statusReseller = isReseller ? 'Reseller' : 'Bukan Reseller';
   const latency = (Math.random() * 0.1 + 0.01).toFixed(2);
+
+  // Hitung sisa hari akun terdekat expired
+  let expiryLine = '';
+  if (activeAccounts > 0 && nearestExpiry > 0) {
+    const sisaHari = Math.ceil((nearestExpiry - Date.now()) / (24 * 60 * 60 * 1000));
+    const expiryWarn = sisaHari <= 3 ? ' ⚠️' : '';
+    expiryLine = `\n<code>└ Akun aktif : ${activeAccounts} (exp terdekat: ${sisaHari} hari${expiryWarn})</code>`;
+  } else if (activeAccounts > 0) {
+    expiryLine = `\n<code>└ Akun aktif : ${activeAccounts}</code>`;
+  }
 
   const messageText = `<code>┏━━━━━━━━━━━━━━━━━━━━━┓</code>
    ✨ <b>${NAMA_STORE}</b> ✨
@@ -3938,7 +3953,7 @@ async function sendMainMenu(ctx) {
 <code>├ ID     : ${userId}</code>
 <code>├ Status : ${statusReseller}</code>
 <code>├ Saldo VPN        : Rp ${Number(saldo || 0).toLocaleString('id-ID')}</code>
-<code>└ Saldo Tembak Kuota: Rp ${Number(saldoAkrab || 0).toLocaleString('id-ID')}</code>
+<code>├ Saldo Tembak Kuota: Rp ${Number(saldoAkrab || 0).toLocaleString('id-ID')}</code>${expiryLine}
 
 📊 <b>Transaksi Kamu</b>
 <code>├ 📅 Hari ini   : ${userToday}</code>
@@ -3961,17 +3976,19 @@ async function sendMainMenu(ctx) {
       { text: '🤝 Akrab', callback_data: 'menu_akrab' }
     ],
     [
-      { text: '💉 Suntik', callback_data: 'menu_suntik' },
+      { text: '📋 Akun Saya', callback_data: 'view_accounts' },
       { text: '💳 Top Up', callback_data: 'menu_topup' }
+    ],
+    [
+      { text: '💉 Suntik', callback_data: 'menu_suntik' },
+      { text: '🔧 Tools', callback_data: 'menu_tools' }
     ],
     ...(testMenuEnabled ? [[
       { text: '🧪 Test', callback_data: 'admin_test_menu' },
-      { text: '🔧 Tools', callback_data: 'menu_tools' }
-    ], [
       { text: '📞 Admin', callback_data: 'hubungi_admin' }
     ]] : [[
-      { text: '🔧 Tools', callback_data: 'menu_tools' },
-      { text: '📞 Admin', callback_data: 'hubungi_admin' }
+      { text: '📞 Admin', callback_data: 'hubungi_admin' },
+      { text: '🔄 Refresh', callback_data: 'send_main_menu' }
     ]]),
     [
       { text: '⭐ Jadi Reseller', callback_data: 'jadi_reseller' }
@@ -4131,46 +4148,149 @@ async function sendHelpAdmin(ctx) {
   }
   
   const helpMessage = `
-*Daftar Perintah Admin:*
+📋 *Daftar Perintah Admin:*
 
-1. /addsaldo - Menambahkan saldo ke akun pengguna.
-2. /hapussaldo - Menghapus saldo dari akun pengguna.
-3. /addserver - Menambahkan server baru.
-4. /addserver_reseller - Menambahkan server khusus reseller.
-5. /addserverzivpn - Menambahkan server ZIVPN.
-6. /addserverzivpn_reseller - Menambahkan server ZIVPN khusus reseller.
-7. /addressel - Menambahkan reseller baru.
-8. /delressel - Menghapus ID reseller.
-9. /broadcast - Mengirim pesan siaran ke semua pengguna.
-10. /broadcastreseller - Mengirim pesan siaran khusus reseller.
-11. /broadcastpoll - Mengirim polling ke semua pengguna.
-12. /editharga - Mengedit harga layanan.
-13. /edithargareseller - Mengedit harga reseller (legacy).
-14. /editauth - Mengedit auth server.
-15. /editdomain - Mengedit domain server.
-16. /editlimitcreate - Mengedit batas pembuatan akun server.
-17. /editlimitip - Mengedit batas IP server.
-18. /editlimitquota - Mengedit batas quota server.
-19. /editnama - Mengedit nama server.
-20. /edittotalcreate - Mengedit total pembuatan akun server.
-21. /syncservernow - Sinkronisasi data akun dan bandwidth server.
-22. /setserverbw <id> <limit_tb> [estimasi_gb_per_user_hari] - Set limit bandwidth server via command.
-23. /checkpaymentconfig - Cek konfigurasi payment API.
-24. /allresellerstats - Ambil data statistik semua reseller.
-25. /resellerstats - Ambil data statistik reseller sendiri.
-26. /restartserver [target] - Restart app PM2 dari Telegram.
-27. /hapuslog - Menghapus log bot.
+💰 *Saldo*
+1. /addsaldo \`<user_id> <jumlah>\` — Tambah saldo user
+2. /hapussaldo \`<user_id> <jumlah>\` — Hapus saldo user
 
-Menu Admin > Server > Atur Harga Masa Aktif: aktif/nonaktif harga harian dan 30 hari, edit per server, dan edit global semua server.
+🖥️ *Server*
+3. /addserver — Tambah server baru
+4. /addserver\\_reseller — Tambah server khusus reseller
+5. /addserverzivpn — Tambah server ZIVPN
+6. /addserverzivpn\\_reseller — Tambah server ZIVPN reseller
+7. /editnama \`<domain> <nama>\` — Edit nama server
+8. /editdomain \`<old> <new>\` — Edit domain server
+9. /editauth \`<domain> <auth>\` — Edit auth server
+10. /editharga \`<domain> <harga>\` — Edit harga server
+11. /editlimitcreate \`<domain> <batas>\` — Edit batas buat akun
+12. /editlimitip \`<domain> <limit>\` — Edit batas IP server
+13. /editlimitquota \`<domain> <quota>\` — Edit quota server
+14. /edittotalcreate \`<domain> <total>\` — Edit total akun server
+15. /syncservernow — Sinkronisasi akun & bandwidth server
+16. /setserverbw \`<id> <limit_tb> [avg_gb]\` — Set limit bandwidth
 
-Gunakan perintah dengan format yang benar untuk menghindari kesalahan.
+🤝 *Reseller*
+17. /addressel \`<user_id>\` — Tambah reseller baru
+18. /delressel \`<user_id>\` — Hapus reseller
+19. /resellerstats — Statistik reseller sendiri
+20. /allresellerstats — Statistik semua reseller
+
+📣 *Broadcast*
+21. /broadcast \`<pesan>\` — Siaran ke semua user
+22. /broadcastreseller \`<pesan>\` — Siaran ke reseller
+23. /broadcastpoll \`Pertanyaan | Opsi A | Opsi B\` — Polling ke semua user
+
+💳 *Payment*
+24. /checkpaymentconfig — Cek konfigurasi payment API
+
+📊 *Dashboard & Log*
+25. /summary — Dashboard ringkasan harian
+26. /hapuslog — Hapus file log bot
+27. /restartserver \`[target]\` — Restart app PM2
+
+_Gunakan perintah dengan format yang benar untuk menghindari kesalahan._
 `;
-  ctx.reply(helpMessage);
+  ctx.reply(helpMessage, { parse_mode: 'Markdown' });
 }
 
 bot.command('helpadmin', async (ctx) => {
   await sendHelpAdmin(ctx);
 });
+
+// ── Command /summary — Dashboard Harian Admin ──────────────────────────────
+bot.command('summary', async (ctx) => {
+  if (!adminIds.includes(ctx.from.id)) {
+    return ctx.reply('⛔ Anda tidak memiliki izin untuk menggunakan perintah ini.');
+  }
+  await sendAdminDailyDashboard(ctx);
+});
+
+bot.action('admin_daily_dashboard', async (ctx) => {
+  await ctx.answerCbQuery();
+  if (!adminIds.includes(ctx.from.id)) return;
+  await sendAdminDailyDashboard(ctx);
+});
+
+async function sendAdminDailyDashboard(ctx) {
+  try {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const weekStart  = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay()).getTime();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    const sevenDaysAgo = now.getTime() - (7 * 24 * 60 * 60 * 1000);
+
+    const VPN_TYPES = '"ssh","vmess","vless","trojan","shadowsocks","udp_http","zivpn"';
+    const NOT_TRIAL = 'reference_id NOT LIKE "account-trial-%"';
+
+    const [
+      txTodayRow, txWeekRow, txMonthRow,
+      topupTodayRow, topupMonthRow,
+      totalUserRow, activeUserRow,
+      serverRow
+    ] = await Promise.all([
+      new Promise(r => db.get(`SELECT COUNT(*) as c, COALESCE(SUM(amount),0) as total FROM transactions WHERE timestamp>=? AND type IN (${VPN_TYPES}) AND ${NOT_TRIAL}`, [todayStart], (e, row) => r(row))),
+      new Promise(r => db.get(`SELECT COUNT(*) as c FROM transactions WHERE timestamp>=? AND type IN (${VPN_TYPES}) AND ${NOT_TRIAL}`, [weekStart], (e, row) => r(row))),
+      new Promise(r => db.get(`SELECT COUNT(*) as c FROM transactions WHERE timestamp>=? AND type IN (${VPN_TYPES}) AND ${NOT_TRIAL}`, [monthStart], (e, row) => r(row))),
+      new Promise(r => db.get(`SELECT COALESCE(SUM(amount),0) as total FROM transactions WHERE timestamp>=? AND type='deposit'`, [todayStart], (e, row) => r(row))),
+      new Promise(r => db.get(`SELECT COALESCE(SUM(amount),0) as total FROM transactions WHERE timestamp>=? AND type='deposit'`, [monthStart], (e, row) => r(row))),
+      new Promise(r => db.get('SELECT COUNT(*) as c FROM users', [], (e, row) => r(row))),
+      new Promise(r => db.get(`SELECT COUNT(DISTINCT user_id) as c FROM transactions WHERE timestamp>=? AND type IN (${VPN_TYPES})`, [sevenDaysAgo], (e, row) => r(row))),
+      new Promise(r => db.all('SELECT nama_server, total_create_akun, batas_create_akun FROM Server ORDER BY nama_server COLLATE NOCASE ASC', [], (e, rows) => r(rows || []))),
+    ]).catch(() => Array(8).fill(null));
+
+    const txToday   = txTodayRow  ? (txTodayRow.c  || 0) : 0;
+    const incToday  = txTodayRow  ? (txTodayRow.total || 0) : 0;
+    const txWeek    = txWeekRow   ? (txWeekRow.c   || 0) : 0;
+    const txMonth   = txMonthRow  ? (txMonthRow.c  || 0) : 0;
+    const topToday  = topupTodayRow ? (topupTodayRow.total || 0) : 0;
+    const topMonth  = topupMonthRow ? (topupMonthRow.total || 0) : 0;
+    const totalUser = totalUserRow  ? (totalUserRow.c  || 0) : 0;
+    const activeUser = activeUserRow ? (activeUserRow.c || 0) : 0;
+    const servers   = Array.isArray(serverRow) ? serverRow : [];
+
+    const serverLines = servers.slice(0, 8).map(s => {
+      const batas = Number(s.batas_create_akun || 0);
+      const total = Number(s.total_create_akun || 0);
+      const pct = batas > 0 ? Math.round((total / batas) * 100) : 0;
+      const bar = batas > 0 ? `${total}/${batas} (${pct}%)` : `${total}/∞`;
+      return `<code>├ ${(s.nama_server || '-').slice(0, 18).padEnd(18)} : ${bar}</code>`;
+    }).join('\n');
+
+    const timeStr = now.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
+
+    const text =
+      `📊 <b>DASHBOARD HARIAN</b>\n` +
+      `<code>──────────────────────</code>\n` +
+      `🕐 <i>${timeStr}</i>\n\n` +
+      `🛒 <b>Transaksi Akun VPN</b>\n` +
+      `<code>├ Hari ini  : ${txToday} akun (Rp ${Number(incToday).toLocaleString('id-ID')})</code>\n` +
+      `<code>├ Minggu ini: ${txWeek} akun</code>\n` +
+      `<code>└ Bulan ini : ${txMonth} akun</code>\n\n` +
+      `💰 <b>Top Up Masuk</b>\n` +
+      `<code>├ Hari ini  : Rp ${Number(topToday).toLocaleString('id-ID')}</code>\n` +
+      `<code>└ Bulan ini : Rp ${Number(topMonth).toLocaleString('id-ID')}</code>\n\n` +
+      `👥 <b>User</b>\n` +
+      `<code>├ Total     : ${totalUser} user</code>\n` +
+      `<code>└ Aktif 7hr : ${activeUser} user</code>\n\n` +
+      (serverLines ? `🖥️ <b>Kapasitas Server</b>\n${serverLines}\n\n` : '') +
+      `<i>Gunakan /summary kapan saja untuk refresh.</i>`;
+
+    const replyMarkup = {
+      inline_keyboard: [[{ text: '🔄 Refresh', callback_data: 'admin_daily_dashboard' }, { text: '🔙 Menu Admin', callback_data: 'admin_menu' }]]
+    };
+
+    if (ctx.updateType === 'callback_query') {
+      await ctx.editMessageText(text, { parse_mode: 'HTML', reply_markup: replyMarkup })
+        .catch(async () => { await ctx.reply(text, { parse_mode: 'HTML', reply_markup: replyMarkup }); });
+    } else {
+      await ctx.reply(text, { parse_mode: 'HTML', reply_markup: replyMarkup });
+    }
+  } catch (err) {
+    logger.error('sendAdminDailyDashboard error: ' + err.message);
+    await ctx.reply('❌ Gagal memuat dashboard. Coba lagi.');
+  }
+}
 
 //////////
 bot.command('addserver_reseller', async (ctx) => {
@@ -5161,18 +5281,19 @@ async function handleServiceAction(ctx, action) {
 }
 async function sendAdminMenu(ctx) {
   const adminKeyboard = [
-    [{ text: ' Server', callback_data: 'admin_menu_server' }],
-    [{ text: ' Saldo', callback_data: 'admin_menu_saldo' }],
-    [{ text: ' Reseller', callback_data: 'admin_menu_reseller' }],
-    [{ text: ' Tools', callback_data: 'admin_menu_tools' }],
-    [{ text: ' Setting API Keys', callback_data: 'admin_setting_api' }],
-    [{ text: ' Markup Global Produk', callback_data: 'admin_markup_global_menu' }],
+    [{ text: '🖥️ Server', callback_data: 'admin_menu_server' }],
+    [{ text: '💰 Saldo', callback_data: 'admin_menu_saldo' }],
+    [{ text: '🤝 Reseller', callback_data: 'admin_menu_reseller' }],
+    [{ text: '🔧 Tools', callback_data: 'admin_menu_tools' }],
+    [{ text: '⚙️ Setting API Keys', callback_data: 'admin_setting_api' }],
+    [{ text: '📈 Markup Global Produk', callback_data: 'admin_markup_global_menu' }],
     [{ text: '💾 Backup & Restore Saldo', callback_data: 'menu_backup_saldo' }],
-    [{ text: ' Kembali', callback_data: 'send_main_menu' }]
+    [{ text: '📊 Dashboard Harian', callback_data: 'admin_daily_dashboard' }],
+    [{ text: '🔙 Kembali', callback_data: 'send_main_menu' }]
   ];
 
   try {
-    await ctx.editMessageText('* MENU ADMIN*', {
+    await ctx.editMessageText('👑 *MENU ADMIN*', {
       parse_mode: 'Markdown',
       reply_markup: {
         inline_keyboard: adminKeyboard
@@ -5182,7 +5303,7 @@ async function sendAdminMenu(ctx) {
   } catch (error) {
     if (error.response && error.response.error_code === 400) {
       try {
-        await ctx.reply('* MENU ADMIN*', {
+        await ctx.reply('👑 *MENU ADMIN*', {
           parse_mode: 'Markdown',
           reply_markup: {
             inline_keyboard: adminKeyboard
@@ -5399,48 +5520,40 @@ bot.action('admin_markup_global_menu', async (ctx) => {
 
 async function sendAdminServerMenu(ctx) {
   const keyboard = [
-    [{ text: ' Add Server', callback_data: 'addserver' }],
-        [
-      { text: ' Kelola Server', callback_data: 'admin_manage_server' }
-    ],
-    [{ text: ' Cek Bandwidth Server', callback_data: 'admin_check_bandwidth_servers' }],
-        [
-      { text: 'Edit Nama', callback_data: 'nama_server_edit' }
+    [{ text: '➕ Add Server', callback_data: 'addserver' }],
+    [{ text: '⚙️ Kelola Server', callback_data: 'admin_manage_server' }],
+    [{ text: '📡 Cek Bandwidth Server', callback_data: 'admin_check_bandwidth_servers' }],
+    [{ text: '✏️ Edit Nama', callback_data: 'nama_server_edit' }],
+    [
+      { text: '💵 Harga User 1IP', callback_data: 'editserver_harga_1ip' },
+      { text: '💵 Harga User 2IP', callback_data: 'editserver_harga_2ip' }
     ],
     [
-      { text: 'Edit Harga User 1IP', callback_data: 'editserver_harga_1ip' },
-      { text: 'Edit Harga User 2IP', callback_data: 'editserver_harga_2ip' }
+      { text: '💰 Harga Reseller 1IP', callback_data: 'editserver_harga_reseller_1ip' },
+      { text: '💰 Harga Reseller 2IP', callback_data: 'editserver_harga_reseller_2ip' }
+    ],
+    [{ text: '⏱️ Atur Harga Masa Aktif', callback_data: 'editserver_price_duration' }],
+    [
+      { text: '🌐 Edit Domain', callback_data: 'editserver_domain' },
+      { text: '🔑 Edit Auth', callback_data: 'editserver_auth' }
     ],
     [
-      { text: 'Edit Harga Reseller 1IP', callback_data: 'editserver_harga_reseller_1ip' },
-      { text: 'Edit Harga Reseller 2IP', callback_data: 'editserver_harga_reseller_2ip' }
+      { text: '📦 Edit Quota', callback_data: 'editserver_quota' },
+      { text: '🔒 Edit Limit IP', callback_data: 'editserver_limit_ip' }
     ],
     [
-      { text: ' Atur Harga Masa Aktif', callback_data: 'editserver_price_duration' }
+      { text: '📋 List Server', callback_data: 'listserver' },
+      { text: 'ℹ️ Detail Server', callback_data: 'detailserver' }
     ],
+    [{ text: '🔧 Atur Limit IP Paket', callback_data: 'editserver_iplimit_rules' }],
     [
-      { text: ' Edit Domain', callback_data: 'editserver_domain' },
-      { text: ' Edit Auth', callback_data: 'editserver_auth' }
+      { text: '🗑️ Hapus Server', callback_data: 'deleteserver' },
+      { text: '♻️ Reset Server', callback_data: 'resetdb' }
     ],
-    [
-      { text: ' Edit Quota', callback_data: 'editserver_quota' },
-      { text: ' Edit Limit IP', callback_data: 'editserver_limit_ip' }
-    ],
-    [
-      { text: ' List Server', callback_data: 'listserver' },
-      { text: 'ℹ Detail Server', callback_data: 'detailserver' }
-    ],
-    [
-      { text: ' Atur Limit IP Paket', callback_data: 'editserver_iplimit_rules' }
-    ],
-    [
-      { text: ' Hapus Server', callback_data: 'deleteserver' },
-      { text: ' Reset Server', callback_data: 'resetdb' }
-    ],
-    [{ text: ' Kembali', callback_data: 'admin_menu' }]
+    [{ text: '🔙 Kembali', callback_data: 'admin_menu' }]
   ];
 
-  await ctx.editMessageText('* MENU SERVER*', {
+  await ctx.editMessageText('🖥️ *MENU SERVER*', {
     parse_mode: 'Markdown',
     reply_markup: { inline_keyboard: keyboard }
   });
@@ -5455,23 +5568,23 @@ async function sendAdminSaldoMenu(ctx) {
   const scNexusLabel = scNexusEnabled ? ' Menu SC 1FORCR NEXUS: Aktif' : ' Menu SC 1FORCR NEXUS: Nonaktif';
   const keyboard = [
     [
-      { text: ' Tambah Saldo', callback_data: 'tambah_saldo' },
-      { text: ' Hapus Saldo', callback_data: 'hapus_saldo' }
+      { text: '➕ Tambah Saldo', callback_data: 'tambah_saldo' },
+      { text: '➖ Hapus Saldo', callback_data: 'hapus_saldo' }
     ],
     [
-      { text: ' Lihat Saldo User', callback_data: 'cek_saldo_user' },
-      { text: ' Upload QRIS', callback_data: 'upload_qris' }
+      { text: '👁️ Lihat Saldo User', callback_data: 'cek_saldo_user' },
+      { text: '🖼️ Upload QRIS', callback_data: 'upload_qris' }
     ],
-    [{ text: ' Bonus Topup', callback_data: 'bonus_topup_menu' }],
-    [{ text: 'Pendapatan Hari Ini & Kemarin', callback_data: 'admin_income_summary' }],
-    [{ text: 'Pendapatan Topup Bulanan', callback_data: 'admin_income_monthly_non_reseller' }],
+    [{ text: '🎁 Bonus Topup', callback_data: 'bonus_topup_menu' }],
+    [{ text: '📈 Pendapatan Hari Ini & Kemarin', callback_data: 'admin_income_summary' }],
+    [{ text: '📊 Pendapatan Topup Bulanan', callback_data: 'admin_income_monthly_non_reseller' }],
     [{ text: scNexusLabel, callback_data: 'toggle_sc_nexus_menu' }],
     [{ text: autoLabel, callback_data: 'toggle_topup_auto' }],
     [{ text: manualLabel, callback_data: 'toggle_topup_manual' }],
-    [{ text: ' Kembali', callback_data: 'admin_menu' }]
+    [{ text: '🔙 Kembali', callback_data: 'admin_menu' }]
   ];
 
-  await ctx.editMessageText('* MENU SALDO*', {
+  await ctx.editMessageText('💰 *MENU SALDO*', {
     parse_mode: 'Markdown',
     reply_markup: { inline_keyboard: keyboard }
   });
@@ -5480,16 +5593,16 @@ async function sendAdminSaldoMenu(ctx) {
 async function sendAdminResellerMenu(ctx) {
   const keyboard = [
     [
-      { text: ' Tambah Reseller', callback_data: 'add_reseller_menu' },
-      { text: ' Hapus Reseller', callback_data: 'del_reseller_menu' }
+      { text: '➕ Tambah Reseller', callback_data: 'add_reseller_menu' },
+      { text: '➖ Hapus Reseller', callback_data: 'del_reseller_menu' }
     ],
-    [{ text: ' Syarat Reseller', callback_data: 'reseller_terms_menu' }],
-    [{ text: ' Trigger Cek Syarat', callback_data: 'reseller_terms_trigger' }],
-    [{ text: ' Restore Reseller', callback_data: 'reseller_restore' }],
-    [{ text: ' Kembali', callback_data: 'admin_menu' }]
+    [{ text: '📋 Syarat Reseller', callback_data: 'reseller_terms_menu' }],
+    [{ text: '🔍 Trigger Cek Syarat', callback_data: 'reseller_terms_trigger' }],
+    [{ text: '♻️ Restore Reseller', callback_data: 'reseller_restore' }],
+    [{ text: '🔙 Kembali', callback_data: 'admin_menu' }]
   ];
 
-  await ctx.editMessageText('* MENU RESELLER*', {
+  await ctx.editMessageText('🤝 *MENU RESELLER*', {
     parse_mode: 'Markdown',
     reply_markup: { inline_keyboard: keyboard }
   });
@@ -5518,8 +5631,8 @@ bot.action('del_reseller_menu', async (ctx) => {
 async function sendAdminToolsMenu(ctx) {
   const maintenance = loadMaintenanceSetting();
   const maintenanceLabel = maintenance.enabled
-    ? ` Maintenance: ON (${maintenance.estimate || 'estimasi belum diisi'})`
-    : ' Maintenance: OFF';
+    ? `🔴 Maintenance: ON (${maintenance.estimate || 'estimasi belum diisi'})`
+    : '🟢 Maintenance: OFF';
   const testMenuEnabled = loadTestMenuSetting();
   const testMenuLabel = testMenuEnabled ? '🧪 Test Transaksi : ON' : '🧪 Test Transaksi : OFF';
   const joinChannelSetting = loadJoinChannelSetting();
@@ -5527,28 +5640,28 @@ async function sendAdminToolsMenu(ctx) {
     ? '📢 Wajib Join Channel: ON'
     : '📢 Wajib Join Channel: OFF';
   const keyboard = [
-    [{ text: ' Help Admin', callback_data: 'helpadmin_menu' }],
-    [{ text: ' Kelola Download Config', callback_data: 'admin_download_config_menu' }],
-    [{ text: ' Broadcast Kirim Pesan', callback_data: 'admin_broadcast_menu' }],
-    [{ text: 'Broadcast Polling', callback_data: 'admin_broadcast_poll_menu' }],
-    [{ text: ' Restore Database', callback_data: 'restore_db_menu' }],
-    [{ text: 'Backup Database Sekarang', callback_data: 'auto_backup_now' }],
-    [{ text: 'Sync Server Sekarang', callback_data: 'admin_sync_server_now' }],
-    [{ text: 'Atur Auto Sync Server', callback_data: 'admin_sync_server_toggle_menu' }],
-    [{ text: ' Notif Create (Bot)', callback_data: 'notif_settings_menu' }],
-    [{ text: ' Webhook Multi-Login SC', callback_data: 'sc_webhook_settings_menu' }],
-    [{ text: ' Setup Nginx Webhook', callback_data: 'nginx_webhook_menu' }],
-    [{ text: ' Notif BW Server', callback_data: 'bw_notif_settings_menu' }],
-    [{ text: ' Setting Payment Gateway', callback_data: 'payment_gateway_settings_menu' }],
+    [{ text: '❓ Help Admin', callback_data: 'helpadmin_menu' }],
+    [{ text: '📥 Kelola Download Config', callback_data: 'admin_download_config_menu' }],
+    [{ text: '📣 Broadcast Kirim Pesan', callback_data: 'admin_broadcast_menu' }],
+    [{ text: '📊 Broadcast Polling', callback_data: 'admin_broadcast_poll_menu' }],
+    [{ text: '🗄️ Restore Database', callback_data: 'restore_db_menu' }],
+    [{ text: '💾 Backup Database Sekarang', callback_data: 'auto_backup_now' }],
+    [{ text: '🔄 Sync Server Sekarang', callback_data: 'admin_sync_server_now' }],
+    [{ text: '⏱️ Atur Auto Sync Server', callback_data: 'admin_sync_server_toggle_menu' }],
+    [{ text: '🔔 Notif Create (Bot)', callback_data: 'notif_settings_menu' }],
+    [{ text: '🔗 Webhook Multi-Login SC', callback_data: 'sc_webhook_settings_menu' }],
+    [{ text: '🌐 Setup Nginx Webhook', callback_data: 'nginx_webhook_menu' }],
+    [{ text: '📡 Notif BW Server', callback_data: 'bw_notif_settings_menu' }],
+    [{ text: '💳 Setting Payment Gateway', callback_data: 'payment_gateway_settings_menu' }],
     [{ text: maintenanceLabel, callback_data: 'maintenance_menu' }],
     [{ text: joinChannelLabel, callback_data: 'join_channel_menu' }],
-    [{ text: ' Kontak Admin', callback_data: 'admin_contact_settings_menu' }],
+    [{ text: '📞 Kontak Admin', callback_data: 'admin_contact_settings_menu' }],
     [{ text: testMenuLabel, callback_data: 'toggle_test_menu' }],
     [{ text: '📋 Lihat Antrian Pre-Order', callback_data: 'admin_preorder_list' }],
-    [{ text: ' Kembali', callback_data: 'admin_menu' }]
+    [{ text: '🔙 Kembali', callback_data: 'admin_menu' }]
   ];
 
-  await ctx.editMessageText('* MENU TOOLS*', {
+  await ctx.editMessageText('🛠️ *MENU TOOLS*', {
     parse_mode: 'Markdown',
     reply_markup: { inline_keyboard: keyboard }
   });
@@ -5765,7 +5878,7 @@ async function sendAdminManageServerMenu(ctx) {
     [{ text: ' Kembali', callback_data: 'admin_menu_server' }]
   ];
 
-  await ctx.editMessageText('* KELOLA SERVER*', {
+  await ctx.editMessageText('⚙️ *KELOLA SERVER*', {
     parse_mode: 'Markdown',
     reply_markup: { inline_keyboard: keyboard }
   });
@@ -18680,14 +18793,17 @@ async function processSuccessfulPayment(deposit, uniqueCode) {
             // 7. NOTIFIKASI KE GRUP ADMIN
             if (GROUP_ID_NUM) {
               try {
+                const walletLabel = isAkrabWallet ? '🤝 Tembak Kuota' : '🔑 VPN';
+                const timeStr = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
                 await bot.telegram.sendMessage(
                   GROUP_ID_NUM,
-                  ` *TOP-UP BERHASIL*\n\n` +
-                  ` User: \`${deposit.userId}\`\n` +
-                  ` Amount: Rp ${deposit.originalAmount.toLocaleString('id-ID')}\n` +
-                  (bonusAmount > 0 ? ` Bonus: Rp ${bonusAmount.toLocaleString('id-ID')}\n` : '') +
-                  ` New Balance: Rp ${currentBalance.toLocaleString('id-ID')}\n` +
-                  `🆔 Ref: ${deposit.referenceId.substring(0, 12)}...`,
+                  `💰 *TOP-UP BERHASIL*\n\n` +
+                  `👤 User   : \`${deposit.userId}\`\n` +
+                  `💳 Wallet : ${walletLabel}\n` +
+                  `💵 Nominal: Rp ${deposit.originalAmount.toLocaleString('id-ID')}\n` +
+                  (bonusAmount > 0 ? `🎁 Bonus  : Rp ${bonusAmount.toLocaleString('id-ID')}\n` : '') +
+                  `💼 Saldo  : Rp ${currentBalance.toLocaleString('id-ID')}\n` +
+                  `🕐 Waktu  : ${timeStr}`,
                   { parse_mode: 'Markdown' }
                 );
               } catch (e) {
@@ -19682,6 +19798,81 @@ schedule.scheduleJob('auto_backup_saldo_daily', autoBackupSaldoRule, () => {
 });
 
 logger.info('[AutoBackupSaldo] Scheduler aktif — setiap hari jam 02:00 WIB');
+
+// ── Notifikasi H-3 Expired Akun (setiap hari jam 09:00 WIB) ─────────────────
+async function runExpiryNotification() {
+  try {
+    const now = Date.now();
+    const threeDaysMs = 3 * 24 * 60 * 60 * 1000;
+    const windowStart = now;
+    const windowEnd   = now + threeDaysMs;
+
+    // Ambil akun yang expired dalam 3 hari ke depan, belum pernah dinotif hari ini
+    const accounts = await new Promise((resolve, reject) =>
+      db.all(
+        `SELECT DISTINCT user_id, type, username, server_name, expires_at
+         FROM accounts
+         WHERE expires_at >= ? AND expires_at < ?
+         ORDER BY expires_at ASC`,
+        [windowStart, windowEnd],
+        (err, rows) => err ? reject(err) : resolve(rows || [])
+      )
+    );
+
+    if (!accounts.length) return;
+
+    // Kelompokkan per user
+    const byUser = {};
+    for (const acc of accounts) {
+      if (!byUser[acc.user_id]) byUser[acc.user_id] = [];
+      byUser[acc.user_id].push(acc);
+    }
+
+    let sent = 0;
+    for (const [userId, accs] of Object.entries(byUser)) {
+      try {
+        const lines = accs.map(a => {
+          const sisaHari = Math.ceil((a.expires_at - now) / (24 * 60 * 60 * 1000));
+          const expDate = new Date(a.expires_at).toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' });
+          return `• ${String(a.type || '-').toUpperCase()} <code>${a.username}</code> — ${sisaHari} hari lagi (${expDate})`;
+        }).join('\n');
+
+        const msg =
+          `⚠️ <b>Pengingat: Akun Hampir Expired</b>\n\n` +
+          `Akun VPN kamu akan expired dalam 3 hari:\n\n` +
+          `${lines}\n\n` +
+          `Segera perpanjang agar tidak terputus.`;
+
+        await bot.telegram.sendMessage(Number(userId), msg, {
+          parse_mode: 'HTML',
+          reply_markup: {
+            inline_keyboard: [[{ text: '🔄 Perpanjang Sekarang', callback_data: 'service_renew' }]]
+          }
+        });
+        sent++;
+      } catch (e) {
+        logger.warn(`[ExpiryNotif] Gagal kirim ke user ${userId}: ${e.message}`);
+      }
+    }
+
+    if (sent > 0) logger.info(`[ExpiryNotif] Notif terkirim ke ${sent} user`);
+  } catch (err) {
+    logger.error('[ExpiryNotif] Error: ' + (err && err.message ? err.message : err));
+  }
+}
+
+const expiryNotifRule = new schedule.RecurrenceRule();
+expiryNotifRule.tz = 'Asia/Jakarta';
+expiryNotifRule.hour = 9;
+expiryNotifRule.minute = 0;
+
+schedule.scheduleJob('expiry_notif_daily', expiryNotifRule, () => {
+  runExpiryNotification().catch((err) => {
+    logger.error('[ExpiryNotif] Uncaught: ' + (err && err.message ? err.message : err));
+  });
+});
+
+logger.info('[ExpiryNotif] Scheduler aktif — setiap hari jam 09:00 WIB');
 
 const dbFile = path.join(__dirname, "sellvpn.db");
 const autoBackupDir = path.join(__dirname, "auto_backup");
