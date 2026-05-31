@@ -3915,7 +3915,7 @@ bot.command('debugakrab', async (ctx) => {
       // Tampilkan sample mentah jika filter tidak ketemu
       const sample = (products || []).slice(0, 3);
       return ctx.reply(
-        `❌ Tidak ada produk ${grup.toUpperCase()}.\n\nSample 3 produk mentah:\n<pre>${JSON.stringify(sample, null, 2).slice(0, 2000)}</pre>`,
+        `❌ Tidak ada produk ${grup.toUpperCase()}.\n\nTotal produk diterima: ${(products || []).length}\nSample 3 produk mentah:\n<pre>${JSON.stringify(sample, null, 2).slice(0, 2000)}</pre>\n\nKetik /debugakrabraw untuk lihat response API mentah.`,
         { parse_mode: 'HTML' }
       );
     }
@@ -3931,6 +3931,28 @@ bot.command('debugakrab', async (ctx) => {
     await ctx.reply(`<b>Debug ${grup.toUpperCase()} (${list.length} produk)</b>\nKetik /debugakrab xda untuk lihat XDA\n\n${lines.join('\n')}`, { parse_mode: 'HTML' });
   } catch (err) {
     await ctx.reply('Error: ' + err.message);
+  }
+});
+
+// Debug: tampilkan response HTTP MENTAH dari endpoint list_product
+bot.command('debugakrabraw', async (ctx) => {
+  if (!adminIds.includes(ctx.from.id)) return;
+  try {
+    const axios = require('axios');
+    const url = `${KHFY_ENDPOINT}/api_v2/list_product`;
+    const resp = await axios.get(url, { params: { api_key: KHFY_API_KEY }, timeout: 20000, validateStatus: () => true });
+    const data = resp.data;
+    let info = `<b>RAW list_product</b>\n`;
+    info += `URL: <code>${KHFY_ENDPOINT}/api_v2/list_product</code>\n`;
+    info += `HTTP Status: ${resp.status}\n`;
+    info += `Tipe data: ${Array.isArray(data) ? 'array' : typeof data}\n`;
+    if (data && typeof data === 'object' && !Array.isArray(data)) {
+      info += `Keys: ${Object.keys(data).join(', ')}\n`;
+    }
+    info += `\n<pre>${JSON.stringify(data, null, 2).slice(0, 3000)}</pre>`;
+    await ctx.reply(info, { parse_mode: 'HTML' });
+  } catch (err) {
+    await ctx.reply('Error: ' + (err.message || err) + (err.response ? `\nHTTP ${err.response.status}: ${JSON.stringify(err.response.data).slice(0, 500)}` : ''));
   }
 });
 
