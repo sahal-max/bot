@@ -22,6 +22,8 @@ const testMenuPath = path.join(__dirname, 'test_menu.json');
 const defaultTestMenu = { enabled: true };
 const maintenancePath = path.join(__dirname, 'maintenance_mode.json');
 const defaultMaintenance = { enabled: false, estimate: '' };
+const joinChannelPath = path.join(__dirname, 'join_channel.json');
+const defaultJoinChannel = { enabled: false, channel_url: '', channel_id: '' };
 const varsPath = path.join(__dirname, '.vars.json');
 
 function loadResellerTerms() {
@@ -169,6 +171,47 @@ function saveMaintenanceSetting(next) {
   };
   fs.writeFileSync(maintenancePath, JSON.stringify(payload, null, 2), 'utf8');
   return payload;
+}
+
+function loadJoinChannelSetting() {
+  try {
+    const raw = fs.readFileSync(joinChannelPath, 'utf8');
+    const parsed = JSON.parse(raw);
+    return {
+      enabled: !!parsed.enabled,
+      channel_url: String(parsed.channel_url || '').trim(),
+      channel_id: String(parsed.channel_id || '').trim()
+    };
+  } catch (err) {
+    return { ...defaultJoinChannel };
+  }
+}
+
+function saveJoinChannelSetting(next) {
+  const payload = {
+    enabled: !!next.enabled,
+    channel_url: String(next.channel_url || '').trim(),
+    channel_id: String(next.channel_id || '').trim()
+  };
+  fs.writeFileSync(joinChannelPath, JSON.stringify(payload, null, 2), 'utf8');
+  return payload;
+}
+
+async function checkUserJoinedChannel(userId) {
+  const setting = loadJoinChannelSetting();
+  if (!setting.enabled || !setting.channel_id) return true;
+  try {
+    const channelId = setting.channel_id.startsWith('@')
+      ? setting.channel_id
+      : (setting.channel_id.startsWith('-') ? Number(setting.channel_id) : '@' + setting.channel_id);
+    const member = await bot.telegram.getChatMember(channelId, userId);
+    const status = member?.status || '';
+    return ['member', 'administrator', 'creator'].includes(status);
+  } catch (err) {
+    logger.warn(`checkUserJoinedChannel error: ${err.message}`);
+    // Jika gagal cek (bot bukan admin channel, dll), loloskan user
+    return true;
+  }
 }
 
 function formatRupiah(amount) {
@@ -430,7 +473,6 @@ const {
 
 const dbH = require('./modules/db_helpers');
 const wallet = require('./modules/wallet');
-const ppobModule = require('./modules/ppob');
 const akrabModule = require('./modules/akrab');
 const smmModule = require('./modules/smm');
 
@@ -531,11 +573,6 @@ let WEBHOOK_URL = String(vars.WEBHOOK_URL || '').trim();
 let FAYU_ENDPOINT    = String(vars.FAYU_ENDPOINT    || 'https://fayupedia.id').trim();
 let FAYU_API_ID      = String(vars.FAYU_API_ID      || '').trim();
 let FAYU_API_KEY     = String(vars.FAYU_API_KEY     || '').trim();
-
-let HIDEPULSA_BASE_URL = String(vars.HIDEPULSA_BASE_URL || 'https://app.hidepulsa.com').trim();
-let HIDEPULSA_API_KEY  = String(vars.HIDEPULSA_API_KEY  || '').trim();
-let HIDEPULSA_PASSWORD = String(vars.HIDEPULSA_PASSWORD || '').trim();
-let XL_CIRCLE_WEBHOOK_SECRET = String(vars.XL_CIRCLE_WEBHOOK_SECRET || '').trim();
 
 let KHFY_ENDPOINT    = String(vars.KHFY_ENDPOINT    || 'https://panel.khfy-store.com').trim();
 let KHFY_API_KEY     = String(vars.KHFY_API_KEY     || '').trim();
@@ -1097,6 +1134,58 @@ bot.use(async (ctx, next) => {
   return;
 });
 
+// ── Middleware: Wajib Join Channel ──────────────────────────────────────────
+bot.use(async (ctx, next) => {
+  const userId = Number(ctx.from?.id || 0);
+  if (!userId) return next();
+
+  // Admin selalu lolos
+  const isAdminUser = Array.isArray(adminIds) ? adminIds.includes(userId) : Number(adminIds) === userId;
+  if (isAdminUser) return next();
+
+  const setting = loadJoinChannelSetting();
+  if (!setting.enabled || !setting.channel_id) return next();
+
+  // Tombol konfirmasi join — langsung cek ulang
+  const data = ctx.callbackQuery?.data || '';
+  if (data === 'check_join_channel') {
+    const joined = await checkUserJoinedChannel(userId);
+    if (joined) {
+      await ctx.answerCbQuery('✅ Terima kasih sudah join!', { show_alert: false }).catch(() => {});
+      try { await ctx.deleteMessage(); } catch (_) {}
+      return sendMainMenu(ctx);
+    } else {
+      await ctx.answerCbQuery('❌ Kamu belum join channel!', { show_alert: true }).catch(() => {});
+      return;
+    }
+  }
+
+  const joined = await checkUserJoinedChannel(userId);
+  if (joined) return next();
+
+  // Blokir dan tampilkan pesan wajib join
+  const channelUrl = setting.channel_url || 'https://t.me/';
+  const keyboard = {
+    inline_keyboard: [
+      [{ text: '📢 Join Channel', url: channelUrl }],
+      [{ text: '✅ Sudah Join, Konfirmasi', callback_data: 'check_join_channel' }]
+    ]
+  };
+  const msg =
+    '⚠️ *Wajib Join Channel*\n\n' +
+    'Untuk menggunakan bot ini, kamu harus join channel kami terlebih dahulu.\n\n' +
+    '1. Klik tombol *Join Channel* di bawah\n' +
+    '2. Setelah join, klik *Sudah Join, Konfirmasi*';
+
+  if (ctx.updateType === 'callback_query') {
+    await ctx.answerCbQuery('Kamu harus join channel dulu!', { show_alert: true }).catch(() => {});
+    await ctx.reply(msg, { parse_mode: 'Markdown', reply_markup: keyboard }).catch(() => {});
+  } else {
+    await ctx.reply(msg, { parse_mode: 'Markdown', reply_markup: keyboard }).catch(() => {});
+  }
+  return;
+});
+
 function getScEventBearerToken(req) {
   const auth = String(req.headers?.authorization || '').trim();
   if (/^Bearer\s+/i.test(auth)) return auth.replace(/^Bearer\s+/i, '').trim();
@@ -1203,102 +1292,6 @@ app.post('/sc1forcr/events/multi-login', async (req, res) => {
     return res.json({ ok: true });
   } catch (err) {
     logger.error(' Gagal proses webhook multi-login:', err.message);
-    return res.status(500).json({ ok: false, message: 'internal error' });
-  }
-});
-
-// ── Webhook HidePulsa PPOB (HMAC SHA-256) ──────────────────────────────────
-// Spec PRD 12.2: X-Webhook-Signature: v1={hex}, timestamp window ≤ 300 detik
-app.post('/webhook/hidepulsa', async (req, res) => {
-  try {
-    // Verifikasi HMAC SHA-256 jika secret sudah diset
-    if (XL_CIRCLE_WEBHOOK_SECRET) {
-      const sigHeader = String(req.headers['x-webhook-signature'] || '').trim();
-      const tsHeader  = String(req.headers['x-webhook-timestamp'] || req.headers['x-timestamp'] || '').trim();
-
-      // Cek timestamp window 300 detik
-      if (tsHeader) {
-        const ts = Number(tsHeader);
-        const diffSec = Math.abs(Date.now() / 1000 - ts);
-        if (diffSec > 300) {
-          logger.warn(' Webhook HidePulsa: timestamp expired (' + Math.round(diffSec) + 's)');
-          return res.status(401).json({ ok: false, message: 'timestamp expired' });
-        }
-      }
-
-      // Verifikasi HMAC: signature = HMAC-SHA256(secret, timestamp + '.' + rawBody)
-      if (sigHeader) {
-        const rawBody = JSON.stringify(req.body || {});
-        const payload = tsHeader ? (tsHeader + '.' + rawBody) : rawBody;
-        const expected = require('crypto')
-          .createHmac('sha256', XL_CIRCLE_WEBHOOK_SECRET)
-          .update(payload)
-          .digest('hex');
-        const expectedFull = 'v1=' + expected;
-
-        // Constant-time comparison
-        const sigToCheck = sigHeader.startsWith('v1=') ? sigHeader : ('v1=' + sigHeader);
-        const bufA = Buffer.from(expectedFull);
-        const bufB = Buffer.from(sigToCheck);
-        const valid = bufA.length === bufB.length &&
-          require('crypto').timingSafeEqual(bufA, bufB);
-
-        if (!valid) {
-          logger.warn(' Webhook HidePulsa: HMAC tidak cocok');
-          return res.status(401).json({ ok: false, message: 'invalid signature' });
-        }
-      } else {
-        // Fallback: cek secret string biasa di header/body
-        const incoming = String(
-          req.headers['x-webhook-secret'] ||
-          req.headers['x-hidepulsa-secret'] ||
-          req.body?.secret || ''
-        ).trim();
-        if (incoming !== XL_CIRCLE_WEBHOOK_SECRET) {
-          logger.warn(' Webhook HidePulsa: secret tidak cocok');
-          return res.status(401).json({ ok: false, message: 'unauthorized' });
-        }
-      }
-    }
-
-    const body = req.body || {};
-    const orderId   = String(body.order_id || body.transaction_id || body.ref_id || '').trim();
-    const rawStatus = String(body.status || body.state || '').trim().toLowerCase();
-
-    if (!orderId) {
-      return res.status(400).json({ ok: false, message: 'order_id required' });
-    }
-
-    const statusMap = {
-      'success': 'success', 'sukses': 'success', 'completed': 'success',
-      'failed': 'failed', 'gagal': 'failed', 'error': 'failed',
-      'pending': 'pending', 'processing': 'processing',
-    };
-    const status = statusMap[rawStatus] || rawStatus || 'unknown';
-
-    await dbH.updatePpobOrderStatus(db, orderId, status);
-    logger.info(` Webhook HidePulsa: order ${orderId} → ${status}`);
-
-    const order = await new Promise((resolve) => {
-      db.get('SELECT * FROM ppob_orders WHERE order_id = ?', [orderId], (err, row) => resolve(row || null));
-    });
-
-    if (order && order.user_id) {
-      const emoji = status === 'success' ? '' : status === 'failed' ? '' : '';
-      const label = status === 'success' ? 'Berhasil' : status === 'failed' ? 'Gagal' : 'Diproses';
-      const msg =
-        `${emoji} <b>Update Transaksi PPOB</b>\n\n` +
-        `Order ID : <code>${orderId}</code>\n` +
-        `Produk   : ${order.product_code || '-'}\n` +
-        `Tujuan   : ${order.target || '-'}\n` +
-        `Nominal  : Rp ${Number(order.amount || 0).toLocaleString('id-ID')}\n` +
-        `Status   : <b>${label}</b>`;
-      await bot.telegram.sendMessage(order.user_id, msg, { parse_mode: 'HTML' }).catch(() => {});
-    }
-
-    return res.json({ ok: true });
-  } catch (err) {
-    logger.error(' Webhook HidePulsa error: ' + (err && err.message ? err.message : err));
     return res.status(500).json({ ok: false, message: 'internal error' });
   }
 });
@@ -1836,21 +1829,6 @@ db.run(`ALTER TABLE pending_deposits ADD COLUMN wallet_type TEXT DEFAULT 'vpn'`,
   if (err && !err.message.includes('duplicate column')) logger.error('migrate wallet_type:', err.message);
 });
 
-// ── Tabel Baru: ppob_orders ──────────────────────────────
-db.run(`CREATE TABLE IF NOT EXISTS ppob_orders (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id INTEGER NOT NULL,
-  order_id TEXT,
-  product_code TEXT,
-  target TEXT,
-  amount INTEGER DEFAULT 0,
-  status TEXT DEFAULT 'pending',
-  created_at INTEGER,
-  FOREIGN KEY (user_id) REFERENCES users(user_id)
-)`, (err) => {
-  if (err) logger.error('Kesalahan membuat tabel ppob_orders:', err.message);
-});
-
 // ── Tabel Baru: akrab_orders ─────────────────────────────
 db.run(`CREATE TABLE IF NOT EXISTS akrab_orders (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1915,16 +1893,6 @@ db.run(`CREATE TABLE IF NOT EXISTS markup_config (
   value REAL NOT NULL DEFAULT 0
 )`, (err) => {
   if (err) logger.error('Kesalahan membuat tabel markup_config:', err.message);
-});
-
-// ── Tabel Baru: hidepulsa_tokens ─────────────────────────
-db.run(`CREATE TABLE IF NOT EXISTS hidepulsa_tokens (
-  user_id INTEGER PRIMARY KEY,
-  access_token TEXT,
-  refresh_token TEXT,
-  expires_at INTEGER
-)`, (err) => {
-  if (err) logger.error('Kesalahan membuat tabel hidepulsa_tokens:', err.message);
 });
 
 const userState = {};
@@ -3772,33 +3740,6 @@ bot.command(['start', 'menu'], async (ctx) => {
     }
   });
 
-  // ── Welcome animation ──────────────────────────────────────────────────────
-  const frames = [
-    '🔥',
-    '🔥🔥',
-    '🔥🔥🔥',
-    '🔥🔥🔥\n\n⚡ <b>Memuat...</b>',
-    `🔥🔥🔥\n\n⚡ <b>Selamat datang, ${userName}!</b>\n<i>Menyiapkan menu...</i>`,
-  ];
-
-  let welcomeMsg;
-  try {
-    welcomeMsg = await ctx.reply(frames[0], { parse_mode: 'HTML' });
-    for (let i = 1; i < frames.length; i++) {
-      await new Promise(r => setTimeout(r, 500));
-      try {
-        await ctx.telegram.editMessageText(
-          welcomeMsg.chat.id,
-          welcomeMsg.message_id,
-          undefined,
-          frames[i],
-          { parse_mode: 'HTML' }
-        );
-      } catch (_) {}
-    }
-    await new Promise(r => setTimeout(r, 800));
-    try { await ctx.telegram.deleteMessage(welcomeMsg.chat.id, welcomeMsg.message_id); } catch (_) {}
-  } catch (_) {}
   // ──────────────────────────────────────────────────────────────────────────
 
   await sendMainMenu(ctx);
@@ -3905,27 +3846,6 @@ bot.command('debugcekstok', async (ctx) => {
     body += '<b>V2 (XDA) raw response:</b>\n<pre>' + JSON.stringify(stokV2Resp, null, 2).slice(0, 800) + '</pre>';
 
     await ctx.reply(body, { parse_mode: 'HTML' });
-  } catch (err) {
-    await ctx.reply('Error: ' + err.message);
-  }
-});
-
-bot.command('debugcircle', async (ctx) => {
-  if (!adminIds.includes(ctx.from.id)) return;
-  try {
-    const products = await akrabModule.getProducts(KHFY_ENDPOINT, KHFY_API_KEY);
-    // Tampilkan 20 produk pertama dengan semua field penting
-    const sample = (products || []).slice(0, 20).map(p => {
-      const kode = p.kode_produk || p.code || p.produk || '-';
-      const nama = (p.nama_produk || p.name || p.nama || '-').slice(0, 25);
-      const prov = p.kode_provider || '-';
-      const kosong = p.kosong ?? '-';
-      return `<code>${kode}</code> | ${nama} | prov:${prov} | k:${kosong}`;
-    });
-    await ctx.reply(
-      `<b>Debug getProducts() — 20 pertama</b>\nTotal: ${(products||[]).length}\n\n${sample.join('\n')}`,
-      { parse_mode: 'HTML' }
-    );
   } catch (err) {
     await ctx.reply('Error: ' + err.message);
   }
@@ -5333,28 +5253,23 @@ bot.action('admin_setting_api', async (ctx) => {
   if (!isAdminUser) return ctx.answerCbQuery('Tidak ada izin!', { show_alert: true });
 
   const fayuStatus = FAYU_API_KEY      ? '' : '';
-  const hideStatus = HIDEPULSA_API_KEY ? '' : '';
   const khfyStatus = KHFY_API_KEY      ? '' : '';
   const qrisStatus = (GOPAY_API_KEY || API_KEY || MERCHANT_ID) ? '' : '';
   const webhookBase      = WEBHOOK_URL ? WEBHOOK_URL.replace(/\/$/, '') : `http://YOUR_DOMAIN:${port}`;
-  const webhookHidepulsa = `${webhookBase}/webhook/hidepulsa`;
   const webhookAkrab     = `${webhookBase}/webhook/akrab`;
 
   const msgText =
     ` <b>Setting API Keys & Konfigurasi</b>\n\n` +
     `${fayuStatus} FayuPedia SMM\n` +
-    `${hideStatus} HidePulsa PPOB\n` +
-    `${khfyStatus} Akrab & Circle\n` +
+    `${khfyStatus} Akrab\n` +
     `${qrisStatus} Payment Gateway\n\n` +
     ` <b>Webhook URLs:</b>\n` +
-    `HidePulsa : <code>${webhookHidepulsa}</code>\n` +
     `Akrab     : <code>${webhookAkrab}</code>\n` +
     (WEBHOOK_URL ? '' : `\n Set <b>Webhook URL</b> dulu agar URL di atas benar.\n`) +
     `\nPilih yang ingin diupdate:`;
   const replyMarkup = { inline_keyboard: [
     [{ text: `${fayuStatus} FayuPedia SMM`,   callback_data: 'setting_fayu'                    }],
-    [{ text: `${hideStatus} HidePulsa PPOB`,  callback_data: 'setting_hidepulsa'               }],
-    [{ text: `${khfyStatus} Akrab & Circle`,  callback_data: 'setting_khfy'                    }],
+    [{ text: `${khfyStatus} Akrab`,           callback_data: 'setting_khfy'                    }],
     [{ text: `${qrisStatus} Payment Gateway`, callback_data: 'payment_gateway_settings_menu'   }],
     [{ text: ' Set Webhook URL',            callback_data: 'setting_webhook_url'             }],
     [{ text: ' Menu Admin',                 callback_data: 'admin_menu'                      }]
@@ -5399,57 +5314,11 @@ bot.action('setting_fayu_api_key', async (ctx) => {
       { reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'setting_fayu' }]] }}); });
 });
 
-// ── Setting HidePulsa ───────────────────────────────────────────────────────
-bot.action('setting_hidepulsa', async (ctx) => {
-  await ctx.answerCbQuery().catch(() => {});
-  const msgText =
-    ` <b>HidePulsa PPOB</b>\n\n` +
-    `API Key: <code>${maskSecret(HIDEPULSA_API_KEY)}</code>\n` +
-    `Password: <code>${maskSecret(HIDEPULSA_PASSWORD)}</code>\n` +
-    `Webhook Secret: <code>${maskSecret(XL_CIRCLE_WEBHOOK_SECRET)}</code>\n\n` +
-    `Pilih yang ingin diupdate:`;
-  const replyMarkup = { inline_keyboard: [
-    [{ text: 'Ganti API Key',        callback_data: 'setting_hidepulsa_api_key'       }],
-    [{ text: 'Ganti Password',       callback_data: 'setting_hidepulsa_password'       }],
-    [{ text: 'Ganti Webhook Secret', callback_data: 'setting_hidepulsa_webhook_secret' }],
-    [{ text: ' Kembali',           callback_data: 'admin_setting_api'               }]
-  ]};
-  await ctx.editMessageText(msgText, { parse_mode: 'HTML', reply_markup: replyMarkup })
-    .catch(async () => { await ctx.reply(msgText, { parse_mode: 'HTML', reply_markup: replyMarkup }); });
-});
-
-bot.action('setting_hidepulsa_api_key', async (ctx) => {
-  await ctx.answerCbQuery().catch(() => {});
-  userState[ctx.from.id] = { step: 'setting_input_hidepulsa_api_key' };
-  await ctx.editMessageText('Masukkan HidePulsa API Key baru:',
-    { reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'setting_hidepulsa' }]] }})
-    .catch(async () => { await ctx.reply('Masukkan HidePulsa API Key baru:',
-      { reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'setting_hidepulsa' }]] }}); });
-});
-
-bot.action('setting_hidepulsa_password', async (ctx) => {
-  await ctx.answerCbQuery().catch(() => {});
-  userState[ctx.from.id] = { step: 'setting_input_hidepulsa_password' };
-  await ctx.editMessageText('Masukkan HidePulsa Password baru:',
-    { reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'setting_hidepulsa' }]] }})
-    .catch(async () => { await ctx.reply('Masukkan HidePulsa Password baru:',
-      { reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'setting_hidepulsa' }]] }}); });
-});
-
-bot.action('setting_hidepulsa_webhook_secret', async (ctx) => {
-  await ctx.answerCbQuery().catch(() => {});
-  userState[ctx.from.id] = { step: 'setting_input_hidepulsa_webhook_secret' };
-  await ctx.editMessageText('Masukkan HidePulsa Webhook Secret baru:',
-    { reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'setting_hidepulsa' }]] }})
-    .catch(async () => { await ctx.reply('Masukkan HidePulsa Webhook Secret baru:',
-      { reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'setting_hidepulsa' }]] }}); });
-});
-
 // ── Setting Akrab (khfy) ────────────────────────────────────────────────────
 bot.action('setting_khfy', async (ctx) => {
   await ctx.answerCbQuery().catch(() => {});
   const msgText =
-    ` <b>Akrab & Circle (khfy-store)</b>\n\n` +
+    ` <b>Akrab (khfy-store)</b>\n\n` +
     `API Key: <code>${maskSecret(KHFY_API_KEY)}</code>\n` +
     `Reseller ID: <code>${KHFY_RESELLER_ID || '-'}</code>\n\n` +
     `Pilih yang ingin diupdate:`;
@@ -5492,7 +5361,6 @@ bot.action('setting_webhook_url', async (ctx) => {
     `Masukkan URL publik bot (HTTPS direkomendasikan).\n` +
     `Contoh: <code>https://bot.domain.com</code>\n\n` +
     `Bot akan otomatis generate:\n` +
-    `• <code>/webhook/hidepulsa</code> untuk HidePulsa\n` +
     `• <code>/webhook/akrab</code> untuk Akrab`;
   await ctx.editMessageText(msgText, {
     parse_mode: 'HTML',
@@ -5653,6 +5521,10 @@ async function sendAdminToolsMenu(ctx) {
     : ' Maintenance: OFF';
   const testMenuEnabled = loadTestMenuSetting();
   const testMenuLabel = testMenuEnabled ? '🧪 Test Transaksi : ON' : '🧪 Test Transaksi : OFF';
+  const joinChannelSetting = loadJoinChannelSetting();
+  const joinChannelLabel = joinChannelSetting.enabled
+    ? '📢 Wajib Join Channel: ON'
+    : '📢 Wajib Join Channel: OFF';
   const keyboard = [
     [{ text: ' Help Admin', callback_data: 'helpadmin_menu' }],
     [{ text: ' Kelola Download Config', callback_data: 'admin_download_config_menu' }],
@@ -5668,6 +5540,7 @@ async function sendAdminToolsMenu(ctx) {
     [{ text: ' Notif BW Server', callback_data: 'bw_notif_settings_menu' }],
     [{ text: ' Setting Payment Gateway', callback_data: 'payment_gateway_settings_menu' }],
     [{ text: maintenanceLabel, callback_data: 'maintenance_menu' }],
+    [{ text: joinChannelLabel, callback_data: 'join_channel_menu' }],
     [{ text: ' Kontak Admin', callback_data: 'admin_contact_settings_menu' }],
     [{ text: testMenuLabel, callback_data: 'toggle_test_menu' }],
     [{ text: '📋 Lihat Antrian Pre-Order', callback_data: 'admin_preorder_list' }],
@@ -7267,7 +7140,7 @@ bot.action('admin_test_menu', async (ctx) => {
       reply_markup: {
         inline_keyboard: [
           [{ text: '💉 Test SMM (Suntik Followers)', callback_data: 'test_smm_start' }],
-          [{ text: '🤝 Test Akrab & Circle', callback_data: 'test_akrab_start' }],
+          [{ text: '🤝 Test Akrab', callback_data: 'test_akrab_start' }],
           [{ text: '🔙 Kembali', callback_data: 'send_main_menu' }],
         ],
       },
@@ -7454,6 +7327,78 @@ bot.action('maintenance_set_estimate', async (ctx) => {
 bot.action('helpadmin_menu', async (ctx) => {
   await ctx.answerCbQuery();
   await sendHelpAdmin(ctx);
+});
+
+// ── Join Channel Menu (Admin) ───────────────────────────────────────────────
+async function sendJoinChannelMenu(ctx) {
+  const setting = loadJoinChannelSetting();
+  const statusLabel = setting.enabled ? '✅ ON' : '❌ OFF';
+  const channelDisplay = setting.channel_url || '(belum diset)';
+  const channelIdDisplay = setting.channel_id || '(belum diset)';
+
+  const text =
+    '*📢 SETTING WAJIB JOIN CHANNEL*\n\n' +
+    `Status     : *${statusLabel}*\n` +
+    `Channel URL: \`${channelDisplay}\`\n` +
+    `Channel ID : \`${channelIdDisplay}\`\n\n` +
+    '_Channel ID bisa berupa @username atau ID numerik (misal: -1001234567890)._\n' +
+    '_Bot harus menjadi admin channel agar bisa cek status member._';
+
+  const keyboard = [
+    [{ text: setting.enabled ? '❌ Nonaktifkan' : '✅ Aktifkan', callback_data: 'join_channel_toggle' }],
+    [{ text: '🔗 Set URL Channel', callback_data: 'join_channel_set_url' }],
+    [{ text: '🆔 Set Channel ID', callback_data: 'join_channel_set_id' }],
+    [{ text: '🔙 Kembali', callback_data: 'admin_menu_tools' }]
+  ];
+
+  await ctx.editMessageText(text, {
+    parse_mode: 'Markdown',
+    reply_markup: { inline_keyboard: keyboard }
+  }).catch(async () => {
+    await ctx.reply(text, { parse_mode: 'Markdown', reply_markup: { inline_keyboard: keyboard } });
+  });
+}
+
+bot.action('join_channel_menu', async (ctx) => {
+  await ctx.answerCbQuery();
+  if (!adminIds.includes(ctx.from.id)) return ctx.answerCbQuery('Tidak ada izin!', { show_alert: true });
+  await sendJoinChannelMenu(ctx);
+});
+
+bot.action('join_channel_toggle', async (ctx) => {
+  await ctx.answerCbQuery();
+  if (!adminIds.includes(ctx.from.id)) return ctx.answerCbQuery('Tidak ada izin!', { show_alert: true });
+  const current = loadJoinChannelSetting();
+  const next = saveJoinChannelSetting({ ...current, enabled: !current.enabled });
+  await ctx.answerCbQuery(
+    next.enabled ? '✅ Wajib join channel diaktifkan' : '❌ Wajib join channel dinonaktifkan',
+    { show_alert: true }
+  ).catch(() => {});
+  await sendJoinChannelMenu(ctx);
+});
+
+bot.action('join_channel_set_url', async (ctx) => {
+  await ctx.answerCbQuery();
+  if (!adminIds.includes(ctx.from.id)) return ctx.answerCbQuery('Tidak ada izin!', { show_alert: true });
+  userState[ctx.chat.id] = { step: 'join_channel_input_url' };
+  await ctx.editMessageText(
+    '🔗 *Set URL Channel*\n\nMasukkan URL channel Telegram.\nContoh: `https://t.me/namachannel`\n\nKetik *batal* untuk membatalkan.',
+    { parse_mode: 'Markdown', reply_markup: { inline_keyboard: [[{ text: '🔙 Batal', callback_data: 'join_channel_menu' }]] } }
+  ).catch(async () => {
+    await ctx.reply('Masukkan URL channel (contoh: https://t.me/namachannel):\nKetik batal untuk membatalkan.');
+  });
+});
+
+bot.action('join_channel_set_id', async (ctx) => {
+  await ctx.answerCbQuery();
+  if (!adminIds.includes(ctx.from.id)) return ctx.answerCbQuery('Tidak ada izin!', { show_alert: true });
+  userState[ctx.chat.id] = { step: 'join_channel_input_id' };
+  await ctx.editMessageText(
+    '🆔 *Set Channel ID*\n\nMasukkan username atau ID channel.\nContoh: `@namachannel` atau `-1001234567890`\n\n_Bot harus sudah menjadi admin di channel tersebut._\n\nKetik *batal* untuk membatalkan.',
+    { parse_mode: 'Markdown', reply_markup: { inline_keyboard: [[{ text: '🔙 Batal', callback_data: 'join_channel_menu' }]] } }
+  ).catch(async () => {
+    await ctx.reply('Masukkan Channel ID (contoh: @namachannel):\nKetik batal untuk membatalkan.');
+  });
 });
 
 
@@ -8131,7 +8076,7 @@ bot.action('menu_topup', async (ctx) => {
     '✦ Saldo Tembak Kuota : <code>Rp ' + Number(saldoAkrab || 0).toLocaleString('id-ID') + '</code>\n' +
     '<code>──────────────────────</code>\n' +
     '<i>VPN: Akun VPN + Suntik Followers</i>\n' +
-    '<i>Tembak Kuota: PPOB + Akrab &amp; Circle</i>\n\n' +
+    '<i>Tembak Kuota: Akrab</i>\n\n' +
     '✦ Pilih jenis saldo yang ingin di-top up:';
 
   await ctx.editMessageText(msgText, { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } })
@@ -10494,7 +10439,7 @@ bot.action('menu_join_reseller', async (ctx) => {
       `• Harga server reseller (lebih murah)\n` +
       `• Lock/unlock akun VPN\n` +
       `• Statistik transaksi bulanan\n` +
-      `• Markup harga semua layanan (VPN, PPOB, Akrab, SMM)`,
+      `• Markup harga semua layanan (VPN, Akrab, SMM)`,
       { parse_mode: 'HTML', reply_markup: { inline_keyboard: [
         [{ text: ' Daftar Jadi Reseller', callback_data: 'jadi_reseller' }],
         [{ text: ' Menu Utama', callback_data: 'send_main_menu' }]
@@ -10507,7 +10452,7 @@ bot.action('menu_join_reseller', async (ctx) => {
         `• Harga server reseller (lebih murah)\n` +
         `• Lock/unlock akun VPN\n` +
         `• Statistik transaksi bulanan\n` +
-        `• Markup harga semua layanan (VPN, PPOB, Akrab, SMM)`,
+        `• Markup harga semua layanan (VPN, Akrab, SMM)`,
         { parse_mode: 'HTML', reply_markup: { inline_keyboard: [
           [{ text: ' Daftar Jadi Reseller', callback_data: 'jadi_reseller' }],
           [{ text: ' Menu Utama', callback_data: 'send_main_menu' }]
@@ -10516,7 +10461,6 @@ bot.action('menu_join_reseller', async (ctx) => {
     });
   } else {
     const markupVPN   = await dbH.getMarkup(db, 'reseller', 'vpn',   userId).catch(() => null);
-    const markupPPOB  = await dbH.getMarkup(db, 'reseller', 'ppob',  userId).catch(() => null);
     const markupAkrab = await dbH.getMarkup(db, 'reseller', 'akrab', userId).catch(() => null);
     const markupSMM   = await dbH.getMarkup(db, 'reseller', 'smm',   userId).catch(() => null);
 
@@ -10530,16 +10474,14 @@ bot.action('menu_join_reseller', async (ctx) => {
       ` Saldo VPN  : Rp ${Number(saldo).toLocaleString('id-ID')}\n` +
       ` Saldo Akrab: Rp ${Number(saldoAkrab).toLocaleString('id-ID')}\n\n` +
       `Markup kamu saat ini:\n` +
-      `VPN: ${fmtMarkup(markupVPN)} | PPOB: ${fmtMarkup(markupPPOB)}\n` +
-      `Akrab: ${fmtMarkup(markupAkrab)} | SMM: ${fmtMarkup(markupSMM)}`;
+      `VPN: ${fmtMarkup(markupVPN)} | Akrab: ${fmtMarkup(markupAkrab)} | SMM: ${fmtMarkup(markupSMM)}`;
 
     const replyMarkup = { inline_keyboard: [
       [{ text: ' Cek Semua Saldo', callback_data: 'reseller_cek_semua_saldo' }],
       [{ text: ' Statistik Saya', callback_data: 'reseller_stats' }],
       [{ text: ' Markup VPN',   callback_data: 'reseller_markup_vpn'  },
-       { text: ' Markup PPOB',  callback_data: 'reseller_markup_ppob' }],
-      [{ text: ' Markup Akrab', callback_data: 'reseller_markup_akrab'},
-       { text: ' Markup SMM',   callback_data: 'reseller_markup_smm'  }],
+       { text: ' Markup Akrab', callback_data: 'reseller_markup_akrab'}],
+      [{ text: ' Markup SMM',   callback_data: 'reseller_markup_smm'  }],
       [{ text: ' Menu Utama', callback_data: 'send_main_menu' }]
     ]};
 
@@ -10560,7 +10502,7 @@ bot.action('reseller_cek_semua_saldo', async (ctx) => {
     ` Saldo VPN   : <code>Rp ${Number(saldo).toLocaleString('id-ID')}</code>\n` +
     `   ↳ Untuk: Akun VPN + Suntik Followers\n\n` +
     ` Saldo Akrab : <code>Rp ${Number(saldoAkrab).toLocaleString('id-ID')}</code>\n` +
-    `   ↳ Untuk: PPOB + Akrab & Circle`;
+    `   ↳ Untuk: Akrab`;
   const replyMarkup = { inline_keyboard: [
     [{ text: ' Top Up VPN',   callback_data: 'topup_saldo'  },
      { text: ' Top Up Akrab', callback_data: 'topup_akrab'  }],
@@ -10598,12 +10540,11 @@ async function showResellerMarkupMenu(ctx, service, label) {
 }
 
 bot.action('reseller_markup_vpn',   async (ctx) => { await ctx.answerCbQuery().catch(() => {}); await showResellerMarkupMenu(ctx, 'vpn',   'Akun VPN'); });
-bot.action('reseller_markup_ppob',  async (ctx) => { await ctx.answerCbQuery().catch(() => {}); await showResellerMarkupMenu(ctx, 'ppob',  'PPOB'); });
-bot.action('reseller_markup_akrab', async (ctx) => { await ctx.answerCbQuery().catch(() => {}); await showResellerMarkupMenu(ctx, 'akrab', 'Akrab & Circle'); });
+bot.action('reseller_markup_akrab', async (ctx) => { await ctx.answerCbQuery().catch(() => {}); await showResellerMarkupMenu(ctx, 'akrab', 'Akrab'); });
 bot.action('reseller_markup_smm',   async (ctx) => { await ctx.answerCbQuery().catch(() => {}); await showResellerMarkupMenu(ctx, 'smm',   'Suntik Followers'); });
 
 // Set markup reseller per service (pct/flat)
-bot.action(/^reseller_markup_(vpn|ppob|akrab|smm)_set_(pct|flat)$/, async (ctx) => {
+bot.action(/^reseller_markup_(vpn|akrab|smm)_set_(pct|flat)$/, async (ctx) => {
   await ctx.answerCbQuery().catch(() => {});
   const userId = ctx.from.id;
   const service = ctx.match[1];
@@ -10618,7 +10559,7 @@ bot.action(/^reseller_markup_(vpn|ppob|akrab|smm)_set_(pct|flat)$/, async (ctx) 
     });
 });
 
-bot.action(/^reseller_markup_(vpn|ppob|akrab|smm)_delete$/, async (ctx) => {
+bot.action(/^reseller_markup_(vpn|akrab|smm)_delete$/, async (ctx) => {
   await ctx.answerCbQuery().catch(() => {});
   const userId = ctx.from.id;
   const service = ctx.match[1];
@@ -11862,7 +11803,7 @@ bot.action('menu_vpn', async (ctx) => {
 });
 
 // ══════════════════════════════════════════
-// MENU AKRAB & CIRCLE
+// MENU AKRAB
 // ══════════════════════════════════════════
 bot.action('menu_akrab', async (ctx) => {
   await ctx.answerCbQuery();
@@ -11880,7 +11821,6 @@ bot.action('menu_akrab', async (ctx) => {
       { text: '🟢 Akrab V2', callback_data: 'akrab_grup_v2' },
     ],
     [
-      { text: '⭕ Circle', callback_data: 'akrab_grup_circle' },
       { text: '📦 Cek Stok', callback_data: 'akrab_cek_stock_all' },
     ],
     [
@@ -11895,7 +11835,7 @@ bot.action('menu_akrab', async (ctx) => {
 
   await ctx.editMessageText(
     '<code>┌─────────────────────────┐</code>\n' +
-    '<code>│</code> 🤝 <b>AKRAB &amp; CIRCLE</b>\n' +
+    '<code>│</code> 🤝 <b>AKRAB</b>\n' +
     '<code>│─────────────────────────</code>\n' +
     '<code>│</code> Saldo : <code>Rp ' + Number(saldoAkrab || 0).toLocaleString('id-ID') + '</code>\n' +
     '<code>│─────────────────────────</code>\n' +
@@ -11906,27 +11846,22 @@ bot.action('menu_akrab', async (ctx) => {
   );
 });
 
-// ── Grup Akrab V1 / V2 / Circle ─────────────────────────────────────────────
-// Pemetaan kode_provider khfy-store ke grup:
-// ── Grup Akrab V1 / V2 / Circle ─────────────────────────────────────────────
-// Pengelompokan berdasarkan kode produk + nama:
-//   v1     : XLA* (kecuali XCL)   — Akrab V1
-//   v2     : XDA*                 — Akrab V2
-//   circle : XCL* atau nama mengandung "circle"
+// ── Grup Akrab V1 / V2 ──────────────────────────────────────────────────────
+// Pengelompokan berdasarkan kode produk:
+//   v1 : XLA*  — Akrab V1
+//   v2 : XDA*  — Akrab V2
 function getAkrabGroup(kodeProduk, namaProduk) {
   const k = String(kodeProduk || '').toUpperCase();
-  const n = String(namaProduk || '').toUpperCase();
-  if (/^XCL/.test(k) || n.includes('CIRCLE')) return 'circle';
   if (/^XDA/.test(k)) return 'v2';
   if (/^XLA/.test(k)) return 'v1';
-  return 'other'; // produk lain (PLN, Bonus, dll) tidak masuk grup manapun
+  return 'other'; // produk lain tidak masuk grup manapun
 }
 
-bot.action(/^akrab_grup_(v1|v2|circle)$/, async (ctx) => {
+bot.action(/^akrab_grup_(v1|v2)$/, async (ctx) => {
   await ctx.answerCbQuery('Memuat produk...');
   const userId = ctx.from.id;
   const grup = ctx.match[1];
-  const grupLabel = grup === 'v1' ? 'Akrab V1' : grup === 'v2' ? 'Akrab V2' : 'Circle';
+  const grupLabel = grup === 'v1' ? 'Akrab V1' : 'Akrab V2';
 
   try {
     const products = await akrabModule.getProducts(KHFY_ENDPOINT, KHFY_API_KEY);
@@ -12023,20 +11958,12 @@ bot.action(/^akrab_grup_(v1|v2|circle)$/, async (ctx) => {
     const markupGlobal = await dbH.getMarkup(db, 'global', 'akrab', null).catch(() => null);
     const markupReseller = await dbH.getMarkup(db, 'reseller', 'akrab', userId).catch(() => null);
 
-    // Helper: cek produk kosong
-    // Untuk V1/V2: hanya pakai slot map (karena field `kosong` getProducts tidak reliable)
-    // Untuk Circle: pakai field `kosong`/`status` (tidak ada endpoint stok)
+    // Helper: cek produk kosong — pakai slot map (data real-time)
     const isProdukKosong = (p) => {
       const code = String(p.kode_produk || p.code || '').toUpperCase();
-      if (grup === 'v1' || grup === 'v2') {
-        // SELALU pakai slot map. Jika tidak ada di slot map → dianggap kosong
-        if (stokMap[code] !== undefined) return stokMap[code] === 0;
-        return true; // tidak ada di endpoint stok = kosong
-      }
-      // Circle: pakai field kosong
-      if (p.kosong == 1 || p.kosong === true) return true;
-      if (String(p.status || '').toLowerCase() === 'kosong') return true;
-      return false;
+      // SELALU pakai slot map. Jika tidak ada di slot map → dianggap kosong
+      if (stokMap[code] !== undefined) return stokMap[code] === 0;
+      return true; // tidak ada di endpoint stok = kosong
     };
 
     const keyboard = filtered.slice(0, 40).map((p) => {
@@ -12095,7 +12022,7 @@ bot.action('akrab_list_produk', async (ctx) => {
     });
     keyboard.push([{ text: ' Kembali', callback_data: 'menu_akrab' }]);
 
-    await ctx.editMessageText(' <b>Produk Akrab & Circle</b>\n\nPilih kategori:', {
+    await ctx.editMessageText(' <b>Produk Akrab</b>\n\nPilih kategori:', {
       parse_mode: 'HTML',
       reply_markup: { inline_keyboard: keyboard },
     });
@@ -12177,15 +12104,15 @@ bot.action(/^akrab_beli_(.+)$/, async (ctx) => {
     p.kode_produk === produkCode || p.code === produkCode || p.produk === produkCode
   );
 
-  // Cek stok produk: andalkan slot map (data real-time). Untuk XLA/XDA, abaikan field kosong getProducts.
+  // Cek stok produk: andalkan slot map (data real-time).
   const isKosong = (() => {
     const code = String((product && (product.kode_produk || product.code)) || produkCode || '').toUpperCase();
-    // Untuk XLA/XDA: SELALU pakai slot map
+    // Selalu pakai slot map untuk XLA/XDA
     if (/^XLA[0-9]/.test(code) || /^XDA[0-9]/.test(code)) {
       if (stokMap[code] !== undefined) return stokMap[code] === 0;
       return true; // tidak ada di slot map = kosong
     }
-    // Produk lain (Circle, dll): pakai field kosong
+    // Produk lain: pakai field kosong
     if (!product) return false;
     if (product.kosong == 1 || product.kosong === true) return true;
     if (String(product.status || '').toLowerCase() === 'kosong') return true;
@@ -12285,10 +12212,9 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
     const getKode = (p) => String(p.kode_produk || p.code || p.produk || '').toUpperCase();
     const getNama = (p) => String(p.nama_produk || p.name || p.nama || '');
 
-    // Pisahkan produk — hanya XLA, XDA, Circle. Produk lain dibuang.
-    const xlaProducts    = (products || []).filter(p => /^XLA/i.test(getKode(p)) && !/^XCL/i.test(getKode(p)) && !getNama(p).toUpperCase().includes('CIRCLE'));
-    const xdaProducts    = (products || []).filter(p => /^XDA/i.test(getKode(p)));
-    const circleProducts = (products || []).filter(p => /^XCL/i.test(getKode(p)) || getNama(p).toUpperCase().includes('CIRCLE'));
+    // Pisahkan produk — hanya XLA dan XDA. Produk lain dibuang.
+    const xlaProducts = (products || []).filter(p => /^XLA/i.test(getKode(p)));
+    const xdaProducts = (products || []).filter(p => /^XDA/i.test(getKode(p)));
 
     const now = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
 
@@ -12302,7 +12228,6 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
         .replace(/XL AXIS Data /gi, '')
         .replace(/Reguler \+ Lokal/gi, '')
         .replace(/\(Promo\)/gi, 'P')
-        .replace(/CIRCLE /gi, '')
         .replace(/PROMO/gi, '')
         .replace(/\s+/g, ' ')
         .trim()
@@ -12332,13 +12257,11 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
 🕐 <i>${now}</i>\n\n`;
 
     // ── XLA ── sumber utama: slot map endpoint V1 (data stok real-time)
-    //          getProducts() hanya untuk ambil nama produk
     if (Object.keys(xlaSlotMap).length || xlaProducts.length) {
       const namaMapXla = {};
       xlaProducts.forEach(p => {
         namaMapXla[getKode(p)] = shortName(p.nama_produk || p.name || getKode(p));
       });
-      // Daftar kode dari slot map (sumber stok asli) + sisanya dari produk yang tidak ada di slot map
       const kodeFromSlot = Object.keys(xlaSlotMap);
       const kodeFromProd = xlaProducts.map(getKode).filter(k => !xlaSlotMap.hasOwnProperty(k));
       const allKode = [...kodeFromSlot, ...kodeFromProd];
@@ -12357,7 +12280,6 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
     }
 
     // ── XDA ── sumber utama: slot map endpoint V2 (data stok real-time)
-    //          getProducts() hanya untuk ambil nama produk
     if (Object.keys(xdaSlotMap).length || xdaProducts.length) {
       const namaMapXda = {};
       xdaProducts.forEach(p => {
@@ -12378,18 +12300,6 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
         return { icon, label: nama, qty };
       });
       body += `🟢 <b>XDA</b>\n<code>${formatPair(items)}</code>\n\n`;
-    }
-
-    // ── Circle (XCLP) ── tidak ada endpoint stok, pakai field kosong
-    if (circleProducts.length) {
-      const items = circleProducts.map(p => {
-        const nama = shortName(p.nama_produk || p.name || getKode(p) || '-');
-        const tersedia = !isKosongProduk(p);
-        const icon = tersedia ? '✅' : '❌';
-        if (tersedia) totalReady++; else totalKosong++;
-        return { icon, label: nama, qty: '' };
-      });
-      body += `⭕ <b>Circle</b>\n<code>${formatPair(items)}</code>\n\n`;
     }
 
     body += `📊 <b>Ready ${totalReady} · Kosong ${totalKosong}</b>`;
@@ -12725,8 +12635,15 @@ async function _autoBuyPreordersInner(tipe, stokItems) {
 async function broadcastRestok(tipe, stokItems) {
   const label = tipe === 'xla' ? 'Akrab V1 (XLA)' : 'Akrab V2 (XDA)';
   const emoji = tipe === 'xla' ? '🔵' : '🟢';
-  const users = await dbGetAllPreorderUsers(tipe);
-  if (!users.length) return;
+
+  // Hanya broadcast ke user yang produknya ada di stokItems
+  const restokKodes = new Set(stokItems.map(it => String(it.type || '').toUpperCase()));
+  const allOrders = await dbGetAllPreorders(tipe);
+  // Filter: hanya user yang pre-order produk yang baru restok
+  const relevantOrders = allOrders.filter(o => restokKodes.has(String(o.produk_kode || '').toUpperCase()));
+  const relevantUserIds = [...new Set(relevantOrders.map(o => o.user_id))];
+
+  if (!relevantUserIds.length) return;
 
   // Ambil nama produk dari API untuk tampilan lebih detail
   let produkMap = {};
@@ -12754,19 +12671,17 @@ async function broadcastRestok(tipe, stokItems) {
     `🛒 <i>Segera beli sebelum habis!</i>`;
 
   let ok = 0, fail = 0;
-  for (const row of users) {
+  for (const userId of relevantUserIds) {
     try {
-      await bot.telegram.sendMessage(row.user_id, msg, { parse_mode: 'HTML' });
+      await bot.telegram.sendMessage(userId, msg, { parse_mode: 'HTML' });
       ok++;
     } catch (e) {
       fail++;
-      logger.warn(`broadcastRestok ${tipe} gagal ke ${row.user_id}: ${e.message}`);
+      logger.warn(`broadcastRestok ${tipe} gagal ke ${userId}: ${e.message}`);
     }
   }
 
-  // Hapus semua preorder setelah broadcast
-  await dbClearPreorders(tipe);
-  logger.info(`broadcastRestok ${tipe}: ${ok} berhasil, ${fail} gagal, list dihapus`);
+  logger.info(`broadcastRestok ${tipe}: ${ok} berhasil, ${fail} gagal (${relevantUserIds.length} user relevan dari ${allOrders.length} total preorder)`);
 }
 
 bot.action(/^akrab_konfirmasi_(.+)$/, async (ctx) => {
@@ -12893,7 +12808,7 @@ bot.action('akrab_markup_delete', async (ctx) => {
   });
 });
 
-// ── TOP UP SALDO TEMBAK KUOTA (via QRIS, wallet gabungan PPOB + Akrab) ──────
+// ── TOP UP SALDO TEMBAK KUOTA (via QRIS, wallet Akrab) ──────
 bot.action('topup_akrab', async (ctx) => {
   const userId = ctx.from.id;
   await ctx.answerCbQuery();
@@ -12917,7 +12832,7 @@ bot.action('topup_akrab', async (ctx) => {
 
   await ctx.editMessageText(
     ' <b>Top Up Saldo Tembak Kuota</b>\n\n' +
-    'Saldo ini dipakai untuk: PPOB + Akrab & Circle.\n\n' +
+    'Saldo ini dipakai untuk: Akrab.\n\n' +
     `Masukkan jumlah top up (minimal Rp ${minTopupForMode.toLocaleString('id-ID')}):`,
     {
       parse_mode: 'HTML',
@@ -12926,7 +12841,7 @@ bot.action('topup_akrab', async (ctx) => {
   ).catch(async () => {
     await ctx.reply(
       ' <b>Top Up Saldo Tembak Kuota</b>\n\n' +
-      'Saldo ini dipakai untuk: PPOB + Akrab & Circle.\n\n' +
+      'Saldo ini dipakai untuk: Akrab.\n\n' +
       `Masukkan jumlah top up (minimal Rp ${minTopupForMode.toLocaleString('id-ID')}):`,
       { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard_nomor() } }
     );
@@ -12944,7 +12859,7 @@ bot.on('text', async (ctx) => {
     return;
   }
 
-  // ── Step Akrab & Circle ────────────────────────────────
+  // ── Step Akrab ────────────────────────────────
   try {
     const akState = userState[ctx.chat.id];
     if (akState && typeof akState.step === 'string') {
@@ -13280,7 +13195,7 @@ bot.on('text', async (ctx) => {
     if (resellerMarkupState && typeof resellerMarkupState.step === 'string') {
       const text = String(ctx.message.text || '').trim();
       const userId = ctx.from.id;
-      const resellerMarkupMatch = resellerMarkupState.step.match(/^reseller_markup_input_(vpn|ppob|akrab|smm)_(pct|flat)$/);
+      const resellerMarkupMatch = resellerMarkupState.step.match(/^reseller_markup_input_(vpn|akrab|smm)_(pct|flat)$/);
       if (resellerMarkupMatch) {
         const service = resellerMarkupMatch[1];
         const type = resellerMarkupMatch[2];
@@ -13315,9 +13230,6 @@ bot.on('text', async (ctx) => {
       const settingMap = {
         'setting_input_fayu_api_id':              ['FAYU_API_ID',              (val) => { FAYU_API_ID = val; },              'FayuPedia API ID',         'setting_fayu'      ],
         'setting_input_fayu_api_key':             ['FAYU_API_KEY',             (val) => { FAYU_API_KEY = val; },             'FayuPedia API Key',        'setting_fayu'      ],
-        'setting_input_hidepulsa_api_key':        ['HIDEPULSA_API_KEY',        (val) => { HIDEPULSA_API_KEY = val; },        'HidePulsa API Key',        'setting_hidepulsa' ],
-        'setting_input_hidepulsa_password':       ['HIDEPULSA_PASSWORD',       (val) => { HIDEPULSA_PASSWORD = val; },       'HidePulsa Password',       'setting_hidepulsa' ],
-        'setting_input_hidepulsa_webhook_secret': ['XL_CIRCLE_WEBHOOK_SECRET', (val) => { XL_CIRCLE_WEBHOOK_SECRET = val; }, 'HidePulsa Webhook Secret', 'setting_hidepulsa' ],
         'setting_input_khfy_api_key':             ['KHFY_API_KEY',             (val) => { KHFY_API_KEY = val; },             'Akrab API Key',            'setting_khfy'      ],
         'setting_input_khfy_reseller_id':         ['KHFY_RESELLER_ID',         (val) => { KHFY_RESELLER_ID = val; },         'Akrab Reseller ID',        'setting_khfy'      ],
         'setting_input_webhook_url':              ['WEBHOOK_URL',              (val) => { WEBHOOK_URL = val; },              'Webhook URL',              'admin_setting_api' ],
@@ -13344,7 +13256,6 @@ bot.on('text', async (ctx) => {
             ` <b>Webhook URL</b> berhasil diset.\n\n` +
             `URL: <code>${normalized}</code>\n\n` +
             `Endpoint aktif:\n` +
-            `• HidePulsa: <code>${normalized}/webhook/hidepulsa</code>\n` +
             `• Akrab    : <code>${normalized}/webhook/akrab</code>`,
             { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: ' Kembali', callback_data: 'admin_setting_api' }]] }}
           );
@@ -13459,6 +13370,42 @@ bot.on('text', async (ctx) => {
     return ctx.reply('Buka kembali menu maintenance untuk cek status terbaru.', {
       reply_markup: { inline_keyboard: [[{ text: 'Buka Menu Maintenance', callback_data: 'maintenance_menu' }]] }
     });
+  }
+
+  if (state.step === 'join_channel_input_url') {
+    const text = String(ctx.message.text || '').trim();
+    if (text.toLowerCase() === 'batal') {
+      delete userState[ctx.chat.id];
+      return ctx.reply('Dibatalkan.', { reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'join_channel_menu' }]] } });
+    }
+    if (!text.startsWith('http')) {
+      return ctx.reply('URL tidak valid. Harus diawali https://\nContoh: https://t.me/namachannel');
+    }
+    const current = loadJoinChannelSetting();
+    saveJoinChannelSetting({ ...current, channel_url: text });
+    delete userState[ctx.chat.id];
+    await ctx.reply(`✅ URL channel disimpan: ${text}`, {
+      reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali ke Setting', callback_data: 'join_channel_menu' }]] }
+    });
+    return;
+  }
+
+  if (state.step === 'join_channel_input_id') {
+    const text = String(ctx.message.text || '').trim();
+    if (text.toLowerCase() === 'batal') {
+      delete userState[ctx.chat.id];
+      return ctx.reply('Dibatalkan.', { reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'join_channel_menu' }]] } });
+    }
+    if (!text) {
+      return ctx.reply('Channel ID tidak boleh kosong.');
+    }
+    const current = loadJoinChannelSetting();
+    saveJoinChannelSetting({ ...current, channel_id: text });
+    delete userState[ctx.chat.id];
+    await ctx.reply(`✅ Channel ID disimpan: ${text}`, {
+      reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali ke Setting', callback_data: 'join_channel_menu' }]] }
+    });
+    return;
   }
 
   if (state.step === 'server_iplimit_rule_1ip') {
@@ -19118,10 +19065,15 @@ setInterval(() => {
 
 async function checkAkrabRestok() {
   try {
+    if (!KHFY_API_KEY || !KHFY_ENDPOINT) {
+      logger.warn('checkAkrabRestok: KHFY_API_KEY atau KHFY_ENDPOINT belum diset, skip.');
+      return;
+    }
+
     const [stokV1Resp, stokV2Resp, products] = await Promise.all([
-      akrabModule.cekStokAkrab(KHFY_ENDPOINT).catch(() => null),
-      akrabModule.cekStokAkrabV2(KHFY_ENDPOINT).catch(() => null),
-      akrabModule.getProducts(KHFY_ENDPOINT, KHFY_API_KEY).catch(() => []),
+      akrabModule.cekStokAkrab(KHFY_ENDPOINT).catch((e) => { logger.warn('cekStokAkrab error: ' + e.message); return null; }),
+      akrabModule.cekStokAkrabV2(KHFY_ENDPOINT).catch((e) => { logger.warn('cekStokAkrabV2 error: ' + e.message); return null; }),
+      akrabModule.getProducts(KHFY_ENDPOINT, KHFY_API_KEY).catch((e) => { logger.warn('getProducts error: ' + e.message); return []; }),
     ]);
 
     // Build map kode → nama produk dari getProducts()
@@ -19144,13 +19096,17 @@ async function checkAkrabRestok() {
       itemsV2 = stokV2Resp.data;
     }
 
+    const isFirstRun = Object.keys(lastStokSnapshot.xla).length === 0 && Object.keys(lastStokSnapshot.xda).length === 0;
+
     // Cek XLA — ada yang dari 0 jadi > 0?
     const restokXla = [];
     for (const it of itemsV1) {
       const tipe = String(it.type || it.kode || '').toUpperCase();
+      if (!tipe) continue;
       const slot = Number(it.sisa_slot ?? it.stok ?? it.stock ?? 0);
       const prev = lastStokSnapshot.xla[tipe] ?? null;
-      if (prev !== null && prev === 0 && slot > 0) {
+      // Hanya notif jika bukan first run dan sebelumnya 0 sekarang ada stok
+      if (!isFirstRun && prev !== null && prev === 0 && slot > 0) {
         restokXla.push({ type: tipe, sisa_slot: slot, nama: namaMap[tipe] || tipe });
       }
       lastStokSnapshot.xla[tipe] = slot;
@@ -19160,12 +19116,19 @@ async function checkAkrabRestok() {
     const restokXda = [];
     for (const it of itemsV2) {
       const tipe = String(it.type || it.kode || '').toUpperCase();
+      if (!tipe) continue;
       const slot = Number(it.sisa_slot ?? it.stok ?? 0);
       const prev = lastStokSnapshot.xda[tipe] ?? null;
-      if (prev !== null && prev === 0 && slot > 0) {
+      // Hanya notif jika bukan first run dan sebelumnya 0 sekarang ada stok
+      if (!isFirstRun && prev !== null && prev === 0 && slot > 0) {
         restokXda.push({ type: tipe, sisa_slot: slot, nama: namaMap[tipe] || tipe });
       }
       lastStokSnapshot.xda[tipe] = slot;
+    }
+
+    if (isFirstRun) {
+      logger.info(`checkAkrabRestok: snapshot awal diisi — XLA ${itemsV1.length} item, XDA ${itemsV2.length} item`);
+      return;
     }
 
     if (restokXla.length > 0) {

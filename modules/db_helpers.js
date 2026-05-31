@@ -1,5 +1,5 @@
 'use strict';
-// Helper DB untuk modul-modul baru (PPOB, Akrab, SMM, Markup)
+// Helper DB untuk modul-modul (Akrab, SMM, Markup)
 
 function dbGet(db, sql, params = []) {
   return new Promise((resolve, reject) =>
@@ -31,22 +31,6 @@ async function updateSaldo(db, userId, delta) {
 }
 async function updateSaldoAkrab(db, userId, delta) {
   await dbRun(db, 'UPDATE users SET saldo_akrab = saldo_akrab + ? WHERE user_id = ?', [delta, userId]);
-}
-
-// ── HidePulsa Tokens ─────────────────────────────────────
-async function saveHidepulsaToken(db, userId, accessToken, refreshToken, expiresAt) {
-  await dbRun(db,
-    `INSERT INTO hidepulsa_tokens (user_id, access_token, refresh_token, expires_at)
-     VALUES (?, ?, ?, ?)
-     ON CONFLICT(user_id) DO UPDATE SET
-       access_token = excluded.access_token,
-       refresh_token = excluded.refresh_token,
-       expires_at = excluded.expires_at`,
-    [userId, accessToken, refreshToken, expiresAt]
-  );
-}
-async function getHidepulsaToken(db, userId) {
-  return await dbGet(db, 'SELECT * FROM hidepulsa_tokens WHERE user_id = ?', [userId]);
 }
 
 // ── Markup Config ────────────────────────────────────────
@@ -116,22 +100,6 @@ function applyMarkup(basePrice, markupRow) {
 }
 
 // ── Order Helpers ────────────────────────────────────────
-async function savePpobOrder(db, userId, orderId, productCode, target, amount) {
-  await dbRun(db,
-    'INSERT INTO ppob_orders (user_id, order_id, product_code, target, amount, created_at) VALUES (?,?,?,?,?,?)',
-    [userId, orderId, productCode, target, amount, Date.now()]
-  );
-}
-async function updatePpobOrderStatus(db, orderId, status) {
-  await dbRun(db, 'UPDATE ppob_orders SET status = ? WHERE order_id = ?', [status, orderId]);
-}
-async function getPpobOrders(db, userId, limit = 10) {
-  return await dbAll(db,
-    'SELECT * FROM ppob_orders WHERE user_id = ? ORDER BY created_at DESC LIMIT ?',
-    [userId, limit]
-  );
-}
-
 async function saveAkrabOrder(db, userId, reffId, produk, tujuan, amount) {
   await dbRun(db,
     'INSERT INTO akrab_orders (user_id, reff_id, produk, tujuan, amount, created_at) VALUES (?,?,?,?,?,?)',
@@ -185,9 +153,7 @@ function formatRp(amount) {
 module.exports = {
   dbGet, dbRun, dbAll,
   getSaldo, getSaldoAkrab, updateSaldo, updateSaldoAkrab,
-  saveHidepulsaToken, getHidepulsaToken,
   getMarkup, setMarkup, deleteMarkup, applyMarkup,
-  savePpobOrder, updatePpobOrderStatus, getPpobOrders,
   saveAkrabOrder, updateAkrabOrderStatus, getAkrabOrderByReffId, getPendingAkrabOrders,
   saveSmmOrder, updateSmmOrderStatus, getSmmOrders, getPendingSmmOrders,
   formatRp,
