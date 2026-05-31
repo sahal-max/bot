@@ -41,13 +41,16 @@ async function tambahSaldoAkrab(db, userId, amount) {
   ));
 }
 
-// Markup dipisah, TIDAK numpuk:
-//  - Reseller (punya markup reseller)  → pakai markup reseller saja
-//  - Member biasa (tanpa markup reseller) → pakai markup global saja
+// Markup bertingkat sesuai PRD section 6 & 7.2:
+//  - Harga dasar bot  = harga API + markup global admin
+//  - Harga jual reseller = harga dasar bot + markup reseller (DITUMPUK)
+// Contoh: API 10.000 → +10% global = 11.000 → +9% reseller = 11.990
+//  - User biasa (tanpa markup reseller) → harga API + markup global saja
 function getEffectivePrice(basePrice, markupGlobal, markupReseller) {
-  if (markupReseller) return dbH.applyMarkup(basePrice, markupReseller);
-  if (markupGlobal) return dbH.applyMarkup(basePrice, markupGlobal);
-  return basePrice;
+  let price = Number(basePrice) || 0;
+  if (markupGlobal) price = dbH.applyMarkup(price, markupGlobal);
+  if (markupReseller) price = dbH.applyMarkup(price, markupReseller);
+  return price;
 }
 
 module.exports = {

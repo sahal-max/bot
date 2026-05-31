@@ -3908,19 +3908,27 @@ bot.command('debugakrab', async (ctx) => {
   if (!adminIds.includes(ctx.from.id)) return;
   try {
     const products = await akrabModule.getProducts(KHFY_ENDPOINT, KHFY_API_KEY);
-    const xda = (products || []).filter(p => /^XDA/i.test(p.kode_produk || p.code || ''));
-    if (!xda.length) {
-      return ctx.reply('❌ Tidak ada produk XDA dari getProducts()');
+    const grup = (ctx.message.text.split(/\s+/)[1] || 'xla').toLowerCase();
+    const re = grup === 'xda' ? /^XDA/i : /^XLA/i;
+    const list = (products || []).filter(p => re.test(p.kode_produk || p.code || ''));
+    if (!list.length) {
+      // Tampilkan sample mentah jika filter tidak ketemu
+      const sample = (products || []).slice(0, 3);
+      return ctx.reply(
+        `❌ Tidak ada produk ${grup.toUpperCase()}.\n\nSample 3 produk mentah:\n<pre>${JSON.stringify(sample, null, 2).slice(0, 2000)}</pre>`,
+        { parse_mode: 'HTML' }
+      );
     }
-    const lines = xda.map(p => {
+    const lines = list.slice(0, 25).map(p => {
       const kode = p.kode_produk || p.code || '-';
-      const nama = (p.nama_produk || p.name || '-').slice(0, 30);
-      const harga = p.harga_final || p.price || p.harga || 0;
-      const kosong = p.kosong || 0;
+      const nama = (p.nama_produk || p.name || '-').slice(0, 25);
+      const harga = p.harga ?? p.price ?? '-';
+      const hargaFinal = p.harga_final ?? '-';
+      const kosong = p.kosong ?? 0;
       const provider = p.kode_provider || '-';
-      return `<code>${kode}</code> | ${nama} | Rp ${Number(harga).toLocaleString('id-ID')} | k:${kosong} | prov:${provider}`;
+      return `<code>${kode}</code> | ${nama}\n   harga:${harga} final:${hargaFinal} k:${kosong} prov:${provider}`;
     });
-    await ctx.reply(`<b>Debug XDA dari getProducts()</b>\n${xda.length} produk\n\n${lines.join('\n')}`, { parse_mode: 'HTML' });
+    await ctx.reply(`<b>Debug ${grup.toUpperCase()} (${list.length} produk)</b>\nKetik /debugakrab xda untuk lihat XDA\n\n${lines.join('\n')}`, { parse_mode: 'HTML' });
   } catch (err) {
     await ctx.reply('Error: ' + err.message);
   }
@@ -12303,13 +12311,19 @@ bot.action('menu_akrab', async (ctx) => {
 });
 
 // ── Grup Akrab V1 / V2 ──────────────────────────────────────────────────────
-// Pengelompokan berdasarkan kode produk:
-//   v1 : XLA*  — Akrab V1
-//   v2 : XDA*  — Akrab V2
-function getAkrabGroup(kodeProduk, namaProduk) {
+// Pengelompokan produk Akrab. Cek kode_produk, kode_provider, dan nama produk.
+//   v1 : XLA / XL Akrab / produk dengan provider XLA  — Akrab V1
+//   v2 : XDA / produk dengan provider XDA             — Akrab V2
+function getAkrabGroup(kodeProduk, namaProduk, kodeProvider) {
   const k = String(kodeProduk || '').toUpperCase();
-  if (/^XDA/.test(k)) return 'v2';
-  if (/^XLA/.test(k)) return 'v1';
+  const n = String(namaProduk || '').toUpperCase();
+  const prov = String(kodeProvider || '').toUpperCase();
+
+  // V2 (XDA) — cek paling spesifik dulu
+  if (/^XDA/.test(k) || /^XDA/.test(prov) || prov === 'XDA') return 'v2';
+  // V1 (XLA) — termasuk produk yang nama/provider-nya mengandung XLA atau "XL AKRAB"
+  if (/^XLA/.test(k) || /^XLA/.test(prov) || prov === 'XLA') return 'v1';
+  if (n.includes('XL AKRAB') || n.includes('XLA')) return 'v1';
   return 'other'; // produk lain tidak masuk grup manapun
 }
 
@@ -12347,10 +12361,11 @@ bot.action(/^akrab_grup_(v1|v2)$/, async (ctx) => {
       }
     } catch (_) { /* stok endpoint optional */ }
 
-    // Filter berdasarkan kode produk + nama (bukan kode_provider)
+    // Filter berdasarkan kode produk + nama + provider
     const getKode = (p) => String(p.kode_produk || p.code || p.produk || '').toUpperCase();
     const getNama = (p) => String(p.nama_produk || p.name || p.nama || '');
-    const filtered = (products || []).filter((p) => getAkrabGroup(getKode(p), getNama(p)) === grup);
+    const getProv = (p) => String(p.kode_provider || p.provider || '').toUpperCase();
+    const filtered = (products || []).filter((p) => getAkrabGroup(getKode(p), getNama(p), getProv(p)) === grup);
 
     // Simpan ke userState — hanya produk nyata dari getProducts(), TIDAK ada produk virtual
     // Produk virtual dihapus karena tidak bisa dibeli (tidak ada di API)
@@ -12384,13 +12399,24 @@ bot.action(/^akrab_grup_(v1|v2)$/, async (ctx) => {
       return false; // default: anggap tersedia jika tidak ada info kosong
     };
 
-    const keyboard = filtered.slice(0, 40).map((p) => {
+    // Harga base = harga modal dari API (field harga/price). harga_final dipakai
+    // sebagai fallback terakhir. Markup global + reseller ditumpuk di atas base.
+    const getBasePrice = (p) => Number(p.harga || p.price || p.harga_final || 0);
+
+    // Sort produk by ukuran GB (kecil → besar) supaya Big/Jumbo tampil urut
+    const sortedProducts = [...filtered].sort((a, b) => {
+      const ga = Number((getKode(a).match(/(\d+)/) || [0, 0])[1]);
+      const gbb = Number((getKode(b).match(/(\d+)/) || [0, 0])[1]);
+      return ga - gbb;
+    });
+
+    const keyboard = sortedProducts.slice(0, 40).map((p) => {
       const code = p.kode_produk || p.code || p.produk;
       const name = p.nama_produk || p.name || p.nama || code;
-      const base = Number(p.harga_final || p.price || p.harga || 0);
+      const base = getBasePrice(p);
       const habis = isProdukKosong(p);
       const finalPrice = wallet.getEffectivePrice(base, markupGlobal, markupReseller);
-      const labelHarga = base > 0 ? ' - Rp ' + finalPrice.toLocaleString('id-ID') : '';
+      const labelHarga = finalPrice > 0 ? ' - Rp ' + finalPrice.toLocaleString('id-ID') : '';
       const labelStok = habis ? ' [KOSONG]' : '';
       return [{
         text: name + labelHarga + labelStok,
@@ -12478,10 +12504,10 @@ bot.action(/^akrab_kat_(.+)$/, async (ctx) => {
   const keyboard = products.slice(0, 30).map((p) => {
     const code = p.kode_produk || p.code || p.produk;
     const name = p.nama_produk || p.name || p.nama || code;
-    const base = Number(p.harga_final || p.price || p.harga || 0);
+    const base = Number(p.harga || p.price || p.harga_final || 0);
     const habis = (p.kosong == 1 || p.kosong === true || String(p.status || '').toLowerCase() === 'kosong');
     const finalPrice = wallet.getEffectivePrice(base, markupGlobal, markupReseller);
-    const labelHarga = base > 0 ? ' — Rp ' + finalPrice.toLocaleString('id-ID') : '';
+    const labelHarga = finalPrice > 0 ? ' — Rp ' + finalPrice.toLocaleString('id-ID') : '';
     const labelStok = habis ? ' [KOSONG]' : '';
     return [{
       text: name + labelHarga + labelStok,
@@ -12494,11 +12520,11 @@ bot.action(/^akrab_kat_(.+)$/, async (ctx) => {
   const listText = products.slice(0, 30).map((p, i) => {
     const code = p.kode_produk || p.code || p.produk;
     const name = p.nama_produk || p.name || p.nama || code;
-    const base = Number(p.harga_final || p.price || p.harga || 0);
+    const base = Number(p.harga || p.price || p.harga_final || 0);
     const finalPrice = wallet.getEffectivePrice(base, markupGlobal, markupReseller);
     const kosong = (p.kosong == 1 || p.kosong === true || String(p.status || '').toLowerCase() === 'kosong');
     const stokIcon = kosong ? '❌ Kosong' : '✅ Tersedia';
-    const hargaText = base > 0 ? `<code>│</code> Rp ${finalPrice.toLocaleString('id-ID')}\n` : '';
+    const hargaText = finalPrice > 0 ? `<code>│</code> Rp ${finalPrice.toLocaleString('id-ID')}\n` : '';
     return `<blockquote><code>┌─────────────────────────┐</code>\n` +
       `<code>│</code> <b>${i + 1}. ${name}</b> <code>${code}</code>\n` +
       `${hargaText}<code>│</code> ${stokIcon}\n` +
@@ -12548,7 +12574,7 @@ bot.action(/^akrab_beli_(.+)$/, async (ctx) => {
 
   const markupGlobal = await dbH.getMarkup(db, 'global', 'akrab', null).catch(() => null);
   const markupReseller = await dbH.getMarkup(db, 'reseller', 'akrab', userId).catch(() => null);
-  const basePrice = product ? Number(product.harga_final || product.price || product.harga || 0) : 0;
+  const basePrice = product ? Number(product.harga || product.price || product.harga_final || 0) : 0;
   const finalPrice = wallet.getEffectivePrice(basePrice, markupGlobal, markupReseller);
 
   userState[userId] = Object.assign({}, state, {
@@ -12913,7 +12939,7 @@ bot.action(/^preorder_pilih_produk_(xla|xda)$/, async (ctx) => {
     const keyboard = filtered.slice(0, 20).map(p => {
       const kode = p.kode_produk || p.code || '';
       const nama = p.nama_produk || p.name || p.nama || kode;
-      const base = Number(p.harga_final || p.price || p.harga || 0);
+      const base = Number(p.harga || p.price || p.harga_final || 0);
       const harga = wallet.getEffectivePrice(base, markupGlobal, markupReseller);
       const hargaText = harga > 0 ? ` — Rp ${harga.toLocaleString('id-ID')}` : '';
       return [{ text: `${nama}${hargaText}`, callback_data: `preorder_set_produk_${tipe}_${kode}` }];
@@ -12950,7 +12976,7 @@ bot.action(/^preorder_set_produk_(xla|xda)_(.+)$/, async (ctx) => {
     if (p) {
       const markupGlobal = await dbH.getMarkup(db, 'global', 'akrab', null).catch(() => null);
       const markupReseller = await dbH.getMarkup(db, 'reseller', 'akrab', userId).catch(() => null);
-      harga = wallet.getEffectivePrice(Number(p.harga_final || p.price || p.harga || 0), markupGlobal, markupReseller);
+      harga = wallet.getEffectivePrice(Number(p.harga || p.price || p.harga_final || 0), markupGlobal, markupReseller);
     }
   } catch (_) {}
 
