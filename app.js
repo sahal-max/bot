@@ -24,6 +24,7 @@ const maintenancePath = path.join(__dirname, 'maintenance_mode.json');
 const defaultMaintenance = { enabled: false, estimate: '' };
 const joinChannelPath = path.join(__dirname, 'join_channel.json');
 const defaultJoinChannel = { enabled: false, channel_url: '', channel_id: '' };
+const blacklistPath = path.join(__dirname, 'blacklist.json');
 const varsPath = path.join(__dirname, '.vars.json');
 
 function loadResellerTerms() {
@@ -195,6 +196,23 @@ function saveJoinChannelSetting(next) {
   };
   fs.writeFileSync(joinChannelPath, JSON.stringify(payload, null, 2), 'utf8');
   return payload;
+}
+
+// ── Blacklist helpers ─────────────────────────────────────────────────────────
+function loadBlacklist() {
+  try {
+    const raw = fs.readFileSync(blacklistPath, 'utf8');
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.map(String) : [];
+  } catch (_) { return []; }
+}
+
+function saveBlacklist(list) {
+  fs.writeFileSync(blacklistPath, JSON.stringify([...new Set(list.map(String))], null, 2), 'utf8');
+}
+
+function isUserBlacklisted(userId) {
+  return loadBlacklist().includes(String(userId));
 }
 
 async function checkUserJoinedChannel(userId) {
@@ -1132,6 +1150,23 @@ bot.use(async (ctx, next) => {
   }
   await ctx.reply(notice, { parse_mode: 'Markdown' });
   return;
+});
+
+// ── Middleware: Blacklist ─────────────────────────────────────────────────────
+bot.use(async (ctx, next) => {
+  const userId = Number(ctx.from?.id || 0);
+  if (!userId) return next();
+  const isAdminUser = Array.isArray(adminIds) ? adminIds.includes(userId) : Number(adminIds) === userId;
+  if (isAdminUser) return next();
+  if (isUserBlacklisted(userId)) {
+    if (ctx.updateType === 'callback_query') {
+      await ctx.answerCbQuery('⛔ Akun kamu diblokir.', { show_alert: true }).catch(() => {});
+    } else {
+      await ctx.reply('⛔ Akun kamu telah diblokir dari bot ini. Hubungi admin jika ada pertanyaan.').catch(() => {});
+    }
+    return;
+  }
+  return next();
 });
 
 // ── Middleware: Wajib Join Channel ──────────────────────────────────────────
@@ -3736,9 +3771,24 @@ bot.command(['start', 'menu'], async (ctx) => {
   db.get('SELECT * FROM users WHERE user_id = ?', [userId], (err, row) => {
     if (err) { logger.error('Kesalahan saat memeriksa user_id:', err.message); return; }
     if (!row) {
-      db.run('INSERT INTO users (user_id) VALUES (?)', [userId], (err) => {
-        if (err) logger.error('Kesalahan saat menyimpan user_id:', err.message);
-        else logger.info(`User ID ${userId} berhasil disimpan`);
+      db.run('INSERT INTO users (user_id) VALUES (?)', [userId], async (err) => {
+        if (err) { logger.error('Kesalahan saat menyimpan user_id:', err.message); return; }
+        logger.info(`User ID ${userId} berhasil disimpan`);
+        // Kirim pesan sambutan untuk user baru
+        try {
+          await ctx.reply(
+            `👋 *Selamat datang di ${NAMA_STORE}!*\n\n` +
+            `Halo *${userName}*, kamu adalah member baru kami 🎉\n\n` +
+            `📌 *Cara pakai bot ini:*\n` +
+            `1️⃣ Top up saldo via menu *💳 Top Up*\n` +
+            `2️⃣ Beli akun VPN via menu *🔑 Akun VPN*\n` +
+            `3️⃣ Beli kuota data via menu *🤝 Akrab*\n` +
+            `4️⃣ Suntik followers via menu *💉 Suntik*\n\n` +
+            `❓ Ada pertanyaan? Hubungi admin via menu *📞 Admin*\n\n` +
+            `_Selamat berbelanja!_ 🛒`,
+            { parse_mode: 'Markdown' }
+          );
+        } catch (_) {}
       });
     }
   });
@@ -4189,8 +4239,12 @@ async function sendHelpAdmin(ctx) {
 
 📊 *Dashboard & Log*
 25. /summary — Dashboard ringkasan harian
-26. /hapuslog — Hapus file log bot
-27. /restartserver \`[target]\` — Restart app PM2
+26. /exportusers — Export semua data user ke CSV
+27. /blacklist \`<user_id>\` — Blokir user dari bot
+28. /unblacklist \`<user_id>\` — Buka blokir user
+29. /listblacklist — Lihat daftar user yang diblokir
+30. /hapuslog — Hapus file log bot
+31. /restartserver \`[target]\` — Restart app PM2
 
 _Gunakan perintah dengan format yang benar untuk menghindari kesalahan._
 `;
@@ -4209,10 +4263,106 @@ bot.command('summary', async (ctx) => {
   await sendAdminDailyDashboard(ctx);
 });
 
+// ── Fitur 7: /exportusers ─────────────────────────────────────────────────────
+bot.command('exportusers', async (ctx) => {
+  if (!adminIds.includes(ctx.from.id)) {
+    return ctx.reply('⛔ Anda tidak memiliki izin untuk menggunakan perintah ini.');
+  }
+
+  try {
+    await ctx.reply('⏳ Memproses export data user...');
+
+    const users = await new Promise((resolve, reject) =>
+      db.all('SELECT user_id, saldo, saldo_akrab FROM users ORDER BY user_id ASC', [], (err, rows) =>
+        err ? reject(err) : resolve(rows || [])
+      )
+    );
+
+    const resellerSet = new Set(listResellersSync().map(String));
+
+    // Buat CSV
+    const header = 'user_id,saldo_vpn,saldo_akrab,status\n';
+    const rows = users.map(u => {
+      const status = resellerSet.has(String(u.user_id)) ? 'reseller' : 'user';
+      return `${u.user_id},${u.saldo || 0},${u.saldo_akrab || 0},${status}`;
+    }).join('\n');
+    const csv = header + rows;
+
+    const now = new Date();
+    const ts = now.toISOString().replace(/[:.]/g, '-').replace('T', '_').slice(0, 19);
+    const fileName = `users_export_${ts}.csv`;
+    const filePath = path.join(__dirname, fileName);
+    fs.writeFileSync(filePath, csv, 'utf8');
+
+    await ctx.telegram.sendDocument(
+      ctx.from.id,
+      { source: filePath, filename: fileName },
+      {
+        caption:
+          `📊 <b>Export Data User</b>\n` +
+          `<code>──────────────────────</code>\n` +
+          `✦ Total User     : ${users.length}\n` +
+          `✦ Total Reseller : ${resellerSet.size}\n` +
+          `✦ Waktu          : ${now.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })}\n` +
+          `<code>──────────────────────</code>\n` +
+          `<i>Format: user_id, saldo_vpn, saldo_akrab, status</i>`,
+        parse_mode: 'HTML'
+      }
+    );
+
+    try { fs.unlinkSync(filePath); } catch (_) {}
+    logger.info(`[ExportUsers] Admin ${ctx.from.id} export ${users.length} user`);
+  } catch (err) {
+    logger.error('[ExportUsers] Error: ' + err.message);
+    await ctx.reply('❌ Gagal export data user: ' + err.message);
+  }
+});
+
 bot.action('admin_daily_dashboard', async (ctx) => {
   await ctx.answerCbQuery();
   if (!adminIds.includes(ctx.from.id)) return;
   await sendAdminDailyDashboard(ctx);
+});
+
+// ── Fitur 8: Blacklist commands ───────────────────────────────────────────────
+bot.command('blacklist', async (ctx) => {
+  if (!adminIds.includes(ctx.from.id)) return ctx.reply('⛔ Tidak ada izin.');
+  const args = ctx.message.text.trim().split(/\s+/);
+  if (args.length < 2 || !/^\d+$/.test(args[1])) {
+    return ctx.reply('Format: `/blacklist <user_id>`', { parse_mode: 'Markdown' });
+  }
+  const targetId = args[1];
+  const list = loadBlacklist();
+  if (list.includes(targetId)) {
+    return ctx.reply(`ℹ️ User \`${targetId}\` sudah ada di blacklist.`, { parse_mode: 'Markdown' });
+  }
+  list.push(targetId);
+  saveBlacklist(list);
+  logger.info(`Admin ${ctx.from.id} blacklist user ${targetId}`);
+  await ctx.reply(`⛔ User \`${targetId}\` berhasil diblokir.`, { parse_mode: 'Markdown' });
+  // Notif ke user
+  bot.telegram.sendMessage(targetId, '⛔ Akun kamu telah diblokir dari bot ini. Hubungi admin jika ada pertanyaan.').catch(() => {});
+});
+
+bot.command('unblacklist', async (ctx) => {
+  if (!adminIds.includes(ctx.from.id)) return ctx.reply('⛔ Tidak ada izin.');
+  const args = ctx.message.text.trim().split(/\s+/);
+  if (args.length < 2 || !/^\d+$/.test(args[1])) {
+    return ctx.reply('Format: `/unblacklist <user_id>`', { parse_mode: 'Markdown' });
+  }
+  const targetId = args[1];
+  const list = loadBlacklist().filter(id => id !== targetId);
+  saveBlacklist(list);
+  logger.info(`Admin ${ctx.from.id} unblacklist user ${targetId}`);
+  await ctx.reply(`✅ User \`${targetId}\` berhasil dihapus dari blacklist.`, { parse_mode: 'Markdown' });
+  bot.telegram.sendMessage(targetId, '✅ Akun kamu telah dibuka blokirnya. Silakan gunakan bot kembali.').catch(() => {});
+});
+
+bot.command('listblacklist', async (ctx) => {
+  if (!adminIds.includes(ctx.from.id)) return ctx.reply('⛔ Tidak ada izin.');
+  const list = loadBlacklist();
+  if (!list.length) return ctx.reply('ℹ️ Blacklist kosong.');
+  await ctx.reply(`⛔ *Daftar Blacklist (${list.length} user):*\n\n` + list.map((id, i) => `${i + 1}. \`${id}\``).join('\n'), { parse_mode: 'Markdown' });
 });
 
 async function sendAdminDailyDashboard(ctx) {
@@ -9701,16 +9851,19 @@ bot.action(/renew_lookup_extend_(\d+)/, async (ctx) => {
 async function sendToolsMenu(ctx) {
   const keyboard = [
     [
-      { text: ' Perpanjang Akun', callback_data: 'service_renew' },
-      { text: ' Cek Server', callback_data: 'cek_server' }
+      { text: '🔄 Perpanjang Akun', callback_data: 'service_renew' },
+      { text: '🖥️ Cek Server', callback_data: 'cek_server' }
     ],
     [
-      { text: ' Rubah Link Vmess, Vless dan Trojan To JSON', callback_data: 'hc_v2ray' }
+      { text: '🔗 Rubah Link V2Ray ke JSON', callback_data: 'hc_v2ray' }
     ],
     [
-      { text: ' Riwayat TopUp', callback_data: 'topup_history' }
+      { text: '📜 Riwayat Transaksi', callback_data: 'tx_history' }
     ],
-    [{ text: ' Kembali', callback_data: 'send_main_menu' }]
+    [
+      { text: '💳 Riwayat TopUp', callback_data: 'topup_history' }
+    ],
+    [{ text: '🔙 Kembali', callback_data: 'send_main_menu' }]
   ];
 
   try {
@@ -9783,6 +9936,66 @@ bot.action('topup_history', async (ctx) => {
         await ctx.reply(chunk, { parse_mode: 'HTML' });
       }
       return;
+    }
+  );
+});
+
+// ── Fitur 1: Riwayat Transaksi (beli akun + perpanjang) ──────────────────────
+bot.action('tx_history', async (ctx) => {
+  await ctx.answerCbQuery().catch(() => {});
+  const userId = ctx.from.id;
+  const VPN_TYPES = `'ssh','vmess','vless','trojan','shadowsocks','udp_http','zivpn'`;
+  db.all(
+    `SELECT amount, type, reference_id, timestamp
+     FROM transactions
+     WHERE user_id = ? AND type IN (${VPN_TYPES})
+       AND reference_id NOT LIKE 'account-trial-%'
+     ORDER BY timestamp DESC
+     LIMIT 10`,
+    [userId],
+    async (err, rows) => {
+      if (err) {
+        logger.error('Error ambil riwayat transaksi:', err.message);
+        return ctx.reply('❌ Terjadi kesalahan saat mengambil riwayat transaksi.');
+      }
+      if (!rows || rows.length === 0) {
+        return ctx.reply('📜 Belum ada riwayat transaksi akun VPN.', {
+          reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'menu_tools' }]] }
+        });
+      }
+
+      const typeLabel = { ssh: 'SSH/OVPN', vmess: 'VMess', vless: 'VLess', trojan: 'Trojan', shadowsocks: 'Shadowsocks', udp_http: 'UDP HTTP', zivpn: 'ZIVPN' };
+      const blocks = rows.map((row, idx) => {
+        const dateText = row.timestamp ? new Date(row.timestamp).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) : '-';
+        const label = typeLabel[row.type] || row.type.toUpperCase();
+        const isRenew = String(row.reference_id || '').includes('renew');
+        const aksi = isRenew ? '🔄 Perpanjang' : '➕ Buat Akun';
+        return (
+          `#${idx + 1} ${aksi}\n` +
+          `• <b>Layanan:</b> ${escapeHtmlLocal(label)}\n` +
+          `• <b>Nominal:</b> ${escapeHtmlLocal(formatRupiah(Math.abs(row.amount)))}\n` +
+          `• <b>Waktu:</b> ${escapeHtmlLocal(dateText)}`
+        );
+      });
+
+      const title = '📜 <b>Riwayat Transaksi Akun (10 terakhir)</b>';
+      const maxLen = 3800;
+      let chunk = `${title}\n\n`;
+      for (const block of blocks) {
+        const next = chunk.length > title.length + 2 ? `${chunk}\n\n${block}` : `${chunk}${block}`;
+        if (next.length > maxLen) {
+          await ctx.reply(chunk, { parse_mode: 'HTML' });
+          chunk = `${title}\n\n${block}`;
+        } else {
+          chunk = next;
+        }
+      }
+      if (chunk.trim()) {
+        await ctx.reply(chunk, {
+          parse_mode: 'HTML',
+          reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'menu_tools' }]] }
+        });
+      }
     }
   );
 });
@@ -10831,6 +11044,103 @@ bot.action('send_main_menu', async (ctx) => {
   await sendMainMenu(ctx);
 });
 
+// ── Fitur 4: Konfirmasi buat akun ────────────────────────────────────────────
+bot.action('confirm_create_yes', async (ctx) => {
+  await ctx.answerCbQuery().catch(() => {});
+  const state = userState[ctx.chat.id];
+  if (!state || state.step !== 'confirm_create_account') {
+    return ctx.reply('⚠️ Sesi konfirmasi sudah habis. Silakan ulangi dari awal.');
+  }
+
+  // Restore state ke step sebelumnya agar proses lanjut
+  const totalHarga = state._confirmTotalHarga;
+  const type = state.type;
+  const action = 'create';
+  const serverId = state.serverId;
+  const username = state.username;
+  const password = state.password || '';
+  const exp = state.exp;
+  const quota = state.quota;
+  const iplimit = state.iplimit;
+  const selectedPackage = state._confirmSelectedPackage;
+  const createPriceMode = state._confirmCreatePriceMode;
+  const isResellerUser = state._confirmIsResellerUser;
+  const server = state._confirmServer;
+  const harga = state._confirmHarga;
+  let usedPassword = password;
+  let msg;
+
+  try {
+    await ctx.deleteMessage().catch(() => {});
+  } catch (_) {}
+
+  const reserveResult = await reserveAccountChargeAtomic(ctx.from.id, totalHarga, type, action);
+  if (!reserveResult.ok) {
+    if (reserveResult.error === 'SALDO_NOT_ENOUGH_OR_USER_NOT_FOUND') {
+      return ctx.reply('❌ *Saldo tidak cukup.* Silakan cek saldo Anda lalu coba lagi.', { parse_mode: 'Markdown' });
+    }
+    return ctx.reply('❌ *Terjadi kesalahan saat memproses saldo. Silakan coba lagi.*', { parse_mode: 'Markdown' });
+  }
+
+  const telegramUserId = String(ctx.from?.id || '');
+  const telegramChatId = String(ctx.chat?.id || '');
+
+  if (type === 'vmess') msg = await createvmess(username, exp, quota, iplimit, serverId, telegramUserId, telegramChatId);
+  else if (type === 'vless') msg = await createvless(username, exp, quota, iplimit, serverId, telegramUserId, telegramChatId);
+  else if (type === 'trojan') msg = await createtrojan(username, exp, quota, iplimit, serverId, telegramUserId, telegramChatId);
+  else if (type === 'shadowsocks') msg = await createshadowsocks(username, exp, quota, iplimit, serverId);
+  else if (type === 'ssh') msg = await createssh(username, password, exp, iplimit, serverId, telegramUserId, telegramChatId);
+  else if (type === 'zivpn') {
+    const randomPassword = Math.random().toString(36).slice(-8);
+    usedPassword = randomPassword;
+    msg = await createzivpn(username, randomPassword, exp, iplimit, serverId, telegramUserId, telegramChatId, selectedPackage);
+  } else if (type === 'udp_http') msg = await createudphttp(username, password, exp, iplimit, serverId, telegramUserId, telegramChatId);
+
+  const msgText = String(msg || '');
+  const msgLower = msgText.toLowerCase();
+  const isErrorMsg = ['error','gagal','failed','not found','tidak ditemukan','unauthorized','forbidden','invalid'].some(n => msgLower.includes(n));
+
+  if (isErrorMsg) {
+    await cancelReservedAccountCharge(ctx.from.id, totalHarga, reserveResult.referenceId).catch(() => {});
+    delete userState[ctx.chat.id];
+    return ctx.reply(msg, { parse_mode: 'Markdown' });
+  }
+
+  await finalizeReservedAccountCharge(reserveResult.referenceId, type).catch(() => {});
+  db.run('UPDATE Server SET total_create_akun = total_create_akun + 1 WHERE id = ?', [serverId]);
+
+  const expDays = Number(exp) || 0;
+  const expiresAt = expDays > 0 ? (Date.now() + expDays * 24 * 60 * 60 * 1000) : null;
+  const passwordToStore = (type === 'zivpn') ? usedPassword : password;
+  const linkPayload = (type === 'vmess' || type === 'vless' || type === 'trojan') ? extractAccountLinksFromMessage(msgText) : {};
+  upsertAccountRecord({ userId: ctx.from.id, type, username, password: passwordToStore, serverId, serverName: state.serverName, domain: state.serverDomain, accountIpPackage: selectedPackage, accountPricePerDay: harga, expiresAt, ...linkPayload });
+
+  // Notif create
+  try {
+    const expDate = new Date(Date.now() + exp * 24 * 60 * 60 * 1000);
+    const creatorUsername = ctx.from.username ? `@${ctx.from.username}` : '-';
+    const roleLabel = isResellerUser ? 'RESELLER' : 'USER';
+    await sendGlobalCreateAccountNotification({ creatorId: ctx.from.id, creatorUsername, serverName: state.serverName || state.serverDomain || '-', accountType: String(type || '-').toUpperCase(), role: roleLabel, remarks: buildCreateNotifRemarks(type, username), expDays: exp, expiredDate: formatDateId(expDate), payment: `VIA SALDO BOT - Rp ${Number(totalHarga || 0).toLocaleString('id-ID')} (${formatCreatePriceMode(createPriceMode)})` });
+    if (!isResellerUser) {
+      const creatorLabel = ctx.from.username ? `@${ctx.from.username}` : (ctx.from.first_name || 'User');
+      await sendNonResellerCreateNotification({ service: type.toUpperCase(), serverName: state.serverName, domain: state.serverDomain, accountUsername: username, accountPassword: usedPassword, expDays: exp, expiredDate: formatDateId(expDate), creatorLabel, creatorId: ctx.from.id });
+    }
+  } catch (_) {}
+
+  delete userState[ctx.chat.id];
+  const msgToUser = normalizeCreateAccountMessageForDisplay(msg, selectedPackage);
+  await ctx.reply(msgToUser, { parse_mode: 'Markdown' });
+});
+
+bot.action('confirm_create_no', async (ctx) => {
+  await ctx.answerCbQuery('❌ Pembuatan akun dibatalkan.').catch(() => {});
+  delete userState[ctx.chat.id];
+  try { await ctx.deleteMessage(); } catch (_) {}
+  await ctx.reply('❌ Pembuatan akun dibatalkan.', {
+    reply_markup: { inline_keyboard: [[{ text: '🔙 Menu VPN', callback_data: 'menu_vpn' }]] }
+  });
+});
+
 bot.action('trial_vmess', async (ctx) => {
   if (!ctx || !ctx.match) {
     return ctx.reply(' *GAGAL!* Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.', { parse_mode: 'Markdown' });
@@ -11150,7 +11460,6 @@ db.all(query, params, async (err, servers) => {
     }
     if (navButtons.length > 0) keyboard.push(navButtons);
     keyboard.push([{ text: ' Kembali ke Menu Utama', callback_data: 'sendMainMenu' }]);
-
 const serverBlocks = currentServers.map(server => {
   const hargaPerHari1 = getEffectiveServerPackagePrice(server, isR, 1);
   const hargaPerHari2 = getEffectiveServerPackagePrice(server, isR, 2);
@@ -11969,6 +12278,7 @@ bot.action('menu_akrab', async (ctx) => {
     ],
     [
       { text: '📦 Cek Stok', callback_data: 'akrab_cek_stock_all' },
+      { text: '📜 Riwayat', callback_data: 'akrab_riwayat' },
     ],
     [
       { text: '🔔 PO V1', callback_data: 'preorder_xla' },
@@ -12328,6 +12638,57 @@ bot.action('akrab_cek_status', async (ctx) => {
       reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'menu_akrab' }]] },
     }
   );
+});
+
+// ── Fitur 10: Riwayat pembelian Akrab ────────────────────────────────────────
+bot.action('akrab_riwayat', async (ctx) => {
+  await ctx.answerCbQuery();
+  const userId = ctx.from.id;
+  try {
+    const orders = await dbH.dbAll(db,
+      `SELECT reff_id, produk, tujuan, amount, status, created_at
+       FROM akrab_orders
+       WHERE user_id = ?
+       ORDER BY created_at DESC
+       LIMIT 10`,
+      [userId]
+    );
+
+    if (!orders.length) {
+      return ctx.editMessageText(
+        '📜 <b>Riwayat Akrab</b>\n\n<i>Belum ada riwayat pembelian.</i>',
+        { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'menu_akrab' }]] } }
+      );
+    }
+
+    const statusEmoji = { success: '✅', failed: '❌', pending: '⏳', processing: '🔄' };
+    const blocks = orders.map((o, idx) => {
+      const dateText = o.created_at ? new Date(o.created_at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) : '-';
+      const emoji = statusEmoji[o.status] || '❓';
+      return (
+        `#${idx + 1} ${emoji} <b>${escapeHtml(o.produk || '-')}</b>\n` +
+        `• Tujuan : <code>${escapeHtml(o.tujuan || '-')}</code>\n` +
+        `• Nominal: Rp ${Number(o.amount || 0).toLocaleString('id-ID')}\n` +
+        `• Status : ${o.status || '-'}\n` +
+        `• Waktu  : ${dateText}\n` +
+        `• Ref ID : <code>${escapeHtml(o.reff_id || '-')}</code>`
+      );
+    });
+
+    const title = '📜 <b>Riwayat Pembelian Akrab (10 terakhir)</b>';
+    const text = `${title}\n\n${blocks.join('\n\n')}`;
+
+    await ctx.editMessageText(text.slice(0, 4000), {
+      parse_mode: 'HTML',
+      reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'menu_akrab' }]] }
+    });
+  } catch (err) {
+    logger.error('akrab_riwayat: ' + err.message);
+    await ctx.editMessageText('❌ Gagal memuat riwayat.', {
+      parse_mode: 'HTML',
+      reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'menu_akrab' }]] }
+    });
+  }
 });
 
 // ── Cek Stok XLA / XDA / Circle (gabungan) ──────────────────────────────────
@@ -15690,6 +16051,49 @@ if (state.action === 'create' && normalizeCreatePriceMode(state.priceMode) === '
             return ctx.reply(' *Saldo Anda tidak mencukupi untuk melakukan transaksi ini.*', { parse_mode: 'Markdown' });
           }
 
+          // ── Konfirmasi sebelum beli/perpanjang ──────────────────────────
+          if (action === 'create') {
+            const saldoSetelah = saldo - totalHarga;
+            const expDate = new Date(Date.now() + exp * 24 * 60 * 60 * 1000);
+            const pkgLabel = selectedPackage === 2 ? '2 IP' : '1 IP';
+            const modeLabel = formatCreatePriceMode(createPriceMode);
+            const confirmText =
+              `📋 *Konfirmasi Pembuatan Akun*\n\n` +
+              `• Layanan  : \`${type.toUpperCase()}\`\n` +
+              `• Server   : \`${state.serverName || '-'}\`\n` +
+              `• Username : \`${username}\`\n` +
+              `• Paket    : ${pkgLabel} · ${modeLabel}\n` +
+              `• Durasi   : ${exp} hari\n` +
+              `• Expired  : ${formatDateId(expDate)}\n` +
+              `• Harga    : Rp ${totalHarga.toLocaleString('id-ID')}\n` +
+              `• Saldo stlh: Rp ${saldoSetelah.toLocaleString('id-ID')}\n\n` +
+              `Lanjutkan pembuatan akun?`;
+
+            // Simpan state untuk konfirmasi
+            userState[ctx.chat.id] = Object.assign({}, state, {
+              step: 'confirm_create_account',
+              _confirmTotalHarga: totalHarga,
+              _confirmSaldo: saldo,
+              _confirmHarga: harga,
+              _confirmSelectedPackage: selectedPackage,
+              _confirmCreatePriceMode: createPriceMode,
+              _confirmIsResellerUser: isResellerUser,
+              _confirmServer: server
+            });
+
+            return ctx.reply(confirmText, {
+              parse_mode: 'Markdown',
+              reply_markup: {
+                inline_keyboard: [
+                  [
+                    { text: '✅ Ya, Buat Akun', callback_data: 'confirm_create_yes' },
+                    { text: '❌ Batal', callback_data: 'confirm_create_no' }
+                  ]
+                ]
+              }
+            });
+          }
+
           const reserveResult = await reserveAccountChargeAtomic(ctx.from.id, totalHarga, type, action);
           if (!reserveResult.ok) {
             logger.error(`Gagal reserve saldo user ${ctx.from.id}, type: ${type}, server: ${serverId}, err: ${reserveResult.error}`);
@@ -15882,9 +16286,24 @@ if (action === 'create') {
         creatorLabel,
         creatorId: ctx.from.id
       });
+    } else {
+      // Notif reseller create ke NOTIF_BOT_TOKEN juga
+      if (NOTIF_BOT_TOKEN && NOTIF_CHAT_ID) {
+        const creatorLabel = ctx.from.username ? `@${ctx.from.username}` : (ctx.from.first_name || 'Reseller');
+        const text =
+          `🏪 NOTIFIKASI AKUN BARU (RESELLER)\n\n` +
+          `Layanan: ${type.toUpperCase()}\n` +
+          `Server: ${state.serverName || '-'}\n` +
+          `Username: ${buildCreateNotifRemarks(type, username)}\n` +
+          `Masa Aktif: ${exp} hari\n` +
+          `Expired: ${formatDateId(expDate)}\n\n` +
+          `Pembuat: ${creatorLabel}\n` +
+          `User ID: ${ctx.from.id}`;
+        axios.post(`https://api.telegram.org/bot${NOTIF_BOT_TOKEN}/sendMessage`, { chat_id: NOTIF_CHAT_ID, text }).catch(() => {});
+      }
     }
   } catch (e) {
-    logger.error(' Gagal kirim notif create non-reseller:', e.message);
+    logger.error(' Gagal kirim notif create akun:', e.message);
   }
 }
 
