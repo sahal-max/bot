@@ -12332,6 +12332,43 @@ bot.action('menu_akrab', async (ctx) => {
   );
 });
 
+// ── Helper bersama: ambil slot map stok Akrab (XLA + XDA) ───────────────────
+// Dipakai oleh menu Akrab V1/V2, Cek Stok, dan Pre-Order agar SELALU SINKRON.
+async function fetchAkrabStokMap() {
+  const stokMap = {};
+  try {
+    const [stokV1Resp, stokV2Resp] = await Promise.all([
+      akrabModule.cekStokAkrab(KHFY_ENDPOINT).catch(() => null),
+      akrabModule.cekStokAkrabV2(KHFY_ENDPOINT).catch(() => null),
+    ]);
+
+    // V1 (XLA): array of {type, sisa_slot}
+    const stokV1Items = Array.isArray(stokV1Resp)
+      ? stokV1Resp
+      : (stokV1Resp && Array.isArray(stokV1Resp.data)) ? stokV1Resp.data : [];
+    stokV1Items.forEach((it) => {
+      const tipe = String(it.type || it.kode || it.nama || '').toUpperCase();
+      if (tipe) stokMap[tipe] = Number(it.sisa_slot ?? it.stok ?? it.stock ?? 0);
+    });
+
+    // V2 (XDA): bisa berupa string message atau array data
+    if (stokV2Resp && stokV2Resp.message) {
+      akrabModule.parseStokV2Message(stokV2Resp.message).forEach((it) => {
+        const tipe = String(it.type || '').toUpperCase();
+        if (tipe) stokMap[tipe] = Number(it.sisa_slot || 0);
+      });
+    } else if (stokV2Resp && Array.isArray(stokV2Resp.data)) {
+      stokV2Resp.data.forEach((it) => {
+        const tipe = String(it.type || it.kode || '').toUpperCase();
+        if (tipe) stokMap[tipe] = Number(it.sisa_slot ?? it.stok ?? 0);
+      });
+    }
+  } catch (e) {
+    logger.warn('fetchAkrabStokMap error: ' + e.message);
+  }
+  return stokMap;
+}
+
 // ── Grup Akrab V1 / V2 ──────────────────────────────────────────────────────
 // Pengelompokan produk Akrab. Cek kode_produk, kode_provider, dan nama produk.
 //   v1 : XLA / XL Akrab / produk dengan provider XLA  — Akrab V1
@@ -12359,29 +12396,8 @@ bot.action(/^akrab_grup_(v1|v2)$/, async (ctx) => {
     const products = await akrabModule.getProducts(KHFY_ENDPOINT, KHFY_API_KEY);
 
     // Ambil data stok juga (paralel) agar penandaan KOSONG sinkron dengan menu Cek Stok
-    let stokMap = {};
-    try {
-      const [stokV1Resp, stokV2Resp] = await Promise.all([
-        akrabModule.cekStokAkrab(KHFY_ENDPOINT).catch(() => null),
-        akrabModule.cekStokAkrabV2(KHFY_ENDPOINT).catch(() => null),
-      ]);
-      // V1: array of {type, sisa_slot}
-      const stokV1Items = Array.isArray(stokV1Resp)
-        ? stokV1Resp
-        : (stokV1Resp && Array.isArray(stokV1Resp.data)) ? stokV1Resp.data : [];
-      stokV1Items.forEach((it) => {
-        const tipe = String(it.type || it.kode || '').toUpperCase();
-        if (tipe) stokMap[tipe] = Number(it.sisa_slot ?? it.stok ?? it.stock ?? 0);
-      });
-      // V2: parse string message
-      if (stokV2Resp && stokV2Resp.message) {
-        const stokV2Items = akrabModule.parseStokV2Message(stokV2Resp.message);
-        stokV2Items.forEach((it) => {
-          const tipe = String(it.type || '').toUpperCase();
-          if (tipe) stokMap[tipe] = Number(it.sisa_slot || 0);
-        });
-      }
-    } catch (_) { /* stok endpoint optional */ }
+    // Ambil data stok via helper bersama agar SINKRON dengan menu Cek Stok & Pre-Order
+    const stokMap = await fetchAkrabStokMap();
 
     // Filter berdasarkan kode produk + nama + provider
     const getKode = (p) => String(p.kode_produk || p.code || p.produk || '').toUpperCase();
@@ -12692,33 +12708,18 @@ bot.action('akrab_riwayat', async (ctx) => {
 bot.action('akrab_cek_stock_all', async (ctx) => {
   await ctx.answerCbQuery('Mengecek stok...');
   try {
-    const [products, stokV1Resp, stokV2Resp] = await Promise.all([
+    const [products, stokMap] = await Promise.all([
       akrabModule.getProducts(KHFY_ENDPOINT, KHFY_API_KEY).catch(() => []),
-      akrabModule.cekStokAkrab(KHFY_ENDPOINT).catch(() => null),
-      akrabModule.cekStokAkrabV2(KHFY_ENDPOINT).catch(() => null),
+      fetchAkrabStokMap(),
     ]);
 
-    // Build map slot XLA dari endpoint V1
+    // Split slot map gabungan menjadi XLA dan XDA (sumber sama dengan menu lain)
     const xlaSlotMap = {};
-    const itemsV1 = Array.isArray(stokV1Resp)
-      ? stokV1Resp
-      : (stokV1Resp && Array.isArray(stokV1Resp.data)) ? stokV1Resp.data : [];
-    itemsV1.forEach((it) => {
-      const tipe = String(it.type || it.kode || it.nama || '').toUpperCase();
-      if (tipe) xlaSlotMap[tipe] = Number(it.sisa_slot ?? it.stok ?? it.stock ?? 0);
-    });
-
-    // Build map slot XDA dari endpoint V2
     const xdaSlotMap = {};
-    if (stokV2Resp && stokV2Resp.message) {
-      akrabModule.parseStokV2Message(stokV2Resp.message).forEach((it) => {
-        xdaSlotMap[String(it.type || '').toUpperCase()] = Number(it.sisa_slot || 0);
-      });
-    } else if (stokV2Resp && Array.isArray(stokV2Resp.data)) {
-      stokV2Resp.data.forEach((it) => {
-        xdaSlotMap[String(it.type || it.kode || '').toUpperCase()] = Number(it.sisa_slot ?? it.stok ?? 0);
-      });
-    }
+    Object.entries(stokMap).forEach(([kode, slot]) => {
+      if (/^XLA/i.test(kode)) xlaSlotMap[kode] = slot;
+      else if (/^XDA/i.test(kode)) xdaSlotMap[kode] = slot;
+    });
 
     // Helper: ambil kode produk dari berbagai kemungkinan field
     const getKode = (p) => String(p.kode_produk || p.code || p.produk || '').toUpperCase();
@@ -12938,15 +12939,19 @@ bot.action(/^preorder_pilih_produk_(xla|xda)$/, async (ctx) => {
   await ctx.answerCbQuery('Memuat produk...');
   const tipe = ctx.match[1];
   const label = tipe === 'xla' ? 'Akrab V1 (XLA)' : 'Akrab V2 (XDA)';
+  const grup = tipe === 'xla' ? 'v1' : 'v2';
 
   try {
-    const products = await akrabModule.getProducts(KHFY_ENDPOINT, KHFY_API_KEY);
-    const filtered = (products || []).filter(p => {
-      const kode = String(p.kode_produk || '').toUpperCase();
-      return tipe === 'xla'
-        ? /^XLAP?[0-9]/i.test(kode)
-        : /^XDA/i.test(kode);
-    });
+    const [products, stokMap] = await Promise.all([
+      akrabModule.getProducts(KHFY_ENDPOINT, KHFY_API_KEY),
+      fetchAkrabStokMap(),
+    ]);
+
+    // Filter pakai getAkrabGroup yang SAMA dengan menu Akrab V1/V2 (konsisten)
+    const getKode = (p) => String(p.kode_produk || p.code || p.produk || '').toUpperCase();
+    const getNama = (p) => String(p.nama_produk || p.name || p.nama || '');
+    const getProv = (p) => String(p.kode_provider || p.provider || '').toUpperCase();
+    const filtered = (products || []).filter(p => getAkrabGroup(getKode(p), getNama(p), getProv(p)) === grup);
 
     if (!filtered.length) {
       return ctx.editMessageText(
@@ -12964,7 +12969,14 @@ bot.action(/^preorder_pilih_produk_(xla|xda)$/, async (ctx) => {
       const base = Number(p.harga || p.price || p.harga_final || 0);
       const harga = wallet.getEffectivePrice(base, markupGlobal, markupReseller);
       const hargaText = harga > 0 ? ` — Rp ${harga.toLocaleString('id-ID')}` : '';
-      return [{ text: `${nama}${hargaText}`, callback_data: `preorder_set_produk_${tipe}_${kode}` }];
+      // Tampilkan status stok sama seperti menu Akrab
+      const code = String(kode).toUpperCase();
+      const slot = stokMap[code];
+      const habis = slot !== undefined
+        ? slot === 0
+        : (p.kosong == 1 || p.kosong === true || String(p.status || '').toLowerCase() === 'kosong');
+      const stokText = habis ? ' [KOSONG]' : (slot !== undefined && slot > 0 ? ` [${slot}]` : '');
+      return [{ text: `${nama}${hargaText}${stokText}`, callback_data: `preorder_set_produk_${tipe}_${kode}` }];
     });
     keyboard.push([{ text: '🔙 Kembali', callback_data: `preorder_${tipe}` }]);
 
