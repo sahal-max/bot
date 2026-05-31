@@ -3937,7 +3937,8 @@ async function sendMainMenu(ctx) {
 <code>├ Nama   : ${userName}</code>
 <code>├ ID     : ${userId}</code>
 <code>├ Status : ${statusReseller}</code>
-<code>└ Saldo  : Rp ${Number(saldo || 0).toLocaleString('id-ID')}</code>
+<code>├ Saldo VPN        : Rp ${Number(saldo || 0).toLocaleString('id-ID')}</code>
+<code>└ Saldo Tembak Kuota: Rp ${Number(saldoAkrab || 0).toLocaleString('id-ID')}</code>
 
 📊 <b>Transaksi Kamu</b>
 <code>├ 📅 Hari ini   : ${userToday}</code>
