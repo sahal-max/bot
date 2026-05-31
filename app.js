@@ -3952,7 +3952,7 @@ async function sendMainMenu(ctx) {
 <code>┗━━━━━━━━━━━━━━━━━━━━━┛</code>
 
 👤 <b>Informasi Akun</b>
-<code>├ Nama   : ${userName}</code>${expiryLine}
+<code>├ Nama   : ${userName}</code>
 <code>├ ID     : ${userId}</code>
 <code>├ Status : ${statusReseller}</code>
 <code>├ Saldo VPN        : Rp ${Number(saldo || 0).toLocaleString('id-ID')}</code>
@@ -11880,9 +11880,34 @@ bot.action('smm_markup_delete', async (ctx) => {
 bot.action('menu_vpn', async (ctx) => {
   await ctx.answerCbQuery();
   const userId = ctx.from.id;
-  const saldo = await dbH.getSaldo(db, userId).catch(() => 0);
+  const now = Date.now();
+
+  const [saldo, activeAccountRow, nearestExpiryRow] = await Promise.all([
+    dbH.getSaldo(db, userId).catch(() => 0),
+    new Promise(r => db.get(
+      'SELECT COUNT(*) as c FROM accounts WHERE user_id = ? AND (expires_at IS NULL OR expires_at > ?)',
+      [userId, now], (e, row) => r(row)
+    )),
+    new Promise(r => db.get(
+      'SELECT MIN(expires_at) as nearest FROM accounts WHERE user_id = ? AND expires_at > ?',
+      [userId, now], (e, row) => r(row)
+    )),
+  ]);
+
   const isReseller = fs.existsSync(resselFilePath) &&
     fs.readFileSync(resselFilePath, 'utf8').split('\n').map(x => x.trim()).includes(userId.toString());
+
+  const activeAccounts = activeAccountRow ? (activeAccountRow.c || 0) : 0;
+  const nearestExpiry  = nearestExpiryRow ? (nearestExpiryRow.nearest || 0) : 0;
+
+  let aktiLine = '';
+  if (activeAccounts > 0 && nearestExpiry > 0) {
+    const sisaHari = Math.ceil((nearestExpiry - now) / (24 * 60 * 60 * 1000));
+    const warn = sisaHari <= 3 ? ' ⚠️' : '';
+    aktiLine = `\n<code>│</code> Akun aktif : <code>${activeAccounts} (exp terdekat: ${sisaHari} hari${warn})</code>`;
+  } else if (activeAccounts > 0) {
+    aktiLine = `\n<code>│</code> Akun aktif : <code>${activeAccounts}</code>`;
+  }
 
   const keyboard = [
     [
@@ -11915,7 +11940,8 @@ bot.action('menu_vpn', async (ctx) => {
     '<code>┌─────────────────────────┐</code>\n' +
     '<code>│</code> 🔑 <b>AKUN VPN</b>\n' +
     '<code>│─────────────────────────</code>\n' +
-    '<code>│</code> Saldo : <code>Rp ' + Number(saldo || 0).toLocaleString('id-ID') + '</code>\n' +
+    '<code>│</code> Saldo : <code>Rp ' + Number(saldo || 0).toLocaleString('id-ID') + '</code>' +
+    aktiLine + '\n' +
     '<code>└─────────────────────────┘</code>\n\n' +
     'Pilih layanan:';
 
