@@ -1152,10 +1152,13 @@ bot.use(async (ctx, next) => {
     const joined = await checkUserJoinedChannel(userId);
     if (joined) {
       await ctx.answerCbQuery('✅ Terima kasih sudah join!', { show_alert: false }).catch(() => {});
+      // Hapus pesan wajib join, lalu kirim menu utama sebagai pesan baru
       try { await ctx.deleteMessage(); } catch (_) {}
+      // Kirim menu utama langsung tanpa bergantung pada ctx.editMessageText
+      ctx.updateType = 'message'; // paksa sendMainMenu kirim pesan baru
       return sendMainMenu(ctx);
     } else {
-      await ctx.answerCbQuery('❌ Kamu belum join channel!', { show_alert: true }).catch(() => {});
+      await ctx.answerCbQuery('❌ Kamu belum join channel! Pastikan sudah join lalu coba lagi.', { show_alert: true }).catch(() => {});
       return;
     }
   }
@@ -12073,11 +12076,20 @@ bot.action(/^akrab_grup_(v1|v2)$/, async (ctx) => {
     const markupReseller = await dbH.getMarkup(db, 'reseller', 'akrab', userId).catch(() => null);
 
     // Helper: cek produk kosong — pakai slot map (data real-time)
+    // Jika kode ada di stokMap → pakai nilai stok
+    // Jika kode TIDAK ada di stokMap → fallback ke field kosong dari getProducts()
+    // (jangan langsung anggap kosong, karena endpoint stok mungkin tidak lengkap)
     const isProdukKosong = (p) => {
       const code = String(p.kode_produk || p.code || '').toUpperCase();
-      // SELALU pakai slot map. Jika tidak ada di slot map → dianggap kosong
-      if (stokMap[code] !== undefined) return stokMap[code] === 0;
-      return true; // tidak ada di endpoint stok = kosong
+      if (stokMap[code] !== undefined) {
+        // Data real-time dari endpoint stok
+        return stokMap[code] === 0;
+      }
+      // Tidak ada di endpoint stok — fallback ke field dari getProducts()
+      if (p._virtual) return true; // produk virtual (estimasi) tanpa data stok = kosong
+      if (p.kosong == 1 || p.kosong === true) return true;
+      if (String(p.status || '').toLowerCase() === 'kosong') return true;
+      return false; // default: anggap tersedia jika tidak ada info kosong
     };
 
     const keyboard = filtered.slice(0, 40).map((p) => {
@@ -12221,13 +12233,11 @@ bot.action(/^akrab_beli_(.+)$/, async (ctx) => {
   // Cek stok produk: andalkan slot map (data real-time).
   const isKosong = (() => {
     const code = String((product && (product.kode_produk || product.code)) || produkCode || '').toUpperCase();
-    // Selalu pakai slot map untuk XLA/XDA
-    if (/^XLA[0-9]/.test(code) || /^XDA[0-9]/.test(code)) {
-      if (stokMap[code] !== undefined) return stokMap[code] === 0;
-      return true; // tidak ada di slot map = kosong
-    }
-    // Produk lain: pakai field kosong
+    // Pakai slot map jika tersedia
+    if (stokMap[code] !== undefined) return stokMap[code] === 0;
+    // Tidak ada di slot map — fallback ke field dari getProducts()
     if (!product) return false;
+    if (product._virtual) return true; // produk virtual tanpa data stok = kosong
     if (product.kosong == 1 || product.kosong === true) return true;
     if (String(product.status || '').toLowerCase() === 'kosong') return true;
     return false;
