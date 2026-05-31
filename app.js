@@ -4029,18 +4029,17 @@ async function sendMainMenu(ctx) {
       { text: '🤝 Akrab', callback_data: 'menu_akrab' }
     ],
     [
-      { text: '📋 Akun Saya', callback_data: 'view_accounts' },
+      { text: '💉 Suntik', callback_data: 'menu_suntik' },
       { text: '💳 Top Up', callback_data: 'menu_topup' }
     ],
     [
-      { text: '💉 Suntik', callback_data: 'menu_suntik' },
-      { text: '🔧 Tools', callback_data: 'menu_tools' }
+      { text: '🔧 Tools', callback_data: 'menu_tools' },
+      { text: '📞 Admin', callback_data: 'hubungi_admin' }
     ],
     ...(testMenuEnabled ? [[
       { text: '🧪 Test', callback_data: 'admin_test_menu' },
-      { text: '📞 Admin', callback_data: 'hubungi_admin' }
+      { text: '🔄 Refresh', callback_data: 'send_main_menu' }
     ]] : [[
-      { text: '📞 Admin', callback_data: 'hubungi_admin' },
       { text: '🔄 Refresh', callback_data: 'send_main_menu' }
     ]]),
     [
