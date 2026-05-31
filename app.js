@@ -12352,52 +12352,10 @@ bot.action(/^akrab_grup_(v1|v2)$/, async (ctx) => {
     const getNama = (p) => String(p.nama_produk || p.name || p.nama || '');
     const filtered = (products || []).filter((p) => getAkrabGroup(getKode(p), getNama(p)) === grup);
 
-    // Untuk V1/V2 — lengkapi daftar dari slot map untuk produk yang TIDAK ada di getProducts.
-    // Harga estimasi proporsional dari produk dengan ukuran GB terdekat.
-    if (grup === 'v1' || grup === 'v2') {
-      const slotKeys = Object.keys(stokMap).filter(k => {
-        if (grup === 'v1') return /^XLA[0-9]/.test(k);
-        if (grup === 'v2') return /^XDA[0-9]/.test(k);
-        return false;
-      });
-      const existingKodes = new Set(filtered.map(getKode));
-
-      const refList = filtered.map(p => {
-        const m = String(getKode(p)).match(/[A-Z]+([0-9]+)/);
-        return m ? { gb: Number(m[1]), harga: Number(p.harga_final || p.price || p.harga || 0), nama: getNama(p) } : null;
-      }).filter(Boolean).sort((a, b) => a.gb - b.gb);
-
-      slotKeys.forEach(kode => {
-        if (existingKodes.has(kode)) return;
-        const m = kode.match(/[A-Z]+([0-9]+)/);
-        if (!m) return;
-        const gb = Number(m[1]);
-        let ref = null;
-        let minDiff = Infinity;
-        refList.forEach(r => {
-          const diff = Math.abs(r.gb - gb);
-          if (diff < minDiff) { minDiff = diff; ref = r; }
-        });
-        const hargaEstimasi = ref && ref.gb > 0 ? Math.round(ref.harga * (gb / ref.gb)) : 0;
-        const namaEstimasi = ref ? ref.nama.replace(/[0-9]+\s*GB/i, gb + ' GB') : `${gb} GB`;
-        filtered.push({
-          kode_produk: kode,
-          nama_produk: namaEstimasi,
-          harga_final: hargaEstimasi,
-          kosong: 0,
-          _virtual: true,
-        });
-      });
-      // Sort by GB
-      filtered.sort((a, b) => {
-        const ga = Number((getKode(a).match(/[A-Z]+([0-9]+)/) || [0, 0])[1]);
-        const gb_ = Number((getKode(b).match(/[A-Z]+([0-9]+)/) || [0, 0])[1]);
-        return ga - gb_;
-      });
-    }
-
+    // Simpan ke userState — hanya produk nyata dari getProducts(), TIDAK ada produk virtual
+    // Produk virtual dihapus karena tidak bisa dibeli (tidak ada di API)
     userState[userId] = Object.assign({}, userState[userId], {
-      akrabProducts: [...(products || []), ...filtered.filter(p => p._virtual)],
+      akrabProducts: products || [],
       akrabStokMap: stokMap,
     });
 
@@ -12417,15 +12375,10 @@ bot.action(/^akrab_grup_(v1|v2)$/, async (ctx) => {
     // Helper: cek produk kosong — pakai slot map (data real-time)
     // Jika kode ada di stokMap → pakai nilai stok
     // Jika kode TIDAK ada di stokMap → fallback ke field kosong dari getProducts()
-    // (jangan langsung anggap kosong, karena endpoint stok mungkin tidak lengkap)
     const isProdukKosong = (p) => {
       const code = String(p.kode_produk || p.code || '').toUpperCase();
-      if (stokMap[code] !== undefined) {
-        // Data real-time dari endpoint stok
-        return stokMap[code] === 0;
-      }
+      if (stokMap[code] !== undefined) return stokMap[code] === 0;
       // Tidak ada di endpoint stok — fallback ke field dari getProducts()
-      if (p._virtual) return true; // produk virtual (estimasi) tanpa data stok = kosong
       if (p.kosong == 1 || p.kosong === true) return true;
       if (String(p.status || '').toLowerCase() === 'kosong') return true;
       return false; // default: anggap tersedia jika tidak ada info kosong
@@ -12572,11 +12525,8 @@ bot.action(/^akrab_beli_(.+)$/, async (ctx) => {
   // Cek stok produk: andalkan slot map (data real-time).
   const isKosong = (() => {
     const code = String((product && (product.kode_produk || product.code)) || produkCode || '').toUpperCase();
-    // Pakai slot map jika tersedia
     if (stokMap[code] !== undefined) return stokMap[code] === 0;
-    // Tidak ada di slot map — fallback ke field dari getProducts()
     if (!product) return false;
-    if (product._virtual) return true; // produk virtual tanpa data stok = kosong
     if (product.kosong == 1 || product.kosong === true) return true;
     if (String(product.status || '').toLowerCase() === 'kosong') return true;
     return false;
