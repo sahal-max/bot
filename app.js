@@ -1123,6 +1123,19 @@ let ADMIN_USERNAME = '';
 const adminIds = ADMIN;
 logger.info('Bot initialized');
 
+// Helper terpusat: cek apakah userId adalah admin (robust untuk berbagai format USER_ID)
+function isAdminId(userId) {
+  const uid = Number(userId);
+  if (!Number.isFinite(uid)) return false;
+  if (Array.isArray(adminIds)) {
+    return adminIds.map(Number).includes(uid);
+  }
+  if (typeof adminIds === 'string') {
+    return adminIds.split(/[,\s]+/).map(s => Number(s.trim())).filter(Number.isFinite).includes(uid);
+  }
+  return Number(adminIds) === uid;
+}
+
 function buildMaintenanceNotice() {
   const setting = loadMaintenanceSetting();
   const estimateText = setting.estimate || 'belum ditentukan';
@@ -1136,19 +1149,24 @@ function buildMaintenanceNotice() {
 
 bot.use(async (ctx, next) => {
   const userId = Number(ctx.from?.id || 0);
-  const isAdminUser = Array.isArray(adminIds) ? adminIds.includes(userId) : Number(adminIds) === userId;
+  const isAdminUser = isAdminId(userId);
   if (isAdminUser) return next();
 
   const maintenance = loadMaintenanceSetting();
   if (!maintenance.enabled) return next();
 
+  logger.info(`[Maintenance] Blokir user ${userId} (mode maintenance aktif)`);
   const notice = buildMaintenanceNotice();
   if (ctx.updateType === 'callback_query') {
     try {
       await ctx.answerCbQuery('Bot sedang maintenance', { show_alert: true });
     } catch (_) {}
   }
-  await ctx.reply(notice, { parse_mode: 'Markdown' });
+  try {
+    await ctx.reply(notice, { parse_mode: 'Markdown' });
+  } catch (e) {
+    logger.warn(`[Maintenance] Gagal kirim notice ke ${userId}: ${e.message}`);
+  }
   return;
 });
 
@@ -1156,8 +1174,7 @@ bot.use(async (ctx, next) => {
 bot.use(async (ctx, next) => {
   const userId = Number(ctx.from?.id || 0);
   if (!userId) return next();
-  const isAdminUser = Array.isArray(adminIds) ? adminIds.includes(userId) : Number(adminIds) === userId;
-  if (isAdminUser) return next();
+  if (isAdminId(userId)) return next();
   if (isUserBlacklisted(userId)) {
     if (ctx.updateType === 'callback_query') {
       await ctx.answerCbQuery('⛔ Akun kamu diblokir.', { show_alert: true }).catch(() => {});
@@ -1175,8 +1192,7 @@ bot.use(async (ctx, next) => {
   if (!userId) return next();
 
   // Admin selalu lolos
-  const isAdminUser = Array.isArray(adminIds) ? adminIds.includes(userId) : Number(adminIds) === userId;
-  if (isAdminUser) return next();
+  if (isAdminId(userId)) return next();
 
   const setting = loadJoinChannelSetting();
   if (!setting.enabled || !setting.channel_id) return next();
