@@ -18913,8 +18913,13 @@ async function processDeposit(ctx, amount, options = {}) {
       : ` Biaya admin OrderKuota: Rp ${adminFee.toLocaleString('id-ID')}`;
 
     // DOWNLOAD QR
-    const qrResponse = await axios.get(qrImageUrl, { responseType: 'arraybuffer', timeout: 15000 });
-    const qrBuffer = Buffer.from(qrResponse.data);
+    let qrBuffer;
+    if (paymentResult.qrBuffer) {
+      qrBuffer = paymentResult.qrBuffer;
+    } else {
+      const qrResponse = await axios.get(qrImageUrl, { responseType: 'arraybuffer', timeout: 15000 });
+      qrBuffer = Buffer.from(qrResponse.data);
+    }
 
     // KIRIM KE USER DENGAN INSTRUKSI SIMPLE
     const purposeLine = topupPurpose === 'reseller_join'
@@ -19008,7 +19013,7 @@ ${gatewayProvider === 'orderkuota' ? 'ℹ Saldo masuk setelah tombol ditekan lal
     logger.info(` QR sent to ${userId}, amount: ${finalAmount}, ref: ${referenceId}`);
 
   } catch (error) {
-    logger.error(' Deposit error:', error.message);
+    logger.error(" Deposit error:", error?.message || JSON.stringify(error));
     
     await ctx.editMessageText(
       ' *GAGAL MEMBUAT PEMBAYARAN*\n\n' + error.message.substring(0, 100) + '...\n\nSilakan coba lagi.',
