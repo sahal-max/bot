@@ -1,0 +1,81 @@
+#!/bin/bash
+export TERM=xterm-256color
+
+neutral="\e[0m"
+red="\e[38;5;196m"
+yellow="\e[38;5;226m"
+green="\e[38;5;82m"
+cyan="\e[38;5;87m"
+purple="\e[38;5;135m"
+bold_white="\e[1;37m"
+
+BOT_DIR="/root/BotVPN"
+REPO="https://github.com/sahal-max/bot.git"
+
+echo -e "${purple}====================================================================${neutral}"
+echo -e "${bold_white}            ⚡ UPDATE BOT TELEGRAM • RETRI VPN ⚡${neutral}"
+echo -e "${purple}====================================================================${neutral}"
+echo ""
+
+if [ ! -d "$BOT_DIR" ]; then
+    echo -e "${red}❌ Folder $BOT_DIR tidak ditemukan.${neutral}"
+    echo -e "${yellow}Jalankan instalasi dulu sebelum update.${neutral}"
+    exit 1
+fi
+
+cd "$BOT_DIR" || exit 1
+
+# Backup file penting yang TIDAK boleh tertimpa
+echo -e "${cyan}🔒 Menyimpan konfigurasi & database...${neutral}"
+BACKUP_TMP="/tmp/retri_update_$(date +%Y%m%d_%H%M%S)"
+mkdir -p "$BACKUP_TMP"
+[ -f "$BOT_DIR/.vars.json" ]            && cp "$BOT_DIR/.vars.json" "$BACKUP_TMP/"
+[ -f "$BOT_DIR/sellvpn.db" ]            && cp "$BOT_DIR/sellvpn.db" "$BACKUP_TMP/"
+[ -f "$BOT_DIR/ressel.db" ]             && cp "$BOT_DIR/ressel.db" "$BACKUP_TMP/"
+[ -f "$BOT_DIR/trial.db" ]              && cp "$BOT_DIR/trial.db" "$BACKUP_TMP/"
+for f in reseller_terms.json topup_manual.json topup_auto.json topup_bonus.json sc_nexus_menu.json maintenance_mode.json smm_markup.json akrab_markup.json; do
+    [ -f "$BOT_DIR/$f" ] && cp "$BOT_DIR/$f" "$BACKUP_TMP/"
+done
+echo -e "${green}✅ Backup sementara: $BACKUP_TMP${neutral}"
+
+# Tarik update terbaru dari repo
+echo -e "${cyan}⬇️  Mengambil update terbaru dari GitHub...${neutral}"
+if [ -d "$BOT_DIR/.git" ]; then
+    git -C "$BOT_DIR" fetch origin main 2>/dev/null
+    git -C "$BOT_DIR" reset --hard origin/main 2>/dev/null
+    git -C "$BOT_DIR" pull origin main 2>/dev/null
+else
+    # Folder bukan git repo: clone fresh ke temp lalu salin
+    rm -rf /tmp/retri_fresh
+    git clone "$REPO" /tmp/retri_fresh || { echo -e "${red}❌ Gagal clone repo.${neutral}"; exit 1; }
+    cp -rf /tmp/retri_fresh/* "$BOT_DIR/"
+    rm -rf /tmp/retri_fresh
+fi
+echo -e "${green}✅ Kode terbaru berhasil diambil.${neutral}"
+
+# Kembalikan file penting
+echo -e "${cyan}♻️  Mengembalikan konfigurasi & database...${neutral}"
+cp -f "$BACKUP_TMP/".vars.json "$BOT_DIR/" 2>/dev/null
+cp -f "$BACKUP_TMP/"*.db "$BOT_DIR/" 2>/dev/null
+cp -f "$BACKUP_TMP/"*.json "$BOT_DIR/" 2>/dev/null
+echo -e "${green}✅ Konfigurasi & database aman.${neutral}"
+
+# Update dependency
+echo -e "${cyan}📦 Memperbarui dependency...${neutral}"
+npm install --prefix "$BOT_DIR" sqlite3 express crypto telegraf axios dotenv node-schedule --no-audit >/dev/null 2>&1
+chmod +x "$BOT_DIR"/* 2>/dev/null
+
+# Restart bot
+echo -e "${cyan}🔄 Restart bot...${neutral}"
+pm2 restart sellvpn >/dev/null 2>&1 || pm2 start "$BOT_DIR/ecosystem.config.js" >/dev/null 2>&1
+pm2 save >/dev/null 2>&1
+
+echo ""
+echo -e "${purple}====================================================================${neutral}"
+echo -e "${bold_white}                  🎉 UPDATE SELESAI 🎉${neutral}"
+echo -e "${purple}====================================================================${neutral}"
+echo -e " Status Bot : ${green}$(pm2 status | grep -q sellvpn && echo aktif || echo nonaktif)${neutral}"
+echo -e " Backup     : ${green}$BACKUP_TMP${neutral}"
+echo ""
+echo -e " 📱 Cek di Telegram: ${bold_white}/start${neutral}"
+echo ""
