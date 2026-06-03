@@ -18662,6 +18662,13 @@ async function createLocalOrderKuotaQr({ amount, qrisData, referenceId }) {
   return { reference: String(referenceId || `LOCAL-${Date.now()}`), amount: Number(amount), qrisString, qrBuffer };
 }
 
+function isPlaceholderSecret(value) {
+  const s = String(value || "").trim().toLowerCase();
+  if (!s) return true;
+  const placeholders = ["your_api_key","your-api-key","apikey","secret","token","placeholder","xxxxxxxx","12345","test"];
+  return placeholders.some(p => s.includes(p));
+}
+
 function getLocalPaymentApiKey() {
   const key = String(LOCAL_PAYMENT_API_KEY || '').trim();
   return isPlaceholderSecret(key) ? '' : key;
