@@ -491,6 +491,7 @@ const {
 } = require('./modules/unlock');
 
 const dbH = require('./modules/db_helpers');
+const ppob = require('./modules/ppob');
 const wallet = require('./modules/wallet');
 const akrabModule = require('./modules/akrab');
 const smmModule = require('./modules/smm');
@@ -622,6 +623,7 @@ if (!Number.isFinite(BW_REPORT_INTERVAL_MINUTES) || BW_REPORT_INTERVAL_MINUTES <
   BW_REPORT_INTERVAL_MINUTES = 180;
 }
 if (BW_REPORT_INTERVAL_MINUTES > 1440) BW_REPORT_INTERVAL_MINUTES = 1440;
+let HIDEPULSA_TELEGRAM_USER_ID = String(vars.HIDEPULSA_TELEGRAM_USER_ID || '').trim();
 let NOTIF_BOT_TOKEN = vars.NOTIF_BOT_TOKEN || '';
 let NOTIF_CHAT_ID = vars.NOTIF_CHAT_ID || '';
 let GLOBAL_CREATE_NOTIF_GROUP_ID = vars.GLOBAL_CREATE_NOTIF_GROUP_ID || '';
@@ -646,6 +648,8 @@ function reloadRuntimePaymentConfig() {
   RAJASERVER_API_KEY = current.RAJASERVER_API_KEY || '';
   LOCAL_PAYMENT_API_KEY = String(current.LOCAL_PAYMENT_API_KEY || current.RAJASERVER_API_KEY || current.API_KEY || '').trim();
   ORDERKUOTA_CREATE_MODE = String(current.ORDERKUOTA_CREATE_MODE || ORDERKUOTA_CREATE_MODE || 'local').trim().toLowerCase();
+  HIDEPULSA_TELEGRAM_USER_ID = String(current.HIDEPULSA_TELEGRAM_USER_ID || '').trim();
+  if (HIDEPULSA_TELEGRAM_USER_ID) ppob.setBotTelegramUserId(Number(HIDEPULSA_TELEGRAM_USER_ID));
   if (!['local', 'gateway'].includes(ORDERKUOTA_CREATE_MODE)) {
     ORDERKUOTA_CREATE_MODE = 'local';
   }
@@ -4109,7 +4113,10 @@ async function sendMainMenu(ctx) {
       { text: '💳 Top Up', callback_data: 'menu_topup' }
     ],
     [
-      { text: '🔧 Tools', callback_data: 'menu_tools' },
+      { text: '🛒 PPOB', callback_data: 'menu_ppob' },
+      { text: '🔧 Tools', callback_data: 'menu_tools' }
+    ],
+    [
       { text: '📞 Admin', callback_data: 'hubungi_admin' }
     ],
     ...(testMenuEnabled ? [[
@@ -5881,6 +5888,7 @@ async function sendAdminToolsMenu(ctx) {
     [{ text: '🌐 Setup Nginx Webhook', callback_data: 'nginx_webhook_menu' }],
     [{ text: '📡 Notif BW Server', callback_data: 'bw_notif_settings_menu' }],
     [{ text: '💳 Setting Payment Gateway', callback_data: 'payment_gateway_settings_menu' }],
+    [{ text: '🛒 Setting HidePulsa PPOB', callback_data: 'hidepulsa_settings_menu' }],
     [{ text: maintenanceLabel, callback_data: 'maintenance_menu' }],
     [{ text: joinChannelLabel, callback_data: 'join_channel_menu' }],
     [{ text: '📞 Kontak Admin', callback_data: 'admin_contact_settings_menu' }],
@@ -6670,6 +6678,93 @@ bot.action(/set_server_bw_limit_(\d+)/, async (ctx) => {
   );
 });
 
+
+bot.action('hidepulsa_settings_menu', async (ctx) => {
+  await ctx.answerCbQuery();
+  if (!adminIds.includes(ctx.from.id)) return ctx.reply('❌ Tidak ada izin.');
+  await sendHidepulsaSettingsMenu(ctx);
+});
+
+bot.action('hidepulsa_set_tgid', async (ctx) => {
+  await ctx.answerCbQuery();
+  if (!adminIds.includes(ctx.from.id)) return ctx.reply('❌ Tidak ada izin.');
+  userState[ctx.from.id] = { step: 'hidepulsa_set_tgid' };
+  await ctx.reply('🆔 Kirim Telegram User ID untuk HidePulsa (angka):');
+});
+
+bot.action('hidepulsa_req_otp', async (ctx) => {
+  await ctx.answerCbQuery();
+  if (!adminIds.includes(ctx.from.id)) return ctx.reply('❌ Tidak ada izin.');
+  const vars = JSON.parse(require('fs').readFileSync('./.vars.json', 'utf-8'));
+  const tgId = Number(vars.HIDEPULSA_TELEGRAM_USER_ID || 0);
+  if (!tgId) return ctx.reply('❌ Set Telegram User ID dulu.');
+  try {
+    await ctx.reply('⏳ Mengirim OTP...');
+    const challengeToken = await ppob.registerAndRequestOtp(tgId);
+    const nextVars = JSON.parse(require('fs').readFileSync('./.vars.json', 'utf-8'));
+    nextVars.HIDEPULSA_CHALLENGE_TOKEN = challengeToken;
+    require('fs').writeFileSync('./.vars.json', JSON.stringify(nextVars, null, 2));
+    await ctx.reply('✅ OTP dikirim ke @apphidepulsa_bot\n\nKlik Verifikasi OTP lalu kirim kode 6 digit.', {
+      reply_markup: { inline_keyboard: [[{ text: '✅ Verifikasi OTP', callback_data: 'hidepulsa_verify_otp' }]] }
+    });
+  } catch (err) {
+    await ctx.reply('❌ Gagal kirim OTP: ' + err.message);
+  }
+});
+
+bot.action('hidepulsa_verify_otp', async (ctx) => {
+  await ctx.answerCbQuery();
+  if (!adminIds.includes(ctx.from.id)) return ctx.reply('❌ Tidak ada izin.');
+  const vars = JSON.parse(require('fs').readFileSync('./.vars.json', 'utf-8'));
+  if (!vars.HIDEPULSA_CHALLENGE_TOKEN) return ctx.reply('❌ Request OTP dulu sebelum verifikasi.');
+  userState[ctx.from.id] = { step: 'hidepulsa_verify_otp', challengeToken: vars.HIDEPULSA_CHALLENGE_TOKEN };
+  await ctx.reply('📲 Kirim kode OTP 6 digit dari @apphidepulsa_bot:');
+});
+
+bot.action('hidepulsa_refresh_token', async (ctx) => {
+  await ctx.answerCbQuery();
+  if (!adminIds.includes(ctx.from.id)) return ctx.reply('❌ Tidak ada izin.');
+  try {
+    await ppob.ensureToken();
+    await ctx.reply('✅ Token berhasil di-refresh!');
+    await sendHidepulsaSettingsMenu(ctx);
+  } catch (err) {
+    await ctx.reply('❌ Gagal refresh: ' + err.message);
+  }
+});
+
+bot.action('hidepulsa_logout', async (ctx) => {
+  await ctx.answerCbQuery();
+  if (!adminIds.includes(ctx.from.id)) return ctx.reply('❌ Tidak ada izin.');
+  ppob.clearTokens();
+  const nextVars = JSON.parse(require('fs').readFileSync('./.vars.json', 'utf-8'));
+  delete nextVars.HIDEPULSA_ACCESS_TOKEN;
+  delete nextVars.HIDEPULSA_REFRESH_TOKEN;
+  delete nextVars.HIDEPULSA_CHALLENGE_TOKEN;
+  require('fs').writeFileSync('./.vars.json', JSON.stringify(nextVars, null, 2));
+  await ctx.reply('🔴 Token dihapus. Silakan login OTP ulang.');
+  await sendHidepulsaSettingsMenu(ctx);
+});
+
+bot.action('hidepulsa_cek_saldo', async (ctx) => {
+  await ctx.answerCbQuery();
+  if (!adminIds.includes(ctx.from.id)) return ctx.reply('❌ Tidak ada izin.');
+  try {
+    const token = await ppob.ensureToken();
+    const res = await axios.get('https://app.hidepulsa.com/profile', {
+      headers: { Authorization: 'Bearer ' + token },
+      timeout: 10000
+    });
+    const balance = (res.data && (res.data.data || res.data.user || {})).balance || 0;
+    await ctx.reply('💰 *Saldo HidePulsa*\n\nRp ' + Number(balance).toLocaleString('id-ID'), {
+      parse_mode: 'Markdown',
+      reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'hidepulsa_settings_menu' }]] }
+    });
+  } catch (err) {
+    await ctx.reply('❌ Gagal cek saldo: ' + err.message);
+  }
+});
+
 bot.action('admin_menu_saldo', async (ctx) => {
   await ctx.answerCbQuery();
   await sendAdminSaldoMenu(ctx);
@@ -7030,6 +7125,35 @@ bot.action('bw_notif_set_interval', async (ctx) => {
     { parse_mode: 'Markdown' }
   );
 });
+
+
+async function sendHidepulsaSettingsMenu(ctx) {
+  const vars = JSON.parse(require('fs').readFileSync('./.vars.json', 'utf-8'));
+  const tgId = vars.HIDEPULSA_TELEGRAM_USER_ID || '-';
+  const hasToken = vars.HIDEPULSA_ACCESS_TOKEN ? '✅ Ada' : '❌ Belum';
+  const hasRefresh = vars.HIDEPULSA_REFRESH_TOKEN ? '✅ Ada' : '❌ Belum';
+  const sessionStatus = ppob.isSessionActive() ? '🟢 Aktif' : '🔴 Tidak aktif';
+  const message =
+    '*⚙️ SETTING HIDEPULSA PPOB*\n\n' +
+    'Telegram User ID : `' + tgId + '`\n' +
+    'Access Token     : ' + hasToken + '\n' +
+    'Refresh Token    : ' + hasRefresh + '\n' +
+    'Status Sesi      : ' + sessionStatus + '\n\nPilih aksi:';
+  const keyboard = [
+    [{ text: '🆔 Set Telegram User ID', callback_data: 'hidepulsa_set_tgid' }],
+    [{ text: '🔐 Login OTP (Minta Kode)', callback_data: 'hidepulsa_req_otp' }],
+    [{ text: '✅ Verifikasi OTP', callback_data: 'hidepulsa_verify_otp' }],
+    [{ text: '🔄 Refresh Token Manual', callback_data: 'hidepulsa_refresh_token' }],
+    [{ text: '🗑️ Hapus Token / Logout', callback_data: 'hidepulsa_logout' }],
+    [{ text: '💰 Cek Saldo HidePulsa', callback_data: 'hidepulsa_cek_saldo' }],
+    [{ text: '🔙 Kembali', callback_data: 'admin_menu_tools' }]
+  ];
+  try {
+    await ctx.editMessageText(message, { parse_mode: 'Markdown', reply_markup: { inline_keyboard: keyboard } });
+  } catch (_) {
+    await ctx.reply(message, { parse_mode: 'Markdown', reply_markup: { inline_keyboard: keyboard } });
+  }
+}
 
 async function sendPaymentGatewayMainMenu(ctx) {
   reloadRuntimePaymentConfig();
@@ -9979,6 +10103,661 @@ async function sendToolsMenu(ctx) {
   }
 }
 
+
+// ════════════════════════════════════════════════════════════
+// PPOB — HidePulsa Integration
+// ════════════════════════════════════════════════════════════
+
+// State untuk PPOB login OTP
+const ppobLoginState = {}; // { userId: { step, challengeToken } }
+
+// ── Helper format pesan ──────────────────────────────────────
+function ppobStatusEmoji(status) {
+  const s = String(status || '').toLowerCase();
+  if (s === 'sukses' || s === 'success') return '✅';
+  if (s === 'pending') return '⏳';
+  if (s === 'gagal' || s === 'failed' || s === 'failure') return '❌';
+  return '🔄';
+}
+
+function ppobMenuKeyboard() {
+  return {
+    inline_keyboard: [
+      [{ text: '📱 Pulsa', callback_data: 'ppob_list_pulsa' }, { text: '📶 Kuota Data', callback_data: 'ppob_list_kuota' }],
+      [{ text: '🌐 Paket Global', callback_data: 'ppob_cat_global' }, { text: '🎁 Combo Plus', callback_data: 'ppob_cat_combo' }],
+      [{ text: '🔄 Masa Aktif', callback_data: 'ppob_cat_masaaktif' }, { text: '🆕 Aktivasi Perdana', callback_data: 'ppob_cat_aktivasi' }],
+      [{ text: '⚡ Listrik PLN', callback_data: 'ppob_cat_listrik' }],
+      [{ text: '🏥 BPJS', callback_data: 'ppob_cat_bpjs' }],
+      [{ text: '🎮 Voucher Game', callback_data: 'ppob_cat_game' }],
+      [{ text: '📦 Produk Digital', callback_data: 'ppob_cat_digital' }],
+      [{ text: '📜 Riwayat', callback_data: 'ppob_history' }],
+      [{ text: '🔙 Kembali', callback_data: 'send_main_menu' }]
+    ]
+  };
+}
+
+// ── Menu utama PPOB ──────────────────────────────────────────
+bot.action('menu_ppob', async (ctx) => {
+  await ctx.answerCbQuery();
+  const userId = ctx.from.id;
+  const isAdmin = adminIds.includes(userId);
+  const isLoggedIn = ppob.isSessionActive();
+  const statusLine = isAdmin ? (isLoggedIn ? '\n\n🟢 *Status API:* Terhubung' : '\n\n🔴 *Status API:* Belum login') : '';
+  const text = '🛒 *LAYANAN PPOB*\n━━━━━━━━━━━━━━━━━━\n\n'
+    + '📱 Pulsa & Kuota semua operator\n'
+    + '⚡ Token & Tagihan Listrik PLN\n'
+    + '🏥 BPJS Kesehatan\n'
+    + '🎮 Voucher Game (ML, FF, dll)'
+    + statusLine;
+  try {
+    await ctx.editMessageText(text, { parse_mode: 'Markdown', reply_markup: ppobMenuKeyboard(isAdmin && isLoggedIn) });
+  } catch (_) {
+    await ctx.reply(text, { parse_mode: 'Markdown', reply_markup: ppobMenuKeyboard(isAdmin && isLoggedIn) });
+  }
+});
+
+// ── Cek session, jika belum login minta OTP ──────────────────
+async function ensurePpobSession(ctx) {
+  if (ppob.isSessionActive()) return true;
+  const userId = ctx.from.id;
+  const botTgId = ppob.getBotTelegramUserId();
+  if (!botTgId) {
+    await ctx.reply(
+      '⚠️ *PPOB belum dikonfigurasi*\n\nAdmin perlu set `HIDEPULSA_TELEGRAM_USER_ID` di `.vars.json`\nlalu restart bot.',
+      { parse_mode: 'Markdown' }
+    );
+    return false;
+  }
+  // Mulai flow OTP
+  try {
+    const challengeToken = await ppob.registerAndRequestOtp(botTgId);
+    ppobLoginState[userId] = { step: 'otp', challengeToken };
+    await ctx.reply(
+      '🔐 *Login HidePulsa*\n\nOTP telah dikirim ke akun Telegram HidePulsa bot.\nKirim kode OTP (6 digit):',
+      { parse_mode: 'Markdown' }
+    );
+    return false; // tunggu OTP
+  } catch (err) {
+    await ctx.reply(`❌ Gagal request OTP: ${err.message}`);
+    return false;
+  }
+}
+
+// ── Handler teks OTP ─────────────────────────────────────────
+bot.on('text', async (ctx, next) => {
+  const userId = ctx.from.id;
+  if (!ppobLoginState[userId]) return next();
+  const state = ppobLoginState[userId];
+  if (state.step !== 'otp') return next();
+
+  const otp = ctx.message.text.trim();
+  if (!/^\d{6}$/.test(otp)) return next();
+
+  try {
+    await ppob.verifyOtp(state.challengeToken, otp);
+    delete ppobLoginState[userId];
+    await ctx.reply('✅ *Login HidePulsa berhasil!*\n\nSekarang kamu bisa gunakan layanan PPOB.', {
+      parse_mode: 'Markdown',
+      reply_markup: ppobMenuKeyboard()
+    });
+  } catch (err) {
+    delete ppobLoginState[userId];
+    await ctx.reply(`❌ OTP salah atau expired: ${err.message}\n\nCoba lagi dari menu PPOB.`);
+  }
+});
+
+// ── Kategori: Pulsa & Kuota ───────────────────────────────────
+bot.action('ppob_cat_pulsa_kuota', async (ctx) => {
+  await ctx.answerCbQuery();
+  const ok = await ensurePpobSession(ctx);
+  if (!ok) return;
+  const keyboard = {
+    inline_keyboard: [
+      [{ text: '📱 Pulsa', callback_data: 'ppob_list_pulsa' }, { text: '📶 Kuota', callback_data: 'ppob_list_kuota' }],
+      [{ text: '🔙 Kembali', callback_data: 'menu_ppob' }]
+    ]
+  };
+  try { await ctx.editMessageText('📱 *Pulsa & Kuota*\n\nPilih jenis:', { parse_mode: 'Markdown', reply_markup: keyboard }); }
+  catch (_) { await ctx.reply('📱 *Pulsa & Kuota*\n\nPilih jenis:', { parse_mode: 'Markdown', reply_markup: keyboard }); }
+});
+
+bot.action('ppob_list_pulsa', async (ctx) => {
+  await ctx.answerCbQuery('Memuat produk...');
+  try {
+    const produk = await ppob.getProdukList('pulsa');
+    const active = produk.filter(p => p.seller_product_status && p.buyer_product_status).slice(0, 20);
+    if (!active.length) return ctx.reply('❌ Produk pulsa tidak tersedia saat ini.');
+    const brands = [...new Set(active.map(p => p.brand))];
+    const keyboard = {
+      inline_keyboard: [
+        ...brands.map(b => [{ text: `📱 ${b}`, callback_data: `ppob_brand_pulsa_${b.toLowerCase()}` }]),
+        [{ text: '🔙 Kembali', callback_data: 'ppob_cat_pulsa_kuota' }]
+      ]
+    };
+    try { await ctx.editMessageText('📱 *Pilih Operator Pulsa:*', { parse_mode: 'Markdown', reply_markup: keyboard }); }
+    catch (_) { await ctx.reply('📱 *Pilih Operator Pulsa:*', { parse_mode: 'Markdown', reply_markup: keyboard }); }
+  } catch (err) {
+    await ctx.reply(`❌ Gagal memuat produk: ${err.message}`);
+  }
+});
+
+async function showBrandProducts(ctx, category, brand, backAction) {
+  await ctx.answerCbQuery('Memuat...');
+  const userId = ctx.from.id;
+  try {
+    const produk = await ppob.getProdukList(category, brand);
+    const active = produk.filter(p => p.seller_product_status && p.buyer_product_status).slice(0, 25);
+    if (!active.length) return ctx.reply('❌ Tidak ada produk ' + brand.toUpperCase() + ' tersedia.');
+    const isGame = category === 'game' || category === 'games';
+    const inputLabel = isGame
+      ? '🎮 *' + brand.toUpperCase() + '*\n\nKirim *User ID game* tujuan:\n_(contoh: 12345678 atau 12345678 (1234) untuk ML)_'
+      : '📦 *' + brand.toUpperCase() + '*\n\nKirim *nomor HP* tujuan terlebih dahulu:\n_(contoh: 087777334689)_';
+    ppobBeliState[userId] = { step: 'input_no_for_list', brand, type: category, products: active, isGame };
+    await ctx.reply(inputLabel, { parse_mode: 'Markdown' });
+  } catch (err) { await ctx.reply('❌ Gagal: ' + err.message); }
+}
+
+bot.action(/^ppob_brand_pulsa_(.+)$/, async (ctx) => {
+  await ctx.answerCbQuery('Memuat produk...');
+  const userId = ctx.from.id;
+  const brand = ctx.match[1].split('_').join(' ');
+  try {
+    const produk = await ppob.getProdukList('pulsa', brand);
+    const active = produk.filter(p => p.seller_product_status && p.buyer_product_status).slice(0, 25);
+    if (!active.length) return ctx.reply('❌ Tidak ada produk ' + brand.toUpperCase() + ' tersedia.');
+    ppobBeliState[userId] = { step: 'input_no_for_list', brand, type: 'pulsa', products: active };
+    await ctx.reply('📱 *Pulsa ' + brand.toUpperCase() + '*\n\nKirim *nomor HP* tujuan terlebih dahulu:\n_(contoh: 087777334689)_', { parse_mode: 'Markdown' });
+  } catch (err) { await ctx.reply('❌ Gagal: ' + err.message); }
+});
+
+bot.action('ppob_list_kuota', async (ctx) => {
+  await ctx.answerCbQuery('Memuat operator...');
+  try {
+    const produk = await ppob.getProdukList('data');
+    const active = produk.filter(p => p.seller_product_status && p.buyer_product_status);
+    const brands = [...new Set(active.map(p => p.brand))].sort();
+    const keyboard = {
+      inline_keyboard: [
+        ...brands.map(b => [{ text: '📶 ' + b, callback_data: 'ppob_kuota_brand_' + b.toLowerCase().split(' ').join('_') }]),
+        [{ text: '🔙 Kembali', callback_data: 'ppob_cat_pulsa_kuota' }]
+      ]
+    };
+    try { await ctx.editMessageText('📶 *Pilih Operator Kuota:*', { parse_mode: 'Markdown', reply_markup: keyboard }); }
+    catch (_) { await ctx.reply('📶 *Pilih Operator Kuota:*', { parse_mode: 'Markdown', reply_markup: keyboard }); }
+  } catch (err) { await ctx.reply('❌ Gagal memuat: ' + err.message); }
+});
+
+bot.action(/^ppob_kuota_brand_(.+)$/, async (ctx) => {
+  await ctx.answerCbQuery('Memuat tipe...');
+  const brand = ctx.match[1].split('_').join(' ');
+  try {
+    const produk = await ppob.getProdukList('data', brand);
+    const active = produk.filter(p => p.seller_product_status && p.buyer_product_status);
+    if (!active.length) return ctx.reply('❌ Tidak ada produk ' + brand.toUpperCase());
+    const types = [...new Set(active.map(p => (p.type || 'Umum').trim()))].sort();
+    const typeEmoji = {'edukasi':'🎓','conference':'💼','nasional':'🌐','lokal':'📍','unlimited':'♾️','social media':'📱','sosmed':'📱','games':'🎮','umum':'📦','reguler':'📦','combo':'🎁','bundling':'🎁'};
+    const getEmoji = (t) => { const tl = t.toLowerCase(); for (const [k,e] of Object.entries(typeEmoji)) { if (tl.includes(k)) return e; } return '📦'; };
+    const keyboard = {
+      inline_keyboard: [
+        ...types.map(t => [{ text: getEmoji(t) + ' ' + t + ' (' + active.filter(p => (p.type||'Umum').trim() === t).length + ' produk)', callback_data: 'ppob_kuota_type_' + brand.toLowerCase().split(' ').join('_') + '__' + t.toLowerCase().split(' ').join('_') }]),
+        [{ text: '🔙 Kembali', callback_data: 'ppob_list_kuota' }]
+      ]
+    };
+    const text = '📶 *Kuota ' + brand.toUpperCase() + '*\n\nPilih tipe kuota:';
+    try { await ctx.editMessageText(text, { parse_mode: 'Markdown', reply_markup: keyboard }); }
+    catch (_) { await ctx.reply(text, { parse_mode: 'Markdown', reply_markup: keyboard }); }
+  } catch (err) { await ctx.reply('❌ Gagal: ' + err.message); }
+});
+
+bot.action(/^ppob_kuota_type_(.+)__(.+)$/, async (ctx) => {
+  await ctx.answerCbQuery();
+  const userId = ctx.from.id;
+  const brand = ctx.match[1].split('_').join(' ');
+  const type = ctx.match[2].split('_').join(' ');
+  try {
+    const allProduk = await ppob.getProdukList('data', brand);
+    const filtered = allProduk.filter(p => p.seller_product_status && p.buyer_product_status && (p.type||'Umum').trim().toLowerCase() === type.toLowerCase()).slice(0, 25);
+    if (!filtered.length) return ctx.reply('❌ Produk tidak ditemukan.');
+    ppobBeliState[userId] = { step: 'input_no_for_list', brand, type, products: filtered };
+    await ctx.reply('📶 *Kuota ' + brand.toUpperCase() + ' - ' + type + '*\n\nKirim *nomor HP* tujuan terlebih dahulu:\n_(contoh: 087777334689)_', { parse_mode: 'Markdown' });
+  } catch (err) { await ctx.reply('❌ Gagal: ' + err.message); }
+});
+bot.action(/^ppob_brand_kuota_(.+)$/, async (ctx) => {
+  const brand = ctx.match[1];
+  await showBrandProducts(ctx, 'data', brand, 'ppob_list_kuota');
+});
+
+// ── Handler beli produk (pilih SKU) ──────────────────────────
+const ppobBeliState = {}; // { userId: { sku, productName, price, step } }
+
+bot.action(/^ppob_listed_(.+)$/, async (ctx) => {
+  await ctx.answerCbQuery();
+  const userId = ctx.from.id;
+  const sku = ctx.match[1];
+  const state = ppobBeliState[userId];
+  if (!state || !state.customerNo) return ctx.reply('❌ Session expired. Mulai ulang.');
+  try {
+    const allProduk = await ppob.getProdukList();
+    const produk = allProduk.find(p => p.buyer_sku_code === sku);
+    if (!produk) return ctx.reply('❌ Produk tidak ditemukan.');
+    ppobBeliState[userId] = { sku, productName: produk.product_name, price: produk.price, customerNo: state.customerNo, step: 'confirm' };
+    const keyboard = { inline_keyboard: [[{ text: '✅ Konfirmasi Beli', callback_data: 'ppob_confirm_beli' }],[{ text: '❌ Batal', callback_data: 'ppob_batal' }]] };
+    return ctx.reply('📦 *Konfirmasi*\n\nProduk : *' + produk.product_name + '*\nNomor  : `' + state.customerNo + '`\nHarga  : *' + ppob.formatRupiah(produk.price) + '*\n\nLanjutkan?', { parse_mode: 'Markdown', reply_markup: keyboard });
+  } catch (err) { await ctx.reply('❌ Gagal: ' + err.message); }
+});
+
+bot.action(/^ppob_beli_(.+)$/, async (ctx) => {
+  await ctx.answerCbQuery();
+  const userId = ctx.from.id;
+  const sku = ctx.match[1];
+
+  try {
+    const allProduk = await ppob.getProdukList();
+    const produk = allProduk.find(p => p.buyer_sku_code === sku);
+    if (!produk) return ctx.reply('❌ Produk tidak ditemukan.');
+
+    ppobBeliState[userId] = { sku, productName: produk.product_name, price: produk.price, step: 'input_no' };
+
+    await ctx.reply(
+      `📦 *${produk.product_name}*\n💰 Harga: *${ppob.formatRupiah(produk.price)}*\n\nKirim nomor tujuan (contoh: 08xxxxxxxxxx):`,
+      { parse_mode: 'Markdown' }
+    );
+  } catch (err) {
+    await ctx.reply(`❌ Gagal: ${err.message}`);
+  }
+});
+
+// ── Kategori: Listrik PLN ─────────────────────────────────────
+
+// ── Kategori baru ────────────────────────────────────────────
+bot.action('ppob_cat_global', async (ctx) => {
+  await ctx.answerCbQuery('Memuat...');
+  try {
+    const produk = await ppob.getProdukList('Global');
+    const active = produk.filter(p => p.seller_product_status && p.buyer_product_status);
+    const brands = [...new Set(active.map(p => p.brand))].sort();
+    const keyboard = { inline_keyboard: [ ...brands.map(b => [{ text: '🌐 ' + b, callback_data: 'ppob_gen_brand_Global__' + b.toLowerCase().split(' ').join('_') }]), [{ text: '🔙 Kembali', callback_data: 'menu_ppob' }] ] };
+    try { await ctx.editMessageText('🌐 *Paket Global*\n\nPilih operator:', { parse_mode: 'Markdown', reply_markup: keyboard }); }
+    catch (_) { await ctx.reply('🌐 *Paket Global*\n\nPilih operator:', { parse_mode: 'Markdown', reply_markup: keyboard }); }
+  } catch (err) { await ctx.reply('❌ Gagal: ' + err.message); }
+});
+
+bot.action('ppob_cat_combo', async (ctx) => {
+  await ctx.answerCbQuery('Memuat...');
+  try {
+    const produk = await ppob.getProdukList('combo plus');
+    const active = produk.filter(p => p.seller_product_status && p.buyer_product_status);
+    const brands = [...new Set(active.map(p => p.brand))].sort();
+    const keyboard = { inline_keyboard: [ ...brands.map(b => [{ text: '🎁 ' + b, callback_data: 'ppob_gen_brand_combo plus__' + b.toLowerCase().split(' ').join('_') }]), [{ text: '🔙 Kembali', callback_data: 'menu_ppob' }] ] };
+    try { await ctx.editMessageText('🎁 *Combo Plus*\n\nPilih operator:', { parse_mode: 'Markdown', reply_markup: keyboard }); }
+    catch (_) { await ctx.reply('🎁 *Combo Plus*\n\nPilih operator:', { parse_mode: 'Markdown', reply_markup: keyboard }); }
+  } catch (err) { await ctx.reply('❌ Gagal: ' + err.message); }
+});
+
+bot.action('ppob_cat_masaaktif', async (ctx) => {
+  await ctx.answerCbQuery('Memuat...');
+  try {
+    const produk = await ppob.getProdukList('Masa Aktif');
+    const active = produk.filter(p => p.seller_product_status && p.buyer_product_status);
+    const brands = [...new Set(active.map(p => p.brand))].sort();
+    const keyboard = { inline_keyboard: [ ...brands.map(b => [{ text: '🔄 ' + b, callback_data: 'ppob_gen_brand_Masa Aktif__' + b.toLowerCase().split(' ').join('_') }]), [{ text: '🔙 Kembali', callback_data: 'menu_ppob' }] ] };
+    try { await ctx.editMessageText('🔄 *Masa Aktif*\n\nPilih operator:', { parse_mode: 'Markdown', reply_markup: keyboard }); }
+    catch (_) { await ctx.reply('🔄 *Masa Aktif*\n\nPilih operator:', { parse_mode: 'Markdown', reply_markup: keyboard }); }
+  } catch (err) { await ctx.reply('❌ Gagal: ' + err.message); }
+});
+
+bot.action('ppob_cat_aktivasi', async (ctx) => {
+  await ctx.answerCbQuery('Memuat...');
+  try {
+    const produk = await ppob.getProdukList('Aktivasi Perdana');
+    const active = produk.filter(p => p.seller_product_status && p.buyer_product_status);
+    const brands = [...new Set(active.map(p => p.brand))].sort();
+    const keyboard = { inline_keyboard: [ ...brands.map(b => [{ text: '🆕 ' + b, callback_data: 'ppob_gen_brand_Aktivasi Perdana__' + b.toLowerCase().split(' ').join('_') }]), [{ text: '🔙 Kembali', callback_data: 'menu_ppob' }] ] };
+    try { await ctx.editMessageText('🆕 *Aktivasi Perdana*\n\nPilih operator:', { parse_mode: 'Markdown', reply_markup: keyboard }); }
+    catch (_) { await ctx.reply('🆕 *Aktivasi Perdana*\n\nPilih operator:', { parse_mode: 'Markdown', reply_markup: keyboard }); }
+  } catch (err) { await ctx.reply('❌ Gagal: ' + err.message); }
+});
+
+bot.action('ppob_cat_digital', async (ctx) => {
+  await ctx.answerCbQuery('Memuat...');
+  try {
+    const produk = await ppob.getProdukList('produk digital');
+    const active = produk.filter(p => p.seller_product_status && p.buyer_product_status);
+    const brands = [...new Set(active.map(p => p.brand))].sort();
+    const keyboard = { inline_keyboard: [ ...brands.map(b => [{ text: '📦 ' + b, callback_data: 'ppob_gen_brand_produk digital__' + b.toLowerCase().split(' ').join('_') }]), [{ text: '🔙 Kembali', callback_data: 'menu_ppob' }] ] };
+    try { await ctx.editMessageText('📦 *Produk Digital*\n\nPilih produk:', { parse_mode: 'Markdown', reply_markup: keyboard }); }
+    catch (_) { await ctx.reply('📦 *Produk Digital*\n\nPilih produk:', { parse_mode: 'Markdown', reply_markup: keyboard }); }
+  } catch (err) { await ctx.reply('❌ Gagal: ' + err.message); }
+});
+
+// ── Handler generik brand per kategori ───────────────────────
+bot.action(/^ppob_gen_brand_(.+)__(.+)$/, async (ctx) => {
+  await ctx.answerCbQuery();
+  const userId = ctx.from.id;
+  const category = ctx.match[1];
+  const brand = ctx.match[2].split('_').join(' ');
+  try {
+    const produk = await ppob.getProdukList(category, brand);
+    const active = produk.filter(p => p.seller_product_status && p.buyer_product_status).slice(0, 25);
+    if (!active.length) return ctx.reply('❌ Tidak ada produk tersedia.');
+    ppobBeliState[userId] = { step: 'input_no_for_list', brand, type: category, products: active, isGame: false };
+    await ctx.reply('📦 *' + brand.toUpperCase() + ' - ' + category + '*\n\nKirim *nomor HP* tujuan:\n_(contoh: 087777334689)_', { parse_mode: 'Markdown' });
+  } catch (err) { await ctx.reply('❌ Gagal: ' + err.message); }
+});
+
+bot.action('ppob_cat_listrik', async (ctx) => {
+  await ctx.answerCbQuery();
+  const ok = await ensurePpobSession(ctx);
+  if (!ok) return;
+  const keyboard = {
+    inline_keyboard: [
+      [{ text: '⚡ Token Listrik (Prabayar)', callback_data: 'ppob_listrik_prabayar' }],
+      [{ text: '📋 Tagihan Listrik (Pascabayar)', callback_data: 'ppob_listrik_pascabayar' }],
+      [{ text: '🔙 Kembali', callback_data: 'menu_ppob' }]
+    ]
+  };
+  try { await ctx.editMessageText('⚡ *Listrik PLN*\n\nPilih jenis:', { parse_mode: 'Markdown', reply_markup: keyboard }); }
+  catch (_) { await ctx.reply('⚡ *Listrik PLN*\n\nPilih jenis:', { parse_mode: 'Markdown', reply_markup: keyboard }); }
+});
+
+bot.action('ppob_listrik_prabayar', async (ctx) => {
+  await ctx.answerCbQuery();
+  const userId = ctx.from.id;
+  try {
+    const produk = await ppob.getProdukList('pln');
+    const prabayar = produk.filter(p => p.seller_product_status && p.buyer_product_status && p.type !== 'pascabayar').slice(0, 15);
+    if (!prabayar.length) return ctx.reply('❌ Produk token listrik tidak tersedia.');
+    const keyboard = {
+      inline_keyboard: [
+        ...prabayar.map(p => [{ text: `⚡ ${p.product_name} — ${ppob.formatRupiah(p.price)}`, callback_data: `ppob_beli_${p.buyer_sku_code}` }]),
+        [{ text: '🔙 Kembali', callback_data: 'ppob_cat_listrik' }]
+      ]
+    };
+    try { await ctx.editMessageText('⚡ *Token Listrik PLN:*', { parse_mode: 'Markdown', reply_markup: keyboard }); }
+    catch (_) { await ctx.reply('⚡ *Token Listrik PLN:*', { parse_mode: 'Markdown', reply_markup: keyboard }); }
+  } catch (err) {
+    await ctx.reply(`❌ Gagal: ${err.message}`);
+  }
+});
+
+bot.action('ppob_listrik_pascabayar', async (ctx) => {
+  await ctx.answerCbQuery();
+  const userId = ctx.from.id;
+  ppobBeliState[userId] = { step: 'input_no_tagihan', type: 'pascabayar', sku: 'PLNPOSTPAID', productName: 'Tagihan Listrik PLN' };
+  await ctx.reply('⚡ Kirim *nomor ID pelanggan PLN* kamu:', { parse_mode: 'Markdown' });
+});
+
+// ── Kategori: BPJS ────────────────────────────────────────────
+bot.action('ppob_cat_bpjs', async (ctx) => {
+  await ctx.answerCbQuery();
+  const ok = await ensurePpobSession(ctx);
+  if (!ok) return;
+  const userId = ctx.from.id;
+  ppobBeliState[userId] = { step: 'input_no_tagihan', type: 'pascabayar', sku: 'BPJS', productName: 'BPJS Kesehatan' };
+  await ctx.reply('🏥 Kirim *nomor Virtual Account BPJS* kamu (13 digit):', { parse_mode: 'Markdown' });
+});
+
+// ── Kategori: Game Voucher ────────────────────────────────────
+bot.action('ppob_cat_game', async (ctx) => {
+  await ctx.answerCbQuery();
+  const ok = await ensurePpobSession(ctx);
+  if (!ok) return;
+  try {
+    const produk = await ppob.getProdukList('game');
+    const active = produk.filter(p => p.seller_product_status && p.buyer_product_status);
+    const brands = [...new Set(active.map(p => p.brand))];
+    const keyboard = {
+      inline_keyboard: [
+        ...brands.map(b => [{ text: `🎮 ${b}`, callback_data: `ppob_brand_game_${b.toLowerCase().replace(/\s+/g, '_')}` }]),
+        [{ text: '🔙 Kembali', callback_data: 'menu_ppob' }]
+      ]
+    };
+    try { await ctx.editMessageText('🎮 *Game Voucher*\n\nPilih game:', { parse_mode: 'Markdown', reply_markup: keyboard }); }
+    catch (_) { await ctx.reply('🎮 *Game Voucher*\n\nPilih game:', { parse_mode: 'Markdown', reply_markup: keyboard }); }
+  } catch (err) {
+    await ctx.reply(`❌ Gagal memuat: ${err.message}`);
+  }
+});
+
+bot.action(/^ppob_brand_game_(.+)$/, async (ctx) => {
+  const brand = ctx.match[1].replace(/_/g, ' ');
+  await showBrandProducts(ctx, 'game', brand, 'ppob_cat_game');
+});
+
+// ── Input nomor tujuan / tagihan (universal text handler) ────
+bot.on('text', async (ctx, next) => {
+  const userId = ctx.from.id;
+  const state = ppobBeliState[userId];
+  if (!state) return next();
+
+  const text = ctx.message.text.trim();
+  if (text.toLowerCase() === 'batal') {
+    delete ppobBeliState[userId];
+    return ctx.reply('❌ Dibatalkan.', { reply_markup: ppobMenuKeyboard() });
+  }
+
+  // ── Step: input nomor untuk prabayar ──
+  if (state.step === 'input_no_for_list') {
+    const noHp = text.trim();
+    const isGame = state.isGame || false;
+    if (!isGame && (noHp.length < 9 || noHp[0] !== '0')) return ctx.reply('❌ Format nomor tidak valid. Contoh: 087777334689');
+    if (!isGame && noHp.length === 0) return ctx.reply('❌ Input tidak boleh kosong.');
+    const products = state.products || [];
+    state.customerNo = noHp;
+    state.step = 'pilih_produk_dari_list';
+    const label = isGame ? '🎮 *Pilih Voucher untuk ID ' + noHp + ':*' : '📶 *Pilih Paket untuk ' + noHp + ':*';
+    const keyboard = {
+      inline_keyboard: [
+        ...products.map(p => [{ text: p.product_name + ' — ' + ppob.formatRupiah(p.price), callback_data: 'ppob_listed_' + p.buyer_sku_code }]),
+        [{ text: '❌ Batal', callback_data: 'ppob_batal' }]
+      ]
+    };
+    return ctx.reply(label, { parse_mode: 'Markdown', reply_markup: keyboard });
+  }
+
+  if (state.step === 'input_no') {
+    state.customerNo = text;
+    state.step = 'confirm';
+    const keyboard = {
+      inline_keyboard: [
+        [{ text: '✅ Konfirmasi Beli', callback_data: 'ppob_confirm_beli' }],
+        [{ text: '❌ Batal', callback_data: 'ppob_batal' }]
+      ]
+    };
+    return ctx.reply(
+      `📦 *Konfirmasi Transaksi*\n\n` +
+      `Produk : *${state.productName}*\n` +
+      `Nomor  : \`${text}\`\n` +
+      `Harga  : *${ppob.formatRupiah(state.price)}*\n\n` +
+      `Lanjutkan?`,
+      { parse_mode: 'Markdown', reply_markup: keyboard }
+    );
+  }
+
+  // ── Step: input nomor untuk pascabayar (tagihan) ──
+  if (state.step === 'input_no_tagihan') {
+    state.customerNo = text;
+    state.step = 'cek_tagihan';
+    await ctx.reply('⏳ Mengecek tagihan...');
+    try {
+      const refId = ppob.generateRefId('CEK');
+      const data = await ppob.cekTagihan({ buyerSkuCode: state.sku, customerNo: text, refId });
+      state.tagihan = data;
+      state.sellingPrice = data.selling_price;
+      state.step = 'confirm_tagihan';
+      const keyboard = {
+        inline_keyboard: [
+          [{ text: `✅ Bayar ${ppob.formatRupiah(data.selling_price)}`, callback_data: 'ppob_confirm_tagihan' }],
+          [{ text: '❌ Batal', callback_data: 'ppob_batal' }]
+        ]
+      };
+      return ctx.reply(
+        `📋 *Detail Tagihan*\n\n` +
+        `Produk    : *${state.productName}*\n` +
+        `Pelanggan : *${data.customer_name || text}*\n` +
+        `No        : \`${text}\`\n` +
+        `Tagihan   : *${ppob.formatRupiah(data.selling_price)}*\n\n` +
+        `Lanjutkan bayar?`,
+        { parse_mode: 'Markdown', reply_markup: keyboard }
+      );
+    } catch (err) {
+      delete ppobBeliState[userId];
+      return ctx.reply(`❌ Gagal cek tagihan: ${err.message}`);
+    }
+  }
+
+  return next();
+});
+
+// ── Konfirmasi beli prabayar ──────────────────────────────────
+bot.action('ppob_confirm_beli', async (ctx) => {
+  await ctx.answerCbQuery();
+  const userId = ctx.from.id;
+  const state = ppobBeliState[userId];
+  if (!state || state.step !== 'confirm') return ctx.reply('❌ Session expired. Mulai ulang.');
+
+  // Cek saldo user
+  db.get('SELECT saldo FROM users WHERE user_id = ?', [userId], async (err, row) => {
+    if (!row || (row.saldo || 0) < state.price) {
+      delete ppobBeliState[userId];
+      return ctx.reply(`❌ Saldo tidak cukup.\nSaldo kamu: *${ppob.formatRupiah(row?.saldo || 0)}*\nHarga: *${ppob.formatRupiah(state.price)}*`, { parse_mode: 'Markdown' });
+    }
+
+    const refId = ppob.generateRefId('TRX');
+    try {
+      await ctx.reply('⏳ Memproses transaksi...');
+      const result = await ppob.beliProduk({
+        buyerSkuCode: state.sku,
+        customerNo: state.customerNo,
+        refId,
+        sellingPrice: state.price
+      });
+
+      // Potong saldo
+      db.run('UPDATE users SET saldo = saldo - ? WHERE user_id = ?', [state.price, userId]);
+
+      // Simpan ke DB
+      ppob.saveTrxDB({
+        userId, refId,
+        buyerSkuCode: state.sku,
+        customerNo: state.customerNo,
+        productName: state.productName,
+        sellingPrice: state.price,
+        status: result.status || 'pending',
+        sn: result.sn || '',
+        message: result.message || '',
+        type: 'prabayar'
+      });
+
+      delete ppobBeliState[userId];
+      const emoji = ppobStatusEmoji(result.status);
+      await ctx.reply(
+        `${emoji} *Transaksi ${result.status || 'Diproses'}*\n\n` +
+        `Produk : ${state.productName}\n` +
+        `Nomor  : \`${state.customerNo}\`\n` +
+        `Harga  : ${ppob.formatRupiah(state.price)}\n` +
+        `Ref ID : \`${refId}\`\n` +
+        (result.sn ? `SN     : \`${result.sn}\`` : `Status : ${result.message || 'Sedang diproses'}`),
+        { parse_mode: 'Markdown', reply_markup: ppobMenuKeyboard() }
+      );
+    } catch (err) {
+      delete ppobBeliState[userId];
+      await ctx.reply(`❌ Transaksi gagal: ${err.message}`);
+    }
+  });
+});
+
+// ── Konfirmasi bayar tagihan ──────────────────────────────────
+bot.action('ppob_confirm_tagihan', async (ctx) => {
+  await ctx.answerCbQuery();
+  const userId = ctx.from.id;
+  const state = ppobBeliState[userId];
+  if (!state || state.step !== 'confirm_tagihan') return ctx.reply('❌ Session expired. Mulai ulang.');
+
+  db.get('SELECT saldo FROM users WHERE user_id = ?', [userId], async (err, row) => {
+    if (!row || (row.saldo || 0) < state.sellingPrice) {
+      delete ppobBeliState[userId];
+      return ctx.reply(`❌ Saldo tidak cukup.\nSaldo kamu: *${ppob.formatRupiah(row?.saldo || 0)}*\nTagihan: *${ppob.formatRupiah(state.sellingPrice)}*`, { parse_mode: 'Markdown' });
+    }
+
+    const refId = ppob.generateRefId('BAYAR');
+    try {
+      await ctx.reply('⏳ Memproses pembayaran...');
+      const result = await ppob.bayarTagihan({
+        buyerSkuCode: state.sku,
+        customerNo: state.customerNo,
+        refId,
+        sellingPrice: state.sellingPrice
+      });
+
+      db.run('UPDATE users SET saldo = saldo - ? WHERE user_id = ?', [state.sellingPrice, userId]);
+
+      ppob.saveTrxDB({
+        userId, refId,
+        buyerSkuCode: state.sku,
+        customerNo: state.customerNo,
+        productName: state.productName,
+        sellingPrice: state.sellingPrice,
+        status: result.status || 'pending',
+        message: result.message || '',
+        type: 'pascabayar'
+      });
+
+      delete ppobBeliState[userId];
+      const emoji = ppobStatusEmoji(result.status);
+      await ctx.reply(
+        `${emoji} *Tagihan ${result.status || 'Diproses'}*\n\n` +
+        `Produk  : ${state.productName}\n` +
+        `No      : \`${state.customerNo}\`\n` +
+        `Dibayar : ${ppob.formatRupiah(state.sellingPrice)}\n` +
+        `Ref ID  : \`${refId}\`\n` +
+        `Pesan   : ${result.message || 'Sedang diproses'}`,
+        { parse_mode: 'Markdown', reply_markup: ppobMenuKeyboard() }
+      );
+    } catch (err) {
+      delete ppobBeliState[userId];
+      await ctx.reply(`❌ Pembayaran gagal: ${err.message}`);
+    }
+  });
+});
+
+// ── Batal ─────────────────────────────────────────────────────
+bot.action('ppob_batal', async (ctx) => {
+  await ctx.answerCbQuery();
+  const userId = ctx.from.id;
+  delete ppobBeliState[userId];
+  try { await ctx.editMessageText('❌ Transaksi dibatalkan.', { reply_markup: ppobMenuKeyboard() }); }
+  catch (_) { await ctx.reply('❌ Transaksi dibatalkan.', { reply_markup: ppobMenuKeyboard() }); }
+});
+
+// ── Riwayat transaksi PPOB ────────────────────────────────────
+bot.action('ppob_history', async (ctx) => {
+  await ctx.answerCbQuery();
+  const userId = ctx.from.id;
+  ppob.db.all(
+    'SELECT * FROM ppob_transactions WHERE user_id = ? ORDER BY created_at DESC LIMIT 10',
+    [userId],
+    async (err, rows) => {
+      if (!rows || !rows.length) {
+        try { await ctx.editMessageText('📜 Belum ada riwayat transaksi PPOB.', { reply_markup: ppobMenuKeyboard() }); }
+        catch (_) { await ctx.reply('📜 Belum ada riwayat transaksi PPOB.'); }
+        return;
+      }
+      const lines = rows.map((r, i) => {
+        const tgl = new Date(r.created_at).toLocaleString('id-ID');
+        const emoji = ppobStatusEmoji(r.status);
+        return `${i + 1}. ${emoji} *${r.product_name}*\n   No: \`${r.customer_no}\`\n   ${ppob.formatRupiah(r.selling_price)} — ${r.status}\n   ${tgl}`;
+      }).join('\n\n');
+      const text = `📜 *Riwayat PPOB (10 terakhir)*\n\n${lines}`;
+      try { await ctx.editMessageText(text, { parse_mode: 'Markdown', reply_markup: ppobMenuKeyboard() }); }
+      catch (_) { await ctx.reply(text, { parse_mode: 'Markdown', reply_markup: ppobMenuKeyboard() }); }
+    }
+  );
+});
+
+// ════════════════════════════════════════════════════════════
+// END PPOB
+// ════════════════════════════════════════════════════════════
 bot.action('menu_tools', async (ctx) => {
   await ctx.answerCbQuery().catch(() => {});
   await sendToolsMenu(ctx);
@@ -16620,6 +17399,35 @@ if (state && state.step === 'reseller_batas') {
   );
   return;
 }
+if (state && state.step === 'hidepulsa_set_tgid') {
+  const adminId = ctx.from.id;
+  const tgId = text.trim();
+  if (isNaN(Number(tgId))) return ctx.reply('❌ Harus angka.');
+  const nextVars = JSON.parse(require('fs').readFileSync('./.vars.json', 'utf-8'));
+  nextVars.HIDEPULSA_TELEGRAM_USER_ID = tgId;
+  require('fs').writeFileSync('./.vars.json', JSON.stringify(nextVars, null, 2));
+  ppob.setBotTelegramUserId(Number(tgId));
+  delete userState[adminId];
+  return ctx.reply('✅ Telegram User ID disimpan: ' + tgId);
+}
+
+if (state && state.step === 'hidepulsa_verify_otp') {
+  const adminId = ctx.from.id;
+  const otp = text.trim();
+  if (!/^\d{6}$/.test(otp)) return ctx.reply('❌ OTP harus 6 digit.');
+  const challengeToken = state.challengeToken;
+  delete userState[adminId];
+  try {
+    await ppob.verifyOtp(challengeToken, otp);
+    const nextVars = JSON.parse(require('fs').readFileSync('./.vars.json', 'utf-8'));
+    delete nextVars.HIDEPULSA_CHALLENGE_TOKEN;
+    require('fs').writeFileSync('./.vars.json', JSON.stringify(nextVars, null, 2));
+    return ctx.reply('✅ Login HidePulsa berhasil! Sesi aktif.');
+  } catch (err) {
+    return ctx.reply('❌ OTP gagal: ' + err.message);
+  }
+}
+
 // ===  TAMBAH SALDO (LANGKAH 1: INPUT USER ID) ===
 if (state && state.step === 'addsaldo_userid') {
   state.targetId = text.trim();
