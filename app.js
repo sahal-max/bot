@@ -10472,7 +10472,7 @@ bot.action(/^ppob_listed_(.+)$/, async (ctx) => {
   } catch (err) { await ctx.reply('❌ Gagal: ' + err.message); }
 });
 
-bot.action(/^ppob_beli_(.+)$/, async (ctx) => {
+bot.action(/^ppob_beli_(?!global_)(.+)$/, async (ctx) => {
   await ctx.answerCbQuery();
   const userId = ctx.from.id;
   const sku = ctx.match[1];
@@ -10541,11 +10541,11 @@ async function showHidepulsaGlobal(ctx, brandFilter, label, markupKey) {
       const finalPrice = wallet.getEffectivePrice(base, mkGlobal, mkReseller);
       const gbMatch = p.product_name.match(/(\d+GB[^|\n]*)/i);
       const shortName = gbMatch ? gbMatch[0].trim() : p.product_name.slice(0,35);
-      return [{ text: shortName+' | Rp '+finalPrice.toLocaleString('id-ID')+' | stok: '+stok, callback_data: 'ppob_beli_global_'+p.buyer_sku_code }];
+      return [{ text: shortName+' | Rp '+finalPrice.toLocaleString('id-ID'), callback_data: 'ppob_beli_global_'+p.buyer_sku_code }];
     });
     rows.push([{ text: '🔙 Kembali', callback_data: 'menu_akrab' }]);
     await ctx.editMessageText(
-      label+'\n<code>──────────────────────</code>\n📊 Stok: '+filtered.length+' produk | total: '+(totalStok>=9999?'unlimited':totalStok)+'\n✦ Pilih produk:',
+      label+'\n<code>──────────────────────</code>\n📦 '+filtered.length+' produk tersedia\n✦ Pilih produk:',
       { parse_mode: 'HTML', reply_markup: { inline_keyboard: rows } }
     ).catch(()=>ctx.reply(label, { reply_markup: { inline_keyboard: rows } }));
   } catch(err) { await ctx.reply('❌ Gagal: '+err.message); }
@@ -10555,13 +10555,13 @@ async function showHidepulsaGlobal(ctx, brandFilter, label, markupKey) {
 bot.action('akrab_grup_v3_global', async (ctx) => {
   console.log('DEBUG: akrab_grup_v3_global dipanggil');
   await ctx.answerCbQuery('Memuat...');
-  await showHidepulsaGlobal(ctx, ['AKRAB'], '🟣 <b>Akrab V3</b>', 'akrab_v3_global');
+  await showHidepulsaGlobal(ctx, ['XL AKRAB'], '🟣 <b>Akrab V3</b>', 'akrab_v3_global');
 });
 
 // ── Circle dari HidePulsa Global ─────────────────────────────
 bot.action('akrab_circle_global', async (ctx) => {
   await ctx.answerCbQuery('Memuat...');
-  await showHidepulsaGlobal(ctx, ['CIRCLE'], '🔴 <b>Circle</b>', 'circle_global');
+  await showHidepulsaGlobal(ctx, ['XL CIRCLE'], '🔴 <b>Circle</b>', 'circle_global');
 });
 
 // ── Beli produk HidePulsa Global ─────────────────────────────
@@ -14214,17 +14214,29 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
     
     try {
       const gProduk = await ppob.getProdukList('Global');
-      const gBrands = [...new Set(gProduk.map(p=>p.brand))].sort();
-      let gBody = '';
-      gBrands.forEach(b => {
-        const all = gProduk.filter(p=>p.brand===b);
-        const aktif = all.filter(p=>p.seller_product_status&&p.buyer_product_status&&(p.stock||0)>0);
-        const stok = aktif.reduce((s,p)=>s+(p.stock||0),0);
-        const icon = aktif.length>0?'✅':'❌';
-        gBody += icon+' '+b+': '+aktif.length+'/'+all.length+' produk, stok: '+stok+'\n';
-        if (aktif.length>0) totalReady++; else totalKosong++;
-      });
-      if (gBody) body += '🌐 <b>Paket Global (HidePulsa)</b>\n<code>'+gBody.trim()+'</code>\n\n';
+      const shortNameG = (nama) => String(nama||'-').replace(/XL CIRCLE /gi,'').replace(/XL AKRAB /gi,'').replace(/FULL KUOTA UTAMA REGULER/gi,'').replace(/PROMO/gi,'P').replace(/\\s+/g,' ').trim().slice(0,18);
+      const akrabAll = gProduk.filter(p=>(p.brand||'').toUpperCase().includes('XL AKRAB'));
+      if (akrabAll.length) {
+        const akrabItems = akrabAll.map(p => {
+          const tersedia = p.seller_product_status && p.buyer_product_status && (p.stock||0) > 0;
+          const icon = tersedia ? '✅ ' : '❌ ';
+          const qty = tersedia ? String(p.stock||0) : '';
+          if (tersedia) totalReady++; else totalKosong++;
+          return { icon, label: shortNameG(p.product_name), qty };
+        });
+        body += `🟣 <b>Akrab V3</b>\n<code>${formatPair(akrabItems)}</code>\n\n`;
+      }
+      const circleAll = gProduk.filter(p=>(p.brand||'').toUpperCase().includes('XL CIRCLE'));
+      if (circleAll.length) {
+        const circleItems = circleAll.map(p => {
+          const tersedia = p.seller_product_status && p.buyer_product_status && (p.stock||0) > 0;
+          const icon = tersedia ? '✅ ' : '❌ ';
+          const qty = tersedia ? String(p.stock||0) : '';
+          if (tersedia) totalReady++; else totalKosong++;
+          return { icon, label: shortNameG(p.product_name), qty };
+        });
+        body += `🔴 <b>Circle</b>\n<code>${formatPair(circleItems)}</code>\n\n`;
+      }
     } catch(e) {}
   body += `📊 <b>Ready ${totalReady} · Kosong ${totalKosong}</b>`;
 
