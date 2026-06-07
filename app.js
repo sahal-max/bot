@@ -5516,14 +5516,21 @@ async function handleServiceAction(ctx, action) {
 }
 async function sendAdminMenu(ctx) {
   const adminKeyboard = [
-    [{ text: '🖥️ Server', callback_data: 'admin_menu_server' }],
-    [{ text: '💰 Saldo', callback_data: 'admin_menu_saldo' }],
-    [{ text: '🤝 Reseller', callback_data: 'admin_menu_reseller' }],
-    [{ text: '🔧 Tools', callback_data: 'admin_menu_tools' }],
-    [{ text: '⚙️ Setting API Keys', callback_data: 'admin_setting_api' }],
-    [{ text: '📈 Markup Global Produk', callback_data: 'admin_markup_global_menu' }],
-    [{ text: '💾 Backup & Restore Saldo', callback_data: 'menu_backup_saldo' }],
-    [{ text: '📊 Dashboard Harian', callback_data: 'admin_daily_dashboard' }],
+    // ── Manajemen ─────────────────────────────
+    [{ text: '🖥️ Server', callback_data: 'admin_menu_server' },
+     { text: '💰 Saldo & Topup', callback_data: 'admin_menu_saldo' }],
+    [{ text: '🤝 Reseller', callback_data: 'admin_menu_reseller' },
+     { text: '👥 User', callback_data: 'admin_menu_user' }],
+    // ── Markup ────────────────────────────────
+    [{ text: '📈 Markup', callback_data: 'admin_menu_markup' }],
+    // ── Backup ────────────────────────────────
+    [{ text: '💾 Backup & Restore', callback_data: 'admin_menu_backup' }],
+    // ── Laporan ───────────────────────────────
+    [{ text: '📊 Dashboard & Laporan', callback_data: 'admin_menu_laporan' }],
+    // ── Tools & Setting ───────────────────────
+    [{ text: '🔧 Tools', callback_data: 'admin_menu_tools' },
+     { text: '⚙️ Setting', callback_data: 'admin_menu_setting' }],
+    [{ text: '🔔 Notifikasi', callback_data: 'admin_menu_notif' }],
     [{ text: '🔙 Kembali', callback_data: 'send_main_menu' }]
   ];
 
@@ -5802,17 +5809,9 @@ async function sendAdminSaldoMenu(ctx) {
   const scNexusEnabled = loadScNexusMenuSetting();
   const scNexusLabel = scNexusEnabled ? ' Menu SC 1FORCR NEXUS: Aktif' : ' Menu SC 1FORCR NEXUS: Nonaktif';
   const keyboard = [
-    [
-      { text: '➕ Tambah Saldo', callback_data: 'tambah_saldo' },
-      { text: '➖ Hapus Saldo', callback_data: 'hapus_saldo' }
-    ],
-    [
-      { text: '👁️ Lihat Saldo User', callback_data: 'cek_saldo_user' },
-      { text: '🖼️ Upload QRIS', callback_data: 'upload_qris' }
-    ],
+    [{ text: '🖼️ Upload QRIS', callback_data: 'upload_qris' }],
     [{ text: '🎁 Bonus Topup', callback_data: 'bonus_topup_menu' }],
-    [{ text: '📈 Pendapatan Hari Ini & Kemarin', callback_data: 'admin_income_summary' }],
-    [{ text: '📊 Pendapatan Topup Bulanan', callback_data: 'admin_income_monthly_non_reseller' }],
+    [{ text: '💹 Markup PPOB', callback_data: 'ppob_markup_menu' }],
     [{ text: scNexusLabel, callback_data: 'toggle_sc_nexus_menu' }],
     [{ text: autoLabel, callback_data: 'toggle_topup_auto' }],
     [{ text: manualLabel, callback_data: 'toggle_topup_manual' }],
@@ -5879,21 +5878,10 @@ async function sendAdminToolsMenu(ctx) {
     [{ text: '📥 Kelola Download Config', callback_data: 'admin_download_config_menu' }],
     [{ text: '📣 Broadcast Kirim Pesan', callback_data: 'admin_broadcast_menu' }],
     [{ text: '📊 Broadcast Polling', callback_data: 'admin_broadcast_poll_menu' }],
-    [{ text: '🗄️ Restore Database', callback_data: 'restore_db_menu' }],
-    [{ text: '💾 Backup Database Sekarang', callback_data: 'auto_backup_now' }],
     [{ text: '🔄 Sync Server Sekarang', callback_data: 'admin_sync_server_now' }],
     [{ text: '⏱️ Atur Auto Sync Server', callback_data: 'admin_sync_server_toggle_menu' }],
-    [{ text: '🔔 Notif Create (Bot)', callback_data: 'notif_settings_menu' }],
-    [{ text: '🔗 Webhook Multi-Login SC', callback_data: 'sc_webhook_settings_menu' }],
-    [{ text: '🌐 Setup Nginx Webhook', callback_data: 'nginx_webhook_menu' }],
-    [{ text: '📡 Notif BW Server', callback_data: 'bw_notif_settings_menu' }],
-    [{ text: '💳 Setting Payment Gateway', callback_data: 'payment_gateway_settings_menu' }],
-    [{ text: '🛒 Setting HidePulsa PPOB', callback_data: 'hidepulsa_settings_menu' }],
-    [{ text: maintenanceLabel, callback_data: 'maintenance_menu' }],
-    [{ text: joinChannelLabel, callback_data: 'join_channel_menu' }],
-    [{ text: '📞 Kontak Admin', callback_data: 'admin_contact_settings_menu' }],
     [{ text: testMenuLabel, callback_data: 'toggle_test_menu' }],
-    [{ text: '📋 Lihat Antrian Pre-Order', callback_data: 'admin_preorder_list' }],
+    [{ text: '🧪 Menu Test Transaksi', callback_data: 'admin_test_menu' }],
     [{ text: '🔙 Kembali', callback_data: 'admin_menu' }]
   ];
 
@@ -6095,6 +6083,95 @@ async function sendAdminSyncToggleMenu(ctx) {
     await ctx.reply('Terjadi kesalahan saat membuka menu autosync server.');
   }
 }
+
+
+// ── Sub-menu Admin: Markup ────────────────────────────────────
+bot.action('admin_menu_markup', async (ctx) => {
+  await ctx.answerCbQuery();
+  if (!adminIds.includes(ctx.from.id)) return;
+  await ctx.editMessageText('📈 <b>Markup</b>\n\nPilih kategori markup:', { parse_mode: 'HTML', reply_markup: { inline_keyboard: [
+    [{ text: '📈 Markup Global VPN/SMM', callback_data: 'admin_markup_global_menu' }],
+    [{ text: '⚙️ Markup Akrab (V1/V2/V3/Circle)', callback_data: 'akrab_markup_menu' }],
+    [{ text: '💹 Markup PPOB', callback_data: 'ppob_markup_menu' }],
+    [{ text: '🔙 Kembali', callback_data: 'admin_menu' }],
+  ]}});
+});
+
+// ── Sub-menu Admin: Backup & Restore ─────────────────────────
+bot.action('admin_menu_backup', async (ctx) => {
+  await ctx.answerCbQuery();
+  if (!adminIds.includes(ctx.from.id)) return;
+  await ctx.editMessageText('💾 <b>Backup & Restore</b>\n\nPilih aksi:', { parse_mode: 'HTML', reply_markup: { inline_keyboard: [
+    [{ text: '💾 Backup Global Sekarang', callback_data: 'admin_do_backup' }],
+    [{ text: '📥 Restore dari File', callback_data: 'admin_do_restore_info' }],
+    [{ text: '🗄️ Restore Database (DB)', callback_data: 'restore_db_menu' }],
+    [{ text: '💾 Backup DB Sekarang', callback_data: 'auto_backup_now' }],
+    [{ text: '🔙 Kembali', callback_data: 'admin_menu' }],
+  ]}});
+});
+
+// ── Sub-menu Admin: Dashboard & Laporan ──────────────────────
+bot.action('admin_menu_laporan', async (ctx) => {
+  await ctx.answerCbQuery();
+  if (!adminIds.includes(ctx.from.id)) return;
+  await ctx.editMessageText('📊 <b>Dashboard & Laporan</b>', { parse_mode: 'HTML', reply_markup: { inline_keyboard: [
+    [{ text: '📊 Dashboard Harian', callback_data: 'admin_daily_dashboard' }],
+    [{ text: '📈 Pendapatan Hari Ini & Kemarin', callback_data: 'admin_income_summary' }],
+    [{ text: '📊 Pendapatan Topup Bulanan', callback_data: 'admin_income_monthly_non_reseller' }],
+    [{ text: '📋 Antrian Pre-Order', callback_data: 'admin_preorder_list' }],
+    [{ text: '🔙 Kembali', callback_data: 'admin_menu' }],
+  ]}});
+});
+
+// ── Sub-menu Admin: Setting ───────────────────────────────────
+bot.action('admin_menu_setting', async (ctx) => {
+  await ctx.answerCbQuery();
+  if (!adminIds.includes(ctx.from.id)) return;
+  const maintenance = loadMaintenanceSetting();
+  const maintenanceLabel = maintenance.enabled ? '🔴 Maintenance: ON' : '🟢 Maintenance: OFF';
+  const joinChannelSetting = loadJoinChannelSetting();
+  const joinLabel = joinChannelSetting.enabled ? '📢 Wajib Join: ON' : '📢 Wajib Join: OFF';
+  await ctx.editMessageText('⚙️ <b>Setting</b>', { parse_mode: 'HTML', reply_markup: { inline_keyboard: [
+    [{ text: '⚙️ Setting API Keys', callback_data: 'admin_setting_api' }],
+    [{ text: '💳 Setting Payment Gateway', callback_data: 'payment_gateway_settings_menu' }],
+    [{ text: '🛒 Setting HidePulsa PPOB', callback_data: 'hidepulsa_settings_menu' }],
+    [{ text: '🔗 Webhook Multi-Login SC', callback_data: 'sc_webhook_settings_menu' }],
+    [{ text: '🌐 Setup Nginx Webhook', callback_data: 'nginx_webhook_menu' }],
+    [{ text: maintenanceLabel, callback_data: 'maintenance_menu' }],
+    [{ text: joinLabel, callback_data: 'join_channel_menu' }],
+    [{ text: '📞 Kontak Admin', callback_data: 'admin_contact_settings_menu' }],
+    [{ text: '🔙 Kembali', callback_data: 'admin_menu' }],
+  ]}});
+});
+
+// ── Sub-menu Admin: Notifikasi ────────────────────────────────
+bot.action('admin_menu_notif', async (ctx) => {
+  await ctx.answerCbQuery();
+  if (!adminIds.includes(ctx.from.id)) return;
+  await ctx.editMessageText('🔔 <b>Notifikasi</b>', { parse_mode: 'HTML', reply_markup: { inline_keyboard: [
+    [{ text: '🔔 Notif Create (Bot)', callback_data: 'notif_settings_menu' }],
+    [{ text: '📡 Notif BW Server', callback_data: 'bw_notif_settings_menu' }],
+    [{ text: '🔔 Setting Notif Group', callback_data: 'admin_notif_group_menu' }],
+    [{ text: '🤝 Setting Notif Akrab Group', callback_data: 'admin_akrab_notif_group_menu' }],
+    [{ text: '🔙 Kembali', callback_data: 'admin_menu' }],
+  ]}});
+});
+
+// ── Sub-menu Admin: User ──────────────────────────────────────
+bot.action('admin_menu_user', async (ctx) => {
+  await ctx.answerCbQuery();
+  if (!adminIds.includes(ctx.from.id)) return;
+  await ctx.editMessageText('👥 <b>Manajemen User</b>', { parse_mode: 'HTML', reply_markup: { inline_keyboard: [
+    [{ text: '👁️ Lihat Saldo User', callback_data: 'cek_saldo_user' }],
+    [{ text: '➕ Tambah Saldo VPN', callback_data: 'tambah_saldo' },
+     { text: '➖ Hapus Saldo VPN', callback_data: 'hapus_saldo' }],
+    [{ text: '➕ Tambah Saldo Akrab', callback_data: 'tambah_saldo_akrab' },
+     { text: '➖ Kurang Saldo Akrab', callback_data: 'kurang_saldo_akrab' }],
+    [{ text: '➕ Tambah Saldo PPOB', callback_data: 'tambah_saldo_ppob' },
+     { text: '➖ Kurang Saldo PPOB', callback_data: 'kurang_saldo_ppob' }],
+    [{ text: '🔙 Kembali', callback_data: 'admin_menu' }],
+  ]}});
+});
 
 bot.action('admin_menu_server', async (ctx) => {
   await ctx.answerCbQuery();
@@ -7130,9 +7207,11 @@ bot.action('bw_notif_set_interval', async (ctx) => {
 async function sendHidepulsaSettingsMenu(ctx) {
   const vars = JSON.parse(require('fs').readFileSync('./.vars.json', 'utf-8'));
   const tgId = vars.HIDEPULSA_TELEGRAM_USER_ID || '-';
-  const hasToken = vars.HIDEPULSA_ACCESS_TOKEN ? '✅ Ada' : '❌ Belum';
-  const hasRefresh = vars.HIDEPULSA_REFRESH_TOKEN ? '✅ Ada' : '❌ Belum';
   const sessionStatus = ppob.isSessionActive() ? '🟢 Aktif' : '🔴 Tidak aktif';
+  // Baca token dari DB (bukan dari vars)
+  const tokenRow = await new Promise(res => db.get('SELECT access_token, refresh_token, access_expires_at, refresh_expires_at FROM ppob_tokens WHERE id = 1', [], (e, r) => res(r || null)));
+  const hasToken = (tokenRow && tokenRow.access_token) ? '✅ Ada (exp: ' + new Date(tokenRow.access_expires_at).toLocaleString('id-ID', {timeZone:'Asia/Jakarta'}) + ')' : '❌ Belum';
+  const hasRefresh = (tokenRow && tokenRow.refresh_token) ? '✅ Ada (exp: ' + new Date(tokenRow.refresh_expires_at).toLocaleString('id-ID', {timeZone:'Asia/Jakarta'}) + ')' : '❌ Belum';
   const message =
     '*⚙️ SETTING HIDEPULSA PPOB*\n\n' +
     'Telegram User ID : `' + tgId + '`\n' +
@@ -7626,12 +7705,58 @@ bot.action('admin_test_menu', async (ctx) => {
       reply_markup: {
         inline_keyboard: [
           [{ text: '💉 Test SMM (Suntik Followers)', callback_data: 'test_smm_start' }],
-          [{ text: '🤝 Test Akrab', callback_data: 'test_akrab_start' }],
+          [{ text: '🤝 Test Akrab V1/V2 (KHFY)', callback_data: 'test_akrab_start' }],
+          [{ text: '🟣 Test Akrab V3 (Global)', callback_data: 'test_akrab_v3_start' }],
+          [{ text: '🔴 Test Circle (Global)', callback_data: 'test_circle_start' }],
+          [{ text: '📱 Test PPOB', callback_data: 'test_ppob_start' }],
           [{ text: '🔙 Kembali', callback_data: 'send_main_menu' }],
         ],
       },
     }
   );
+});
+
+
+bot.action('test_akrab_v3_start', async (ctx) => {
+  await ctx.answerCbQuery('Memuat...');
+  const userId = ctx.from.id;
+  try {
+    const produk = await ppob.getProdukList('Global');
+    const aktif = produk.filter(p => (p.brand||'').toUpperCase().includes('AKRAB') && p.seller_product_status && p.buyer_product_status && (p.unlimited_stock||(p.stock||0)>0));
+    if (!aktif.length) return ctx.editMessageText('<code>❌ Tidak ada produk Akrab V3 tersedia.</code>', { parse_mode:'HTML', reply_markup:{inline_keyboard:[[{text:'🔙',callback_data:'admin_test_menu'}]]}});
+    const s = aktif[0]; const harga = Number(s.price||0);
+    userState[userId] = { step:'test_akrab_v3_input_nomor', testProduct:s, testFinalPrice:harga };
+    await ctx.editMessageText('<code>🧪 TEST AKRAB V3 — DRY RUN</code>\n<code>──────────</code>\n<code>Produk: '+s.product_name.slice(0,30)+'</code>\n<code>Stok: '+(s.unlimited_stock?'unlimited':s.stock)+'</code>\n<code>Harga: Rp '+harga.toLocaleString('id-ID')+'</code>\n<code>──────────</code>\n<code>Masukkan nomor HP test:</code>',
+      { parse_mode:'HTML', reply_markup:{inline_keyboard:[[{text:'🔙 Batal',callback_data:'admin_test_menu'}]]}});
+  } catch(e) { await ctx.editMessageText('<code>❌ '+e.message+'</code>', {parse_mode:'HTML', reply_markup:{inline_keyboard:[[{text:'🔙',callback_data:'admin_test_menu'}]]}}); }
+});
+
+bot.action('test_circle_start', async (ctx) => {
+  await ctx.answerCbQuery('Memuat...');
+  const userId = ctx.from.id;
+  try {
+    const produk = await ppob.getProdukList('Global');
+    const aktif = produk.filter(p => (p.brand||'').toUpperCase().includes('CIRCLE') && p.seller_product_status && p.buyer_product_status && (p.unlimited_stock||(p.stock||0)>0));
+    if (!aktif.length) return ctx.editMessageText('<code>❌ Tidak ada produk Circle tersedia.</code>', { parse_mode:'HTML', reply_markup:{inline_keyboard:[[{text:'🔙',callback_data:'admin_test_menu'}]]}});
+    const s = aktif[0]; const harga = Number(s.price||0);
+    userState[userId] = { step:'test_circle_input_nomor', testProduct:s, testFinalPrice:harga };
+    await ctx.editMessageText('<code>🧪 TEST CIRCLE — DRY RUN</code>\n<code>──────────</code>\n<code>Produk: '+s.product_name.slice(0,30)+'</code>\n<code>Stok: '+(s.unlimited_stock?'unlimited':s.stock)+'</code>\n<code>Harga: Rp '+harga.toLocaleString('id-ID')+'</code>\n<code>──────────</code>\n<code>Masukkan nomor HP test:</code>',
+      { parse_mode:'HTML', reply_markup:{inline_keyboard:[[{text:'🔙 Batal',callback_data:'admin_test_menu'}]]}});
+  } catch(e) { await ctx.editMessageText('<code>❌ '+e.message+'</code>', {parse_mode:'HTML', reply_markup:{inline_keyboard:[[{text:'🔙',callback_data:'admin_test_menu'}]]}}); }
+});
+
+bot.action('test_ppob_start', async (ctx) => {
+  await ctx.answerCbQuery('Memuat...');
+  const userId = ctx.from.id;
+  try {
+    const produk = await ppob.getProdukList('data');
+    const aktif = produk.filter(p => p.seller_product_status && p.buyer_product_status && (p.unlimited_stock||(p.stock||0)>0));
+    if (!aktif.length) return ctx.editMessageText('<code>❌ Tidak ada produk PPOB tersedia.</code>', { parse_mode:'HTML', reply_markup:{inline_keyboard:[[{text:'🔙',callback_data:'admin_test_menu'}]]}});
+    const s = aktif[0]; const harga = Number(s.price||0);
+    userState[userId] = { step:'test_ppob_input_nomor', testProduct:s, testFinalPrice:harga };
+    await ctx.editMessageText('<code>🧪 TEST PPOB — DRY RUN</code>\n<code>──────────</code>\n<code>Produk: '+s.product_name.slice(0,30)+'</code>\n<code>Kategori: '+s.category+'</code>\n<code>Stok: '+(s.unlimited_stock?'unlimited':s.stock)+'</code>\n<code>Harga: Rp '+harga.toLocaleString('id-ID')+'</code>\n<code>──────────</code>\n<code>Masukkan nomor HP test:</code>',
+      { parse_mode:'HTML', reply_markup:{inline_keyboard:[[{text:'🔙 Batal',callback_data:'admin_test_menu'}]]}});
+  } catch(e) { await ctx.editMessageText('<code>❌ '+e.message+'</code>', {parse_mode:'HTML', reply_markup:{inline_keyboard:[[{text:'🔙',callback_data:'admin_test_menu'}]]}}); }
 });
 
 // ── Test SMM ─────────────────────────────────────────────────────────────────
@@ -8012,7 +8137,7 @@ bot.action('auto_backup_now', async (ctx) => {
   }
 
   // 2. Backup saldo JSON (terpisah dari DB)
-  await runAutoBackupSaldo();
+  await runAutoBackupGlobal();
 
   await ctx.reply('✅ Backup database dan backup saldo telah dikirim.');
 });
@@ -10124,12 +10249,10 @@ function ppobMenuKeyboard() {
   return {
     inline_keyboard: [
       [{ text: '📱 Pulsa', callback_data: 'ppob_list_pulsa' }, { text: '📶 Kuota Data', callback_data: 'ppob_list_kuota' }],
-      [{ text: '🌐 Paket Global', callback_data: 'ppob_cat_global' }, { text: '🎁 Combo Plus', callback_data: 'ppob_cat_combo' }],
-      [{ text: '🔄 Masa Aktif', callback_data: 'ppob_cat_masaaktif' }, { text: '🆕 Aktivasi Perdana', callback_data: 'ppob_cat_aktivasi' }],
+      [{ text: '🎁 Combo Plus', callback_data: 'ppob_cat_combo' }, { text: '🔄 Masa Aktif', callback_data: 'ppob_cat_masaaktif' }],
+      [{ text: '🆕 Aktivasi Perdana', callback_data: 'ppob_cat_aktivasi' }],
       [{ text: '⚡ Listrik PLN', callback_data: 'ppob_cat_listrik' }],
-      [{ text: '🏥 BPJS', callback_data: 'ppob_cat_bpjs' }],
-      [{ text: '🎮 Voucher Game', callback_data: 'ppob_cat_game' }],
-      [{ text: '📦 Produk Digital', callback_data: 'ppob_cat_digital' }],
+      [{ text: '🎮 Games', callback_data: 'ppob_cat_games' }],
       [{ text: '📜 Riwayat', callback_data: 'ppob_history' }],
       [{ text: '🔙 Kembali', callback_data: 'send_main_menu' }]
     ]
@@ -10144,7 +10267,10 @@ bot.action('menu_ppob', async (ctx) => {
   const isLoggedIn = ppob.isSessionActive();
   const statusLine = isAdmin ? (isLoggedIn ? '\n\n🟢 *Status API:* Terhubung' : '\n\n🔴 *Status API:* Belum login') : '';
   const text = '🛒 *LAYANAN PPOB*\n━━━━━━━━━━━━━━━━━━\n\n'
-    + '📱 Pulsa & Kuota semua operator\n'
+    + '📱 Pulsa · 📶 Kuota Data\n'
+    + '🎁 Combo Plus · 🔄 Masa Aktif\n'
+    + '🆕 Aktivasi Perdana · ⚡ PLN\n'
+    + '🎮 Games (Mobile Legends & lainnya)\n'
     + '⚡ Token & Tagihan Listrik PLN\n'
     + '🏥 BPJS Kesehatan\n'
     + '🎮 Voucher Game (ML, FF, dll)'
@@ -10370,6 +10496,345 @@ bot.action(/^ppob_beli_(.+)$/, async (ctx) => {
 // ── Kategori: Listrik PLN ─────────────────────────────────────
 
 // ── Kategori baru ────────────────────────────────────────────
+
+// ── Variabel notif grup akrab ─────────────────────────────────
+// (dibaca dari vars setelah bot init)
+
+// ── Helper: kirim notif transaksi Akrab ke grup ───────────────
+async function sendAkrabNotifToGroup(tipe, data) {
+  try {
+    const gid = Number(String(vars.AKRAB_NOTIF_GROUP_ID || '').trim());
+    if (!gid || isNaN(gid)) return;
+    const icon = tipe==='v1'?'🔵':tipe==='v2'?'🟢':tipe==='v3'?'🟣':'🔴';
+    const label = tipe==='v1'?'Akrab V1':tipe==='v2'?'Akrab V2':tipe==='v3'?'Akrab V3':'Circle';
+    const msg = icon+' <b>Transaksi '+label+'</b>\n<code>──────────────────────</code>\n'+
+      '👤 User: <code>'+(data.userName||data.userId)+'</code>\n'+
+      '📦 Produk: '+data.produk+'\n'+
+      '📱 Tujuan: <code>'+data.tujuan+'</code>\n'+
+      '💰 Nominal: Rp '+Number(data.amount).toLocaleString('id-ID')+'\n'+
+      '🔖 Reff ID: <code>'+data.reffId+'</code>\n'+
+      '📊 Status: '+(data.status||'pending');
+    await bot.telegram.sendMessage(gid, msg, { parse_mode: 'HTML' });
+  } catch(e) { logger.error('sendAkrabNotifToGroup: '+e.message); }
+}
+
+// ── Helper: tampilkan produk HidePulsa Global ─────────────────
+async function showHidepulsaGlobal(ctx, brandFilter, label, markupKey) {
+  try {
+    const userId = ctx.from.id;
+    const produk = await ppob.getProdukList('Global');
+    const filtered = produk.filter(p => {
+      const brand = (p.brand||'').toUpperCase();
+      return brandFilter.some(f => brand.includes(f)) && p.seller_product_status && p.buyer_product_status && (p.unlimited_stock || (p.stock||0) > 0);
+    });
+    if (!filtered.length) {
+      return ctx.editMessageText(label+'\n<code>──────────────────────</code>\n✦ Tidak ada stok tersedia.', {
+        parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'menu_akrab' }]] }
+      }).catch(()=>{});
+    }
+    const mkGlobal = await dbH.getMarkup(db, 'global', markupKey, null).catch(()=>null);
+    const mkReseller = await dbH.getMarkup(db, 'reseller', markupKey, userId).catch(()=>null);
+    const totalStok = filtered.reduce((s,p) => s+(p.unlimited_stock?9999:(p.stock||0)), 0);
+    const rows = filtered.map(p => {
+      const stok = p.unlimited_stock ? 'unlimited' : (p.stock||0);
+      const base = Number(p.price||0);
+      const finalPrice = wallet.getEffectivePrice(base, mkGlobal, mkReseller);
+      const gbMatch = p.product_name.match(/(\d+GB[^|\n]*)/i);
+      const shortName = gbMatch ? gbMatch[0].trim() : p.product_name.slice(0,35);
+      return [{ text: shortName+' | Rp '+finalPrice.toLocaleString('id-ID')+' | stok: '+stok, callback_data: 'ppob_beli_global_'+p.buyer_sku_code }];
+    });
+    rows.push([{ text: '🔙 Kembali', callback_data: 'menu_akrab' }]);
+    await ctx.editMessageText(
+      label+'\n<code>──────────────────────</code>\n📊 Stok: '+filtered.length+' produk | total: '+(totalStok>=9999?'unlimited':totalStok)+'\n✦ Pilih produk:',
+      { parse_mode: 'HTML', reply_markup: { inline_keyboard: rows } }
+    ).catch(()=>ctx.reply(label, { reply_markup: { inline_keyboard: rows } }));
+  } catch(err) { await ctx.reply('❌ Gagal: '+err.message); }
+}
+
+// ── Akrab V3 dari HidePulsa Global ───────────────────────────
+bot.action('akrab_grup_v3_global', async (ctx) => {
+  console.log('DEBUG: akrab_grup_v3_global dipanggil');
+  await ctx.answerCbQuery('Memuat...');
+  await showHidepulsaGlobal(ctx, ['AKRAB'], '🟣 <b>Akrab V3</b>', 'akrab_v3_global');
+});
+
+// ── Circle dari HidePulsa Global ─────────────────────────────
+bot.action('akrab_circle_global', async (ctx) => {
+  await ctx.answerCbQuery('Memuat...');
+  await showHidepulsaGlobal(ctx, ['CIRCLE'], '🔴 <b>Circle</b>', 'circle_global');
+});
+
+// ── Beli produk HidePulsa Global ─────────────────────────────
+bot.action(/^ppob_beli_global_(.+)$/, async (ctx) => {
+  await ctx.answerCbQuery('Memuat...');
+  const sku = ctx.match[1];
+  const userId = ctx.from.id;
+  try {
+    let produk = [];
+    try { produk = await ppob.getProdukList('Global'); }
+    catch(e) { return ctx.reply('Gagal koneksi HidePulsa: ' + e.message + '\nCoba lagi beberapa saat.'); }
+    const item = produk.find(p => p.buyer_sku_code === sku);
+    if (!item) return ctx.reply('Produk tidak ditemukan (SKU: ' + sku + '). Coba refresh menu.');
+    const brand = (item.brand||'').toUpperCase();
+    const markupKey = brand.includes('CIRCLE') ? 'circle_global' : 'akrab_v3_global';
+    const mkGlobal = await dbH.getMarkup(db, 'global', markupKey, null).catch(()=>null);
+    const mkReseller = await dbH.getMarkup(db, 'reseller', markupKey, userId).catch(()=>null);
+    const finalPrice = wallet.getEffectivePrice(Number(item.price||0), mkGlobal, mkReseller);
+    const stok = item.unlimited_stock ? 'unlimited' : (item.stock||0);
+    const backCb = brand.includes('CIRCLE') ? 'akrab_circle_global' : 'akrab_grup_v3_global';
+    userState[userId] = { step: 'ppob_global_input_no', sku, item, finalPrice, markupKey };
+    await ctx.editMessageText(
+      '🛒 <b>Detail Produk</b>\n<code>──────────────────────</code>\n'+
+      '📦 '+item.product_name+'\n'+
+      '💰 Harga: <b>Rp '+finalPrice.toLocaleString('id-ID')+'</b>\n'+
+      '📊 Stok: <b>'+stok+'</b>\n\n✦ Masukkan nomor HP tujuan:',
+      { parse_mode: 'HTML', reply_markup: { inline_keyboard: [
+        [{ text: '🔙 Kembali', callback_data: backCb }]
+      ]}}
+    );
+  } catch(err) { await ctx.reply('❌ Gagal: '+err.message); }
+});
+
+// ── Konfirmasi beli HidePulsa Global ─────────────────────────
+bot.action(/^ppob_konfirm_global_(.+)$/, async (ctx) => {
+  await ctx.answerCbQuery('Memproses...');
+  const userId = ctx.from.id;
+  const state = userState[userId];
+  if (!state || !state.item || !state.customerNo) return ctx.reply('❌ Sesi expired. Ulangi dari menu.');
+  const { item, finalPrice, customerNo, markupKey } = state;
+  const brand = (item.brand||'').toUpperCase();
+  const tipe = brand.includes('CIRCLE') ? 'circle' : 'v3';
+  delete userState[userId];
+  try {
+    const saldo = await dbH.getSaldo(db, userId);
+    if (saldo < finalPrice) {
+      return ctx.editMessageText('❌ Saldo tidak cukup.\nSaldo: Rp '+Number(saldo).toLocaleString('id-ID')+'\nDibutuhkan: Rp '+finalPrice.toLocaleString('id-ID'),
+        { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Menu Akrab', callback_data: 'menu_akrab' }]] }});
+    }
+    const result = await ppob.createOrder(item.buyer_sku_code, customerNo);
+    const txId = (result && result.data && result.data.ref_id) || ('TRX'+Date.now());
+    await wallet.potongSaldo(db, userId, finalPrice, txId, 'ppob-global');
+    await sendAkrabNotifToGroup(tipe, {
+      userId, userName: ctx.from.username || ctx.from.first_name,
+      produk: item.product_name, tujuan: customerNo, amount: finalPrice, reffId: txId,
+      status: (result&&result.data&&result.data.message)||'pending'
+    });
+    await ctx.editMessageText(
+      '✅ <b>Transaksi Berhasil!</b>\n<code>──────────────────────</code>\n'+
+      '📦 '+item.product_name+'\n'+
+      '📱 Tujuan: <code>'+customerNo+'</code>\n'+
+      '💰 Nominal: Rp '+finalPrice.toLocaleString('id-ID')+'\n'+
+      '🔖 Ref ID: <code>'+txId+'</code>\n'+
+      '📊 Status: '+(result&&result.data&&result.data.message||'pending'),
+      { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Menu Akrab', callback_data: 'menu_akrab' }]] }}
+    );
+  } catch(err) {
+    await ctx.editMessageText('❌ Transaksi gagal: '+err.message+'\nSaldo tidak terpotong.',
+      { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Menu Akrab', callback_data: 'menu_akrab' }]] }});
+  }
+});
+
+// ── Markup Akrab (gabung semua) ───────────────────────────────
+bot.action('akrab_markup_menu', async (ctx) => {
+  await ctx.answerCbQuery();
+  const userId = ctx.from.id;
+  const isAdminUser = Array.isArray(adminIds) ? adminIds.includes(userId) : Number(adminIds) === userId;
+  if (!isAdminUser) return ctx.answerCbQuery('Tidak ada izin!', { show_alert: true });
+  const mkV12 = await dbH.getMarkup(db, 'global', 'akrab', null).catch(()=>null);
+  const mkV3 = await dbH.getMarkup(db, 'global', 'akrab_v3_global', null).catch(()=>null);
+  const mkCircle = await dbH.getMarkup(db, 'global', 'circle_global', null).catch(()=>null);
+  const fmt = mk => mk ? (mk.type==='pct' ? mk.value+'%' : 'Rp'+Number(mk.value).toLocaleString('id-ID')) : 'Belum diset';
+  await ctx.editMessageText(
+    '⚙️ <b>Markup Akrab</b>\n\n'+
+    '🔵 V1 & V2: '+fmt(mkV12)+'\n'+
+    '🟣 V3 (Global): '+fmt(mkV3)+'\n'+
+    '🔴 Circle: '+fmt(mkCircle)+'\n\nPilih kategori:',
+    { parse_mode: 'HTML', reply_markup: { inline_keyboard: [
+      [{ text: '🔵 Markup Akrab V1 & V2', callback_data: 'akrab_v12_markup_sub' }],
+      [{ text: '🟣 Markup Akrab V3', callback_data: 'akrab_v3_markup_menu' }],
+      [{ text: '🔴 Markup Circle', callback_data: 'akrab_circle_markup_menu' }],
+      [{ text: '🔙 Kembali', callback_data: 'menu_akrab' }],
+    ]}}
+  );
+});
+
+bot.action('akrab_v12_markup_sub', async (ctx) => {
+  await ctx.answerCbQuery();
+  const mk = await dbH.getMarkup(db, 'global', 'akrab', null).catch(()=>null);
+  const s = mk ? (mk.type==='pct'?mk.value+'%':'Rp'+Number(mk.value).toLocaleString('id-ID')) : 'Belum diset';
+  await ctx.editMessageText('⚙️ <b>Markup Akrab V1 & V2</b>\n\nSaat ini: '+s+'\n\nPilih aksi:',
+    { parse_mode: 'HTML', reply_markup: { inline_keyboard: [
+      [{ text: '📊 Set %', callback_data: 'akrab_v12_markup_set_pct' }],
+      [{ text: '💰 Set Flat (Rp)', callback_data: 'akrab_v12_markup_set_flat' }],
+      [{ text: '🗑️ Hapus', callback_data: 'akrab_v12_markup_delete' }],
+      [{ text: '🔙 Kembali', callback_data: 'akrab_markup_menu' }],
+    ]}}
+  );
+});
+bot.action('akrab_v12_markup_set_pct', async (ctx) => { await ctx.answerCbQuery(); userState[ctx.from.id] = { step: 'akrab_v12_markup_input_pct' }; await ctx.reply('Masukkan markup % untuk Akrab V1 & V2:'); });
+bot.action('akrab_v12_markup_set_flat', async (ctx) => { await ctx.answerCbQuery(); userState[ctx.from.id] = { step: 'akrab_v12_markup_input_flat' }; await ctx.reply('Masukkan markup flat (Rp) untuk Akrab V1 & V2:'); });
+bot.action('akrab_v12_markup_delete', async (ctx) => { await ctx.answerCbQuery(); await dbH.deleteMarkup(db,'global','akrab',null); await ctx.reply('✅ Markup Akrab V1&V2 dihapus.'); });
+
+bot.action('akrab_v3_markup_menu', async (ctx) => {
+  await ctx.answerCbQuery();
+  const mk = await dbH.getMarkup(db, 'global', 'akrab_v3_global', null).catch(()=>null);
+  const s = mk ? (mk.type==='pct'?mk.value+'%':'Rp'+Number(mk.value).toLocaleString('id-ID')) : 'Belum diset';
+  await ctx.editMessageText('⚙️ <b>Markup Akrab V3</b>\n\nSaat ini: '+s+'\n\nPilih aksi:',
+    { parse_mode: 'HTML', reply_markup: { inline_keyboard: [
+      [{ text: '📊 Set %', callback_data: 'akrab_v3_markup_set_pct' }],
+      [{ text: '💰 Set Flat (Rp)', callback_data: 'akrab_v3_markup_set_flat' }],
+      [{ text: '🗑️ Hapus', callback_data: 'akrab_v3_markup_delete' }],
+      [{ text: '🔙 Kembali', callback_data: 'akrab_markup_menu' }],
+    ]}}
+  );
+});
+bot.action('akrab_v3_markup_set_pct', async (ctx) => { await ctx.answerCbQuery(); userState[ctx.from.id] = { step: 'akrab_v3_markup_input_pct' }; await ctx.reply('Masukkan markup % untuk Akrab V3:'); });
+bot.action('akrab_v3_markup_set_flat', async (ctx) => { await ctx.answerCbQuery(); userState[ctx.from.id] = { step: 'akrab_v3_markup_input_flat' }; await ctx.reply('Masukkan markup flat (Rp) untuk Akrab V3:'); });
+bot.action('akrab_v3_markup_delete', async (ctx) => { await ctx.answerCbQuery(); await dbH.deleteMarkup(db,'global','akrab_v3_global',null); await ctx.reply('✅ Markup Akrab V3 dihapus.'); });
+
+bot.action('akrab_circle_markup_menu', async (ctx) => {
+  await ctx.answerCbQuery();
+  const mk = await dbH.getMarkup(db, 'global', 'circle_global', null).catch(()=>null);
+  const s = mk ? (mk.type==='pct'?mk.value+'%':'Rp'+Number(mk.value).toLocaleString('id-ID')) : 'Belum diset';
+  await ctx.editMessageText('⚙️ <b>Markup Circle</b>\n\nSaat ini: '+s+'\n\nPilih aksi:',
+    { parse_mode: 'HTML', reply_markup: { inline_keyboard: [
+      [{ text: '📊 Set %', callback_data: 'circle_markup_set_pct' }],
+      [{ text: '💰 Set Flat (Rp)', callback_data: 'circle_markup_set_flat' }],
+      [{ text: '🗑️ Hapus', callback_data: 'circle_markup_delete' }],
+      [{ text: '🔙 Kembali', callback_data: 'akrab_markup_menu' }],
+    ]}}
+  );
+});
+bot.action('circle_markup_set_pct', async (ctx) => { await ctx.answerCbQuery(); userState[ctx.from.id] = { step: 'circle_markup_input_pct' }; await ctx.reply('Masukkan markup % untuk Circle:'); });
+bot.action('circle_markup_set_flat', async (ctx) => { await ctx.answerCbQuery(); userState[ctx.from.id] = { step: 'circle_markup_input_flat' }; await ctx.reply('Masukkan markup flat (Rp) untuk Circle:'); });
+bot.action('circle_markup_delete', async (ctx) => { await ctx.answerCbQuery(); await dbH.deleteMarkup(db,'global','circle_global',null); await ctx.reply('✅ Markup Circle dihapus.'); });
+
+// ── Markup PPOB Admin ─────────────────────────────────────────
+bot.action('ppob_markup_menu', async (ctx) => {
+  await ctx.answerCbQuery();
+  const isAdminUser = Array.isArray(adminIds) ? adminIds.includes(ctx.from.id) : Number(adminIds) === ctx.from.id;
+  if (!isAdminUser) return ctx.answerCbQuery('Tidak ada izin!', { show_alert: true });
+  const mk = await dbH.getMarkup(db, 'global', 'ppob', null).catch(()=>null);
+  const s = mk ? (mk.type==='pct'?mk.value+'%':'Rp'+Number(mk.value).toLocaleString('id-ID')) : 'Belum diset';
+  await ctx.editMessageText('💹 <b>Markup Global PPOB</b>\n\nSaat ini: '+s+'\n\nPilih aksi:',
+    { parse_mode: 'HTML', reply_markup: { inline_keyboard: [
+      [{ text: '📊 Set %', callback_data: 'ppob_markup_set_pct' }],
+      [{ text: '💰 Set Flat (Rp)', callback_data: 'ppob_markup_set_flat' }],
+      [{ text: '🗑️ Hapus', callback_data: 'ppob_markup_delete' }],
+      [{ text: '🔙 Kembali', callback_data: 'admin_menu_saldo' }],
+    ]}}
+  );
+});
+bot.action('ppob_markup_set_pct', async (ctx) => { await ctx.answerCbQuery(); userState[ctx.from.id] = { step: 'ppob_markup_input_pct' }; await ctx.reply('Masukkan markup % untuk PPOB:'); });
+bot.action('ppob_markup_set_flat', async (ctx) => { await ctx.answerCbQuery(); userState[ctx.from.id] = { step: 'ppob_markup_input_flat' }; await ctx.reply('Masukkan markup flat (Rp) untuk PPOB:'); });
+bot.action('ppob_markup_delete', async (ctx) => { await ctx.answerCbQuery(); await dbH.deleteMarkup(db,'global','ppob',null); await ctx.reply('✅ Markup PPOB dihapus.'); });
+
+
+// ═══════════════════════════════════════════════════════
+// BACKUP / RESTORE GLOBAL
+// ═══════════════════════════════════════════════════════
+bot.action('admin_global_backup_menu', async (ctx) => {
+  await ctx.answerCbQuery();
+  const isAdminUser = Array.isArray(adminIds) ? adminIds.includes(ctx.from.id) : Number(adminIds) === ctx.from.id;
+  if (!isAdminUser) return ctx.answerCbQuery('Tidak ada izin!', { show_alert: true });
+  await ctx.editMessageText(
+    '💾 <b>Backup & Restore Global</b>\n\n' +
+    'Backup mencakup:\n' +
+    '• Semua user & saldo (VPN, Akrab, PPOB)\n' +
+    '• Data reseller & member\n' +
+    '• Akun VPN yang sudah dibuat\n' +
+    '• Semua konfigurasi server\n' +
+    '• API key & setting notif grup\n' +
+    '• Markup & vars\n\n' +
+    'Pilih aksi:',
+    { parse_mode: 'HTML', reply_markup: { inline_keyboard: [
+      [{ text: '📤 Buat Backup', callback_data: 'admin_do_backup' }],
+      [{ text: '📥 Restore Backup', callback_data: 'admin_do_restore_info' }],
+      [{ text: '🔙 Kembali', callback_data: 'send_main_menu' }],
+    ]}}
+  );
+});
+
+bot.action('admin_do_backup', async (ctx) => {
+  await ctx.answerCbQuery('Membuat backup...');
+  const isAdminUser = Array.isArray(adminIds) ? adminIds.includes(ctx.from.id) : Number(adminIds) === ctx.from.id;
+  if (!isAdminUser) return;
+  await ctx.reply('⏳ Membuat backup global, mohon tunggu...');
+  try {
+    const backup = {};
+    const dbAll = (sql) => new Promise((res, rej) => db.all(sql, [], (e, r) => e ? res([]) : res(r || [])));
+
+    // Semua tabel database
+    backup.users              = await dbAll('SELECT * FROM users');
+    backup.accounts           = await dbAll('SELECT * FROM accounts');
+    backup.servers            = await dbAll('SELECT * FROM Server');
+    backup.transactions       = await dbAll('SELECT * FROM transactions');
+    backup.pending_deposits   = await dbAll('SELECT * FROM pending_deposits');
+    backup.server_iplimit_rules = await dbAll('SELECT * FROM server_iplimit_rules');
+    backup.akrab_orders       = await dbAll('SELECT * FROM akrab_orders');
+    backup.akrab_preorders    = await dbAll('SELECT * FROM akrab_preorders');
+    backup.smm_orders         = await dbAll('SELECT * FROM smm_orders');
+    backup.markup_config      = await dbAll('SELECT * FROM markup_config');
+    backup.broadcast_polls    = await dbAll('SELECT * FROM broadcast_polls');
+    backup.broadcast_poll_votes = await dbAll('SELECT * FROM broadcast_poll_votes');
+    backup.download_configs   = await dbAll('SELECT * FROM download_configs');
+    backup.ppob_tokens        = await dbAll('SELECT * FROM ppob_tokens');
+
+    // Vars: API key, notif grup, semua konfigurasi
+    backup.vars = vars;
+
+    // Metadata
+    backup._meta = {
+      created_at: new Date().toISOString(),
+      bot_version: 'RetriVPN',
+      total_users: backup.users.length,
+      total_accounts: backup.accounts.length,
+      total_servers: backup.servers.length,
+      total_transactions: backup.transactions.length,
+      total_akrab_orders: backup.akrab_orders.length,
+      tables_backed_up: Object.keys(backup).filter(k => !k.startsWith('_')).length,
+    };
+
+    const backupStr = JSON.stringify(backup, null, 2);
+    const backupPath = '/tmp/global_backup_' + Date.now() + '.json';
+    fs.writeFileSync(backupPath, backupStr);
+
+    const caption =
+      '✅ <b>Backup Berhasil!</b>\n' +
+      '<code>──────────────────────</code>\n' +
+      '👥 User: ' + backup.users.length + '\n' +
+      '🔑 Akun VPN: ' + backup.accounts.length + '\n' +
+      '🖥️ Server: ' + backup.servers.length + '\n' +
+      '💸 Transaksi: ' + backup.transactions.length + '\n' +
+      '🤝 Akrab Orders: ' + backup.akrab_orders.length + '\n' +
+      '📱 SMM Orders: ' + backup.smm_orders.length + '\n' +
+      '⚙️ Markup & Config: ✅\n' +
+      '🔑 API Keys & Vars: ✅\n' +
+      '🔔 Notif Groups: ✅\n' +
+      '<code>──────────────────────</code>\n' +
+      '⚠️ Simpan file ini dengan aman!';
+
+    await ctx.replyWithDocument(
+      { source: backupPath, filename: 'retriVPN_backup_' + new Date().toISOString().slice(0,10) + '.json' },
+      { caption, parse_mode: 'HTML' }
+    );
+    fs.unlinkSync(backupPath);
+  } catch(err) {
+    await ctx.reply('❌ Backup gagal: ' + err.message);
+  }
+});
+
+bot.action('admin_do_restore_info', async (ctx) => {
+  await ctx.answerCbQuery();
+  userState[ctx.from.id] = { step: 'admin_restore_upload' };
+  await ctx.reply(
+    '📥 <b>Restore Global</b>\n\n' +
+    '⚠️ <b>PERINGATAN:</b> Restore akan menimpa data yang ada!\n\n' +
+    'Kirim file backup JSON yang ingin di-restore:',
+    { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '❌ Batal', callback_data: 'admin_global_backup_menu' }]] } }
+  );
+});
+
 bot.action('ppob_cat_global', async (ctx) => {
   await ctx.answerCbQuery('Memuat...');
   try {
@@ -10381,6 +10846,8 @@ bot.action('ppob_cat_global', async (ctx) => {
     catch (_) { await ctx.reply('🌐 *Paket Global*\n\nPilih operator:', { parse_mode: 'Markdown', reply_markup: keyboard }); }
   } catch (err) { await ctx.reply('❌ Gagal: ' + err.message); }
 });
+
+
 
 bot.action('ppob_cat_combo', async (ctx) => {
   await ctx.answerCbQuery('Memuat...');
@@ -10440,8 +10907,48 @@ bot.action(/^ppob_gen_brand_(.+)__(.+)$/, async (ctx) => {
     const produk = await ppob.getProdukList(category, brand);
     const active = produk.filter(p => p.seller_product_status && p.buyer_product_status).slice(0, 25);
     if (!active.length) return ctx.reply('❌ Tidak ada produk tersedia.');
-    ppobBeliState[userId] = { step: 'input_no_for_list', brand, type: category, products: active, isGame: false };
-    await ctx.reply('📦 *' + brand.toUpperCase() + ' - ' + category + '*\n\nKirim *nomor HP* tujuan:\n_(contoh: 087777334689)_', { parse_mode: 'Markdown' });
+
+    // Kategori yang perlu nomor HP tujuan
+    const needPhone = ['pulsa', 'data', 'combo plus', 'masa aktif', 'aktivasi perdana'];
+    const catLower = category.toLowerCase();
+    const isNeedPhone = needPhone.some(n => catLower.includes(n));
+    const isGame = catLower.includes('game');
+
+    if (isNeedPhone) {
+      // Minta nomor HP dulu
+      ppobBeliState[userId] = { step: 'input_no_for_list', brand, type: category, products: active, isGame: false };
+      const emoji = catLower.includes('pulsa') ? '📱' : catLower.includes('data') ? '📶' : catLower.includes('combo') ? '🎁' : catLower.includes('masa') ? '🔄' : '🆕';
+      await ctx.reply(emoji + ' *' + brand.toUpperCase() + '*\n\nKirim *nomor HP* tujuan:\n_(contoh: 087777334689)_', { parse_mode: 'Markdown' });
+    } else if (isGame) {
+      // Game: tampilkan daftar voucher langsung (pakai User ID game)
+      ppobBeliState[userId] = { step: 'input_no_for_list', brand, type: category, products: active, isGame: true };
+      await ctx.reply('🎮 *' + brand.toUpperCase() + '*\n\nKirim *User ID* game tujuan:', { parse_mode: 'Markdown' });
+    } else {
+      // Tidak perlu nomor HP — langsung tampil produk
+      ppobBeliState[userId] = { step: 'pilih_produk_langsung', brand, type: category, products: active };
+      const rows = active.map(p => {
+        const stok = p.unlimited_stock ? 'unlimited' : (p.stock || 0);
+        return [{ text: p.product_name + ' — ' + ppob.formatRupiah(p.price), callback_data: 'ppob_listed_direct_' + p.buyer_sku_code }];
+      });
+      rows.push([{ text: '🔙 Kembali', callback_data: 'menu_ppob' }]);
+      await ctx.reply('📦 *' + brand.toUpperCase() + '*\n\nPilih produk:', { parse_mode: 'Markdown', reply_markup: { inline_keyboard: rows } });
+    }
+  } catch (err) { await ctx.reply('❌ Gagal: ' + err.message); }
+});
+
+
+// ── Games (Mobile Legends, dll dari HidePulsa) ───────────────
+bot.action('ppob_cat_games', async (ctx) => {
+  await ctx.answerCbQuery('Memuat...');
+  try {
+    const produk = await ppob.getProdukList('Games');
+    const active = produk.filter(p => p.seller_product_status && p.buyer_product_status);
+    if (!active.length) return ctx.reply('❌ Tidak ada produk Games tersedia.');
+    const brands = [...new Set(active.map(p => p.brand))].sort();
+    const rows = brands.map(b => [{ text: '🎮 ' + b, callback_data: 'ppob_gen_brand_Games__' + b.toLowerCase().split(' ').join('_') }]);
+    rows.push([{ text: '🔙 Kembali', callback_data: 'menu_ppob' }]);
+    try { await ctx.editMessageText('🎮 *Games*\n\nPilih game:', { parse_mode: 'Markdown', reply_markup: { inline_keyboard: rows } }); }
+    catch (_) { await ctx.reply('🎮 *Games*\n\nPilih game:', { parse_mode: 'Markdown', reply_markup: { inline_keyboard: rows } }); }
   } catch (err) { await ctx.reply('❌ Gagal: ' + err.message); }
 });
 
@@ -11690,7 +12197,8 @@ bot.action('menu_join_reseller', async (ctx) => {
       [{ text: ' Statistik Saya', callback_data: 'reseller_stats' }],
       [{ text: ' Markup VPN',   callback_data: 'reseller_markup_vpn'  },
        { text: ' Markup Akrab', callback_data: 'reseller_markup_akrab'}],
-      [{ text: ' Markup SMM',   callback_data: 'reseller_markup_smm'  }],
+      [{ text: ' Markup SMM',   callback_data: 'reseller_markup_smm'  },
+       { text: '💹 Markup PPOB', callback_data: 'reseller_markup_ppob'}],
       [{ text: ' Menu Utama', callback_data: 'send_main_menu' }]
     ]};
 
@@ -11748,12 +12256,14 @@ async function showResellerMarkupMenu(ctx, service, label) {
     });
 }
 
+bot.action('reseller_markup_ppob', async (ctx) => { await ctx.answerCbQuery().catch(() => {}); await showResellerMarkupMenu(ctx, 'ppob', 'PPOB'); });
+
 bot.action('reseller_markup_vpn',   async (ctx) => { await ctx.answerCbQuery().catch(() => {}); await showResellerMarkupMenu(ctx, 'vpn',   'Akun VPN'); });
 bot.action('reseller_markup_akrab', async (ctx) => { await ctx.answerCbQuery().catch(() => {}); await showResellerMarkupMenu(ctx, 'akrab', 'Akrab'); });
 bot.action('reseller_markup_smm',   async (ctx) => { await ctx.answerCbQuery().catch(() => {}); await showResellerMarkupMenu(ctx, 'smm',   'Suntik Followers'); });
 
 // Set markup reseller per service (pct/flat)
-bot.action(/^reseller_markup_(vpn|akrab|smm)_set_(pct|flat)$/, async (ctx) => {
+bot.action(/^reseller_markup_(vpn|akrab|smm|ppob)_set_(pct|flat)$/, async (ctx) => {
   await ctx.answerCbQuery().catch(() => {});
   const userId = ctx.from.id;
   const service = ctx.match[1];
@@ -11768,7 +12278,7 @@ bot.action(/^reseller_markup_(vpn|akrab|smm)_set_(pct|flat)$/, async (ctx) => {
     });
 });
 
-bot.action(/^reseller_markup_(vpn|akrab|smm)_delete$/, async (ctx) => {
+bot.action(/^reseller_markup_(vpn|akrab|smm|ppob)_delete$/, async (ctx) => {
   await ctx.answerCbQuery().catch(() => {});
   const userId = ctx.from.id;
   const service = ctx.match[1];
@@ -13152,6 +13662,10 @@ bot.action('menu_akrab', async (ctx) => {
       { text: '🟢 Akrab V2', callback_data: 'akrab_grup_v2' },
     ],
     [
+      { text: '🟣 Akrab V3', callback_data: 'akrab_grup_v3_global' },
+      { text: '🔴 Circle', callback_data: 'akrab_circle_global' },
+    ],
+    [
       { text: '📦 Cek Stok', callback_data: 'akrab_cek_stock_all' },
       { text: '📜 Riwayat', callback_data: 'akrab_riwayat' },
     ],
@@ -13161,7 +13675,7 @@ bot.action('menu_akrab', async (ctx) => {
     ],
   ];
   if (isAdminUser) {
-    keyboard.push([{ text: '⚙️ Markup', callback_data: 'akrab_markup_menu' }]);
+    keyboard.push([{ text: '⚙️ Markup Akrab', callback_data: 'akrab_markup_menu' }]);
   }
   keyboard.push([{ text: '🔙 Menu Utama', callback_data: 'send_main_menu' }]);
 
@@ -13178,14 +13692,15 @@ bot.action('menu_akrab', async (ctx) => {
   );
 });
 
-// ── Helper bersama: ambil slot map stok Akrab (XLA + XDA) ───────────────────
-// Dipakai oleh menu Akrab V1/V2, Cek Stok, dan Pre-Order agar SELALU SINKRON.
+// ── Helper bersama: ambil slot map stok Akrab (XLA + XDA + XCLP) ───────────────────
+// Dipakai oleh menu Akrab V3/V2/Circle, Cek Stok, dan Pre-Order agar SELALU SINKRON.
 async function fetchAkrabStokMap() {
   const stokMap = {};
   try {
-    const [stokV1Resp, stokV2Resp] = await Promise.all([
+    const [stokV1Resp, stokV2Resp, products] = await Promise.all([
       akrabModule.cekStokAkrab(KHFY_ENDPOINT).catch(() => null),
       akrabModule.cekStokAkrabV2(KHFY_ENDPOINT).catch(() => null),
+      akrabModule.getProducts(KHFY_ENDPOINT, KHFY_API_KEY).catch(() => []),
     ]);
 
     // V1 (XLA): array of {type, sisa_slot}
@@ -13209,6 +13724,16 @@ async function fetchAkrabStokMap() {
         if (tipe) stokMap[tipe] = Number(it.sisa_slot ?? it.stok ?? 0);
       });
     }
+
+    // V3 (XCLP/Circle): ambil dari getProducts() — field kosong/status
+    // Tidak ada endpoint stok khusus, gunakan data dari list produk
+    (products || []).forEach((p) => {
+      const kode = String(p.kode_produk || p.code || p.produk || '').toUpperCase();
+      if (/^XCLP/i.test(kode) && stokMap[kode] === undefined) {
+        const isKosong = p.kosong == 1 || p.kosong === true || String(p.status || '').toLowerCase() === 'kosong';
+        stokMap[kode] = isKosong ? 0 : (Number(p.stok || p.stock || p.sisa_slot || 1));
+      }
+    });
   } catch (e) {
     logger.warn('fetchAkrabStokMap error: ' + e.message);
   }
@@ -13217,8 +13742,9 @@ async function fetchAkrabStokMap() {
 
 // ── Grup Akrab V1 / V2 ──────────────────────────────────────────────────────
 // Pengelompokan produk Akrab. Cek kode_produk, kode_provider, dan nama produk.
-//   v1 : XLA / XL Akrab / produk dengan provider XLA  — Akrab V1
+//   v1 : XLA / XL Akrab / produk dengan provider XLA  — Akrab V3
 //   v2 : XDA / produk dengan provider XDA             — Akrab V2
+//   v3 : XCLP / Circle / produk dengan provider XCLP  — Circle
 function getAkrabGroup(kodeProduk, namaProduk, kodeProvider) {
   const k = String(kodeProduk || '').toUpperCase();
   const n = String(namaProduk || '').toUpperCase();
@@ -13229,14 +13755,17 @@ function getAkrabGroup(kodeProduk, namaProduk, kodeProvider) {
   // V1 (XLA) — termasuk produk yang nama/provider-nya mengandung XLA atau "XL AKRAB"
   if (/^XLA/.test(k) || /^XLA/.test(prov) || prov === 'XLA') return 'v1';
   if (n.includes('XL AKRAB') || n.includes('XLA')) return 'v1';
+  // V3 (XCLP/Circle)
+  if (/^XCLP/.test(k) || /^XCLP/.test(prov) || prov === 'XCLP') return 'v3';
+  if (n.includes('CIRCLE') || n.includes('XCLP')) return 'v3';
   return 'other'; // produk lain tidak masuk grup manapun
 }
 
-bot.action(/^akrab_grup_(v1|v2)$/, async (ctx) => {
+bot.action(/^akrab_grup_(v1|v2|v3)$/, async (ctx) => {
   await ctx.answerCbQuery('Memuat produk...');
   const userId = ctx.from.id;
   const grup = ctx.match[1];
-  const grupLabel = grup === 'v1' ? 'Akrab V1' : 'Akrab V2';
+  const grupLabel = grup === 'v1' ? 'Akrab V1' : grup === 'v2' ? 'Akrab V2' : 'Circle';
 
   try {
     const products = await akrabModule.getProducts(KHFY_ENDPOINT, KHFY_API_KEY);
@@ -13559,21 +14088,24 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
       fetchAkrabStokMap(),
     ]);
 
-    // Split slot map gabungan menjadi XLA dan XDA (sumber sama dengan menu lain)
+    // Split slot map gabungan menjadi XLA, XDA, dan XCLP (sumber sama dengan menu lain)
     const xlaSlotMap = {};
     const xdaSlotMap = {};
+    const xclpSlotMap = {};
     Object.entries(stokMap).forEach(([kode, slot]) => {
       if (/^XLA/i.test(kode)) xlaSlotMap[kode] = slot;
       else if (/^XDA/i.test(kode)) xdaSlotMap[kode] = slot;
+      else if (/^XCLP/i.test(kode)) xclpSlotMap[kode] = slot;
     });
 
     // Helper: ambil kode produk dari berbagai kemungkinan field
     const getKode = (p) => String(p.kode_produk || p.code || p.produk || '').toUpperCase();
     const getNama = (p) => String(p.nama_produk || p.name || p.nama || '');
 
-    // Pisahkan produk — hanya XLA dan XDA. Produk lain dibuang.
+    // Pisahkan produk — XLA, XDA, dan XCLP.
     const xlaProducts = (products || []).filter(p => /^XLA/i.test(getKode(p)));
     const xdaProducts = (products || []).filter(p => /^XDA/i.test(getKode(p)));
+    const xclpProducts = (products || []).filter(p => /^XCLP/i.test(getKode(p)));
 
     const now = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
 
@@ -13658,7 +14190,43 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
       body += `🟢 <b>XDA</b>\n<code>${formatPair(items)}</code>\n\n`;
     }
 
-    body += `📊 <b>Ready ${totalReady} · Kosong ${totalKosong}</b>`;
+    // ── XCLP (Circle) ── tampilkan dari slot map + produk list.
+    if (Object.keys(xclpSlotMap).length || xclpProducts.length) {
+      const namaMapXclp = {};
+      xclpProducts.forEach(p => { namaMapXclp[getKode(p)] = shortName(p.nama_produk || p.name || getKode(p)); });
+      const kodeFromSlot = Object.keys(xclpSlotMap);
+      const kodeFromProd = xclpProducts.map(getKode).filter(k => !xclpSlotMap.hasOwnProperty(k));
+      const allKode = [...kodeFromSlot, ...kodeFromProd];
+
+      const items = allKode.map(kode => {
+        const nama = namaMapXclp[kode] || kode;
+        const slot = xclpSlotMap[kode];
+        const prod = xclpProducts.find(p => getKode(p) === kode);
+        const tersedia = (slot !== undefined) ? slot > 0 : (prod ? !isKosongProduk(prod) : false);
+        const icon = tersedia ? '✅' : '❌';
+        const qty = (slot !== undefined && slot > 0) ? String(slot) : '';
+        if (tersedia) totalReady++; else totalKosong++;
+        return { icon, label: nama, qty };
+      });
+      body += `🟣 <b>Circle (XCLP)</b>\n<code>${formatPair(items)}</code>\n\n`;
+    }
+
+    
+    try {
+      const gProduk = await ppob.getProdukList('Global');
+      const gBrands = [...new Set(gProduk.map(p=>p.brand))].sort();
+      let gBody = '';
+      gBrands.forEach(b => {
+        const all = gProduk.filter(p=>p.brand===b);
+        const aktif = all.filter(p=>p.seller_product_status&&p.buyer_product_status&&(p.stock||0)>0);
+        const stok = aktif.reduce((s,p)=>s+(p.stock||0),0);
+        const icon = aktif.length>0?'✅':'❌';
+        gBody += icon+' '+b+': '+aktif.length+'/'+all.length+' produk, stok: '+stok+'\n';
+        if (aktif.length>0) totalReady++; else totalKosong++;
+      });
+      if (gBody) body += '🌐 <b>Paket Global (HidePulsa)</b>\n<code>'+gBody.trim()+'</code>\n\n';
+    } catch(e) {}
+  body += `📊 <b>Ready ${totalReady} · Kosong ${totalKosong}</b>`;
 
     await ctx.editMessageText(body, {
       parse_mode: 'HTML',
@@ -13728,7 +14296,7 @@ function dbClearPreorders(tipe) {
 
 async function showPreorderMenu(ctx, tipe) {
   const userId = ctx.from.id;
-  const label = tipe === 'xla' ? 'Akrab V1 (XLA)' : 'Akrab V2 (XDA)';
+  const label = tipe === 'xla' ? 'Akrab V1' : 'Akrab V2';
   const emoji = tipe === 'xla' ? '🔵' : '🟢';
   const existing = await dbGetPreorder(tipe, userId);
   const totalDaftar = await new Promise((resolve) =>
@@ -14089,6 +14657,11 @@ bot.action(/^akrab_konfirmasi_(.+)$/, async (ctx) => {
     await dbH.saveAkrabOrder(db, userId, reffId, produkCode, tujuan, amount);
     delete userState[userId];
 
+    const akrabTipe = (produkCode||'').toUpperCase().includes('XDA') ? 'v2' : 'v1';
+    await sendAkrabNotifToGroup(akrabTipe, {
+      userId, userName: ctx.from.username||ctx.from.first_name,
+      produk: produkCode, tujuan, amount, reffId, status: (result&&result.status)||'pending'
+    });
     await ctx.editMessageText(
       ' <b>Transaksi Akrab Berhasil!</b>\n\n' +
       'Reff ID: <code>' + reffId + '</code>\n' +
@@ -14280,6 +14853,30 @@ bot.on('text', async (ctx) => {
       }
 
       // ── Test Akrab (dry run) ──────────────────────────
+      if (akState.step === 'test_akrab_v3_input_nomor' || akState.step === 'test_circle_input_nomor' || akState.step === 'test_ppob_input_nomor') {
+        const nomor = text; const product = akState.testProduct||{};
+        const harga = Number(akState.testFinalPrice||0);
+        const tipe = akState.step.includes('circle')?'Circle':akState.step.includes('ppob')?'PPOB':'Akrab V3';
+        delete userState[ctx.chat.id];
+        let apiStatus = '✅ OK'; let stokStatus = '✅ Ada stok';
+        try {
+          const cat = akState.step.includes('ppob') ? (product.category||'data') : 'Global';
+          const cek = await ppob.getProdukList(cat);
+          const item = cek.find(p => p.buyer_sku_code === product.buyer_sku_code);
+          if (!item) stokStatus = '⚠️ Produk tidak ditemukan';
+          else if (!item.seller_product_status||!item.buyer_product_status) stokStatus = '❌ Status nonaktif';
+          else if ((item.stock||0)<=0&&!item.unlimited_stock) stokStatus = '❌ Stok habis';
+        } catch(e) { apiStatus = '❌ '+String(e.message||'').slice(0,50); }
+        await ctx.reply(
+          '<code>🧪 HASIL TEST '+tipe.toUpperCase()+' — DRY RUN</code>\n<code>──────────</code>\n'+
+          '<code>Produk: '+product.product_name.slice(0,30)+'</code>\n'+
+          '<code>Tujuan: '+nomor+'</code>\n<code>Harga: Rp '+harga.toLocaleString('id-ID')+'</code>\n<code>──────────</code>\n'+
+          '<code>Koneksi API: '+apiStatus+'</code>\n<code>Stok: '+stokStatus+'</code>\n'+
+          '<code>Saldo dipotong: TIDAK (dry run)</code>\n<code>Order dikirim: TIDAK (dry run)</code>\n<code>──────────</code>\n<code>✅ Alur kode berjalan normal</code>',
+          { parse_mode:'HTML', reply_markup:{inline_keyboard:[[{text:'🔙 Menu Test',callback_data:'admin_test_menu'}]]}}
+        );
+        return;
+      }
       if (akState.step === 'test_akrab_input_nomor') {        const nomor = text;
         const product = akState.testProduct || {};
         const kode = product.kode_produk || product.code || '-';
@@ -14361,6 +14958,76 @@ bot.on('text', async (ctx) => {
         } catch (err) {
           await ctx.reply(' Tidak ditemukan atau error: ' + (err && err.message ? err.message : err));
         }
+        return;
+      }
+
+      // State markup V1&V2, V3, Circle, PPOB
+      if (akState.step === 'admin_input_akrab_notif_group') {
+        const gid = text.trim();
+        vars.AKRAB_NOTIF_GROUP_ID = gid;
+        fs.writeFileSync(varsPath, JSON.stringify(vars, null, 2));
+        await ctx.reply('✅ Notif Akrab akan dikirim ke group: '+gid);
+        delete userState[ctx.chat.id]; return;
+      }
+            if (akState.step === 'akrab_v12_markup_input_pct') {
+        const val = parseFloat(text); if (isNaN(val)||val<=0) return ctx.reply('Tidak valid.');
+        await dbH.setMarkup(db,'global','akrab',null,'pct',val);
+        await ctx.reply('✅ Markup Akrab V1&V2 '+val+'% disimpan.'); delete userState[ctx.chat.id]; return;
+      }
+      if (akState.step === 'akrab_v12_markup_input_flat') {
+        const val = parseInt(text); if (isNaN(val)||val<=0) return ctx.reply('Tidak valid.');
+        await dbH.setMarkup(db,'global','akrab',null,'flat',val);
+        await ctx.reply('✅ Markup Akrab V1&V2 Rp'+val.toLocaleString('id-ID')+' disimpan.'); delete userState[ctx.chat.id]; return;
+      }
+      if (akState.step === 'akrab_v3_markup_input_pct') {
+        const val = parseFloat(text); if (isNaN(val)||val<=0) return ctx.reply('Tidak valid.');
+        await dbH.setMarkup(db,'global','akrab_v3_global',null,'pct',val);
+        await ctx.reply('✅ Markup Akrab V3 '+val+'% disimpan.'); delete userState[ctx.chat.id]; return;
+      }
+      if (akState.step === 'akrab_v3_markup_input_flat') {
+        const val = parseInt(text); if (isNaN(val)||val<=0) return ctx.reply('Tidak valid.');
+        await dbH.setMarkup(db,'global','akrab_v3_global',null,'flat',val);
+        await ctx.reply('✅ Markup Akrab V3 Rp'+val.toLocaleString('id-ID')+' disimpan.'); delete userState[ctx.chat.id]; return;
+      }
+      if (akState.step === 'circle_markup_input_pct') {
+        const val = parseFloat(text); if (isNaN(val)||val<=0) return ctx.reply('Tidak valid.');
+        await dbH.setMarkup(db,'global','circle_global',null,'pct',val);
+        await ctx.reply('✅ Markup Circle '+val+'% disimpan.'); delete userState[ctx.chat.id]; return;
+      }
+      if (akState.step === 'circle_markup_input_flat') {
+        const val = parseInt(text); if (isNaN(val)||val<=0) return ctx.reply('Tidak valid.');
+        await dbH.setMarkup(db,'global','circle_global',null,'flat',val);
+        await ctx.reply('✅ Markup Circle Rp'+val.toLocaleString('id-ID')+' disimpan.'); delete userState[ctx.chat.id]; return;
+      }
+      if (akState.step === 'ppob_markup_input_pct') {
+        const val = parseFloat(text); if (isNaN(val)||val<=0) return ctx.reply('Tidak valid.');
+        await dbH.setMarkup(db,'global','ppob',null,'pct',val);
+        await ctx.reply('✅ Markup PPOB '+val+'% disimpan.'); delete userState[ctx.chat.id]; return;
+      }
+      if (akState.step === 'ppob_markup_input_flat') {
+        const val = parseInt(text); if (isNaN(val)||val<=0) return ctx.reply('Tidak valid.');
+        await dbH.setMarkup(db,'global','ppob',null,'flat',val);
+        await ctx.reply('✅ Markup PPOB Rp'+val.toLocaleString('id-ID')+' disimpan.'); delete userState[ctx.chat.id]; return;
+      }
+
+      // Input nomor tujuan V3/Circle global
+      if (akState.step === 'ppob_global_input_no') {
+        const nomor = text.trim();
+        if (!nomor) return ctx.reply('Nomor tidak boleh kosong.');
+        const { item, finalPrice, sku } = akState;
+        const brand = (item.brand||'').toUpperCase();
+        const backCb = brand.includes('CIRCLE') ? 'akrab_circle_global' : 'akrab_grup_v3_global';
+        userState[ctx.chat.id] = Object.assign({}, akState, { customerNo: nomor });
+        await ctx.reply(
+          '🛒 <b>Konfirmasi Pembelian</b>\n<code>──────────────────────</code>\n'+
+          '📦 '+item.product_name+'\n'+
+          '📱 Tujuan: <code>'+nomor+'</code>\n'+
+          '💰 Harga: <b>Rp '+finalPrice.toLocaleString('id-ID')+'</b>\n\nLanjutkan?',
+          { parse_mode: 'HTML', reply_markup: { inline_keyboard: [
+            [{ text: '✅ Konfirmasi', callback_data: 'ppob_konfirm_global_'+sku }],
+            [{ text: '❌ Batal', callback_data: backCb }],
+          ]}}
+        );
         return;
       }
 
@@ -16830,7 +17497,12 @@ if (state.action === 'create' && normalizeCreatePriceMode(state.priceMode) === '
         return ctx.reply(' *Server tidak ditemukan.*', { parse_mode: 'Markdown' });
       }
 
-      state.quota = Number(state.accountQuota || 0) > 0 ? Number(state.accountQuota) : server.quota;
+      const baseQuota = Number(state.accountQuota || 0) > 0 ? Number(state.accountQuota) : server.quota;
+      const expDaysForQuota = Number(state.exp || 30);
+      const monthMultiplier = expDaysForQuota >= 30 ? Math.ceil(expDaysForQuota / 30) : 1;
+      state.quota = baseQuota * monthMultiplier;
+      state._baseQuota = baseQuota;
+      state._monthMultiplier = monthMultiplier;
       if (state.action === 'renew' && Number(state.accountIpLimit) > 0) {
         state.iplimit = Number(state.accountIpLimit);
       } else if (state.action === 'create') {
@@ -18862,6 +19534,172 @@ bot.action(/server_detail_(\d+)/, async (ctx) => {
   } catch (error) {
     logger.error(' Kesalahan saat mengambil detail server:', error);
     await ctx.reply(' *Terjadi kesalahan saat mengambil detail server.*', { parse_mode: 'Markdown' });
+  }
+});
+
+
+// ── Handler file dokumen untuk restore ───────────────────────
+bot.on('document', async (ctx, next) => {
+  const userId = ctx.from.id;
+  const state = userState[userId];
+  if (!state || state.step !== 'admin_restore_upload') return next();
+  const isAdminUser = Array.isArray(adminIds) ? adminIds.includes(userId) : Number(adminIds) === userId;
+  if (!isAdminUser) return next();
+
+  delete userState[userId];
+  const doc = ctx.message.document;
+  if (!doc || !doc.file_name.endsWith('.json')) return ctx.reply('❌ File harus berformat .json');
+
+  await ctx.reply('⏳ Memproses restore...');
+  try {
+    const fileLink = await ctx.telegram.getFileLink(doc.file_id);
+    const https = require('https');
+    const http = require('http');
+    const client = fileLink.href.startsWith('https') ? https : http;
+    const rawData = await new Promise((res, rej) => {
+      let data = '';
+      client.get(fileLink.href, r => { r.on('data', d => data += d); r.on('end', () => res(data)); r.on('error', rej); });
+    });
+    const backup = JSON.parse(rawData);
+    if (!backup._meta) return ctx.reply('❌ File backup tidak valid.');
+
+    let restored = 0;
+    const dbRun = (sql, params) => new Promise(res => db.run(sql, params, res));
+    let stats = {};
+
+    // Restore users & saldo (termasuk reseller)
+    if (backup.users && backup.users.length) {
+      for (const u of backup.users) {
+        await dbRun('INSERT OR REPLACE INTO users (user_id, saldo, saldo_akrab, username, first_name, last_name, is_reseller, reseller_tier, joined_at) VALUES (?,?,?,?,?,?,?,?,?)',
+          [u.user_id, u.saldo||0, u.saldo_akrab||0, u.username||'', u.first_name||'', u.last_name||'', u.is_reseller||0, u.reseller_tier||0, u.joined_at||Date.now()]);
+      }
+      stats.users = backup.users.length;
+    }
+
+    // Restore akun VPN (renew/delete/lock pakai tabel ini)
+    if (backup.accounts && backup.accounts.length) {
+      for (const a of backup.accounts) {
+        await dbRun('INSERT OR REPLACE INTO accounts (id, user_id, type, username, password, server_id, server_name, domain, link_tls, link_none, link_grpc, link_uptls, link_upntls, account_ip_package, account_price_per_day, expires_at, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+          [a.id, a.user_id, a.type, a.username, a.password||'', a.server_id, a.server_name||'', a.domain||'', a.link_tls||'', a.link_none||'', a.link_grpc||'', a.link_uptls||'', a.link_upntls||'', a.account_ip_package||1, a.account_price_per_day||0, a.expires_at, a.created_at||Date.now()]);
+      }
+      stats.accounts = backup.accounts.length;
+    }
+
+    // Restore server
+    if (backup.servers && backup.servers.length) {
+      for (const s of backup.servers) {
+        await dbRun('INSERT OR IGNORE INTO Server (id, domain, auth, harga, harga_reseller, nama_server, quota, iplimit, batas_create_akun, total_create_akun, support_zivpn, support_udp_http, service) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)',
+          [s.id, s.domain, s.auth||'', s.harga||0, s.harga_reseller||0, s.nama_server||'', s.quota||0, s.iplimit||1, s.batas_create_akun||0, s.total_create_akun||0, s.support_zivpn||0, s.support_udp_http||0, s.service||'ssh']);
+      }
+      stats.servers = backup.servers.length;
+    }
+
+    // Restore Akrab orders & preorders
+    if (backup.akrab_orders && backup.akrab_orders.length) {
+      for (const o of backup.akrab_orders) {
+        await dbRun('INSERT OR IGNORE INTO akrab_orders (id, user_id, tipe, produk_kode, tujuan, harga, reff_id, status, created_at) VALUES (?,?,?,?,?,?,?,?,?)',
+          [o.id, o.user_id, o.tipe||'', o.produk_kode||'', o.tujuan||'', o.harga||0, o.reff_id||'', o.status||'pending', o.created_at||Date.now()]);
+      }
+      stats.akrab_orders = backup.akrab_orders.length;
+    }
+    if (backup.akrab_preorders && backup.akrab_preorders.length) {
+      for (const o of backup.akrab_preorders) {
+        await dbRun('INSERT OR IGNORE INTO akrab_preorders (id, user_id, tipe, produk_kode, tujuan, harga, created_at) VALUES (?,?,?,?,?,?,?)',
+          [o.id, o.user_id, o.tipe||'', o.produk_kode||'', o.tujuan||'', o.harga||0, o.created_at||Date.now()]);
+      }
+      stats.akrab_preorders = backup.akrab_preorders.length;
+    }
+
+    // Restore SMM orders
+    if (backup.smm_orders && backup.smm_orders.length) {
+      for (const o of backup.smm_orders) {
+        await dbRun('INSERT OR IGNORE INTO smm_orders (id, user_id, service, target, quantity, price, order_id, status, created_at) VALUES (?,?,?,?,?,?,?,?,?)',
+          [o.id, o.user_id, o.service||'', o.target||'', o.quantity||0, o.price||0, o.order_id||'', o.status||'pending', o.created_at||Date.now()]);
+      }
+      stats.smm_orders = backup.smm_orders.length;
+    }
+
+    // Restore markup config
+    if (backup.markup_config && backup.markup_config.length) {
+      for (const m of backup.markup_config) {
+        await dbRun('INSERT OR REPLACE INTO markup_config (id, scope, category, user_id, type, value, updated_at) VALUES (?,?,?,?,?,?,?)',
+          [m.id, m.scope||'global', m.category||'', m.user_id||null, m.type||'pct', m.value||0, m.updated_at||Date.now()]);
+      }
+      stats.markups = backup.markup_config.length;
+    }
+
+    // Restore PPOB tokens
+    if (backup.ppob_tokens && backup.ppob_tokens.length) {
+      for (const t of backup.ppob_tokens) {
+        await dbRun('INSERT OR REPLACE INTO ppob_tokens (id, access_token, refresh_token, access_expires_at, refresh_expires_at, updated_at) VALUES (?,?,?,?,?,?)',
+          [t.id, t.access_token||'', t.refresh_token||'', t.access_expires_at||0, t.refresh_expires_at||0, t.updated_at||Date.now()]);
+      }
+      stats.ppob_tokens = backup.ppob_tokens.length;
+    }
+
+    // Restore vars (API key, notif grup, semua konfigurasi)
+    if (backup.vars) {
+      Object.assign(vars, backup.vars);
+      fs.writeFileSync(varsPath, JSON.stringify(vars, null, 2));
+      stats.vars = '✅';
+    }
+
+    await ctx.reply(
+      '✅ <b>Restore Selesai!</b>\n' +
+      '<code>──────────────────────</code>\n' +
+      '👥 User: ' + (stats.users||0) + '\n' +
+      '🔑 Akun VPN: ' + (stats.accounts||0) + ' (renew/delete/lock tersedia)\n' +
+      '🖥️ Server: ' + (stats.servers||0) + '\n' +
+      '🤝 Akrab Orders: ' + (stats.akrab_orders||0) + '\n' +
+      '📱 SMM Orders: ' + (stats.smm_orders||0) + '\n' +
+      '⚙️ Markup: ' + (stats.markups||0) + ' config\n' +
+      '🔑 PPOB Token: ' + (stats.ppob_tokens||0) + '\n' +
+      '📋 Vars/Config: ' + (stats.vars||'❌') + '\n' +
+      '<code>──────────────────────</code>\n' +
+      '⚠️ Restart bot agar semua aktif!',
+      { parse_mode: 'HTML' }
+    );
+  } catch(err) {
+    await ctx.reply('❌ Restore gagal: ' + err.message);
+  }
+});
+
+
+// ── Auto-intercept OTP HidePulsa ─────────────────────────────
+// Jika admin kirim/forward pesan berisi kode 6 digit saat ada challenge token aktif
+bot.on('message', async (ctx, next) => {
+  const userId = ctx.from.id;
+  const isAdminUser = Array.isArray(adminIds) ? adminIds.includes(userId) : Number(adminIds) === userId;
+  if (!isAdminUser) return next();
+
+  const text = ctx.message && (ctx.message.text || ctx.message.caption || '');
+  if (!text) return next();
+
+  // Cek apakah ada challenge token aktif
+  const currentVars = JSON.parse(require('fs').readFileSync('./.vars.json', 'utf-8'));
+  const challengeToken = currentVars.HIDEPULSA_CHALLENGE_TOKEN;
+  if (!challengeToken) return next();
+
+  // Cek apakah pesan mengandung kode 6 digit
+  const otpMatch = text.match(/\b(\d{6})\b/);
+  if (!otpMatch) return next();
+
+  // Cek apakah user sedang dalam state lain
+  const state = userState[userId];
+  if (state && state.step !== 'hidepulsa_verify_otp') return next();
+
+  const otp = otpMatch[1];
+  try {
+    await ppob.verifyOtp(challengeToken, otp);
+    const nextVars = JSON.parse(require('fs').readFileSync('./.vars.json', 'utf-8'));
+    delete nextVars.HIDEPULSA_CHALLENGE_TOKEN;
+    require('fs').writeFileSync('./.vars.json', JSON.stringify(nextVars, null, 2));
+    delete userState[userId];
+    await ctx.reply('✅ <b>OTP HidePulsa terdeteksi dan login berhasil!</b>\n\nSesi PPOB aktif.', { parse_mode: 'HTML' });
+    return;
+  } catch (err) {
+    // OTP salah atau sudah expired, lanjut ke handler normal
+    return next();
   }
 });
 
@@ -21270,85 +22108,103 @@ function restartBandwidthReportScheduler() {
 restartBandwidthReportScheduler();
 
 // ── Auto Backup Saldo Harian (setiap hari jam 02:00 WIB) ────────────────────
-async function runAutoBackupSaldo() {
+// ── Auto Backup Global setiap 5 jam ─────────────────────────
+async function runAutoBackupGlobal() {
   try {
     const admins = getNormalizedAdminIds();
     if (admins.length === 0) {
-      logger.warn('[AutoBackupSaldo] Tidak ada admin ID, skip.');
+      logger.warn('[AutoBackupGlobal] Tidak ada admin ID, skip.');
       return;
     }
 
-    // Ambil semua saldo user
-    const users = await new Promise((resolve, reject) =>
-      db.all('SELECT user_id, saldo, saldo_akrab FROM users', [], (err, rows) =>
-        err ? reject(err) : resolve(rows || [])
-      )
-    );
-
-    // Ambil daftar reseller
-    let resellerList = [];
-    try { resellerList = listResellersSync(); } catch (_) {}
-
-    const now = new Date();
-    const backupData = {
-      timestamp: now.toISOString(),
+    const dbAll = (sql) => new Promise((res) => db.all(sql, [], (e, r) => res(r || [])));
+    const backup = {};
+    backup.users              = await dbAll('SELECT * FROM users');
+    backup.accounts           = await dbAll('SELECT * FROM accounts');
+    backup.servers            = await dbAll('SELECT * FROM Server');
+    backup.transactions       = await dbAll('SELECT * FROM transactions');
+    backup.pending_deposits   = await dbAll('SELECT * FROM pending_deposits');
+    backup.server_iplimit_rules = await dbAll('SELECT * FROM server_iplimit_rules');
+    backup.akrab_orders       = await dbAll('SELECT * FROM akrab_orders');
+    backup.akrab_preorders    = await dbAll('SELECT * FROM akrab_preorders');
+    backup.smm_orders         = await dbAll('SELECT * FROM smm_orders');
+    backup.markup_config      = await dbAll('SELECT * FROM markup_config');
+    backup.broadcast_polls    = await dbAll('SELECT * FROM broadcast_polls');
+    backup.broadcast_poll_votes = await dbAll('SELECT * FROM broadcast_poll_votes');
+    backup.download_configs   = await dbAll('SELECT * FROM download_configs');
+    backup.ppob_tokens        = await dbAll('SELECT * FROM ppob_tokens');
+    backup.vars               = vars;
+    backup._meta = {
+      created_at: new Date().toISOString(),
       generated_by: 'auto',
-      total_users: users.length,
-      total_resellers: resellerList.length,
-      users: users.map(u => ({
-        user_id: u.user_id,
-        saldo_vpn: u.saldo || 0,
-        saldo_akrab: u.saldo_akrab || 0,
-      })),
-      resellers: resellerList,
+      bot_version: 'RetriVPN',
+      total_users: backup.users.length,
+      total_accounts: backup.accounts.length,
+      total_servers: backup.servers.length,
     };
 
+    const now = new Date();
     const ts = now.toISOString().replace(/[:.]/g, '-').replace('T', '_').slice(0, 19);
-    const fileName = `backup_saldo_auto_${ts}.json`;
+    const fileName = `retriVPN_backup_${ts}.json`;
     const filePath = path.join(__dirname, fileName);
-
-    fs.writeFileSync(filePath, JSON.stringify(backupData, null, 2), 'utf8');
+    fs.writeFileSync(filePath, JSON.stringify(backup, null, 2), 'utf8');
 
     const caption =
-      `💾 <b>Auto Backup Saldo Harian</b>\n` +
-      `<code>──────────────────────</code>\n` +
-      `✦ Waktu    : ${now.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })}\n` +
-      `✦ Total User     : ${users.length}\n` +
-      `✦ Total Reseller : ${resellerList.length}\n` +
-      `<code>──────────────────────</code>\n` +
-      `<i>Backup otomatis harian. Simpan untuk restore saldo.</i>`;
+      '💾 <b>Auto Backup Global (5 Jam)</b>\n' +
+      '<code>──────────────────────</code>\n' +
+      '⏰ Waktu: ' + now.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + '\n' +
+      '👥 User: ' + backup.users.length + '\n' +
+      '🔑 Akun VPN: ' + backup.accounts.length + '\n' +
+      '🖥️ Server: ' + backup.servers.length + '\n' +
+      '💸 Transaksi: ' + backup.transactions.length + '\n' +
+      '🤝 Akrab Orders: ' + backup.akrab_orders.length + '\n' +
+      '⚙️ Config & API Keys: ✅\n' +
+      '<code>──────────────────────</code>\n' +
+      '<i>Backup otomatis setiap 5 jam.</i>';
 
     for (const adminId of admins) {
       try {
-        await bot.telegram.sendDocument(
-          adminId,
-          { source: filePath, filename: fileName },
-          { caption, parse_mode: 'HTML' }
-        );
+        await bot.telegram.sendDocument(adminId, { source: filePath, filename: fileName }, { caption, parse_mode: 'HTML' });
       } catch (e) {
-        logger.warn(`[AutoBackupSaldo] Gagal kirim ke admin ${adminId}: ${e.message}`);
+        logger.warn('[AutoBackupGlobal] Gagal kirim ke admin ' + adminId + ': ' + e.message);
       }
     }
-
     try { fs.unlinkSync(filePath); } catch (_) {}
-    logger.info(`[AutoBackupSaldo] Selesai — ${users.length} user, ${resellerList.length} reseller`);
+    logger.info('[AutoBackupGlobal] Selesai — ' + backup.users.length + ' user, ' + backup.accounts.length + ' akun VPN');
   } catch (err) {
-    logger.error('[AutoBackupSaldo] Error: ' + (err && err.message ? err.message : err));
+    logger.error('[AutoBackupGlobal] Error: ' + (err && err.message ? err.message : err));
   }
 }
 
-const autoBackupSaldoRule = new schedule.RecurrenceRule();
-autoBackupSaldoRule.tz = 'Asia/Jakarta';
-autoBackupSaldoRule.hour = 2;
-autoBackupSaldoRule.minute = 0;
-
-schedule.scheduleJob('auto_backup_saldo_daily', autoBackupSaldoRule, () => {
-  runAutoBackupSaldo().catch((err) => {
-    logger.error('[AutoBackupSaldo] Uncaught: ' + (err && err.message ? err.message : err));
+// Jalankan setiap 5 jam (0, 5, 10, 15, 20 WIB)
+schedule.scheduleJob('auto_backup_global_5h', '0 */5 * * *', () => {
+  runAutoBackupGlobal().catch((err) => {
+    logger.error('[AutoBackupGlobal] Uncaught: ' + (err && err.message ? err.message : err));
   });
 });
+logger.info('[AutoBackupGlobal] Scheduler aktif — setiap 5 jam sekali');
+// ── Cek refresh token HidePulsa setiap hari jam 08:00 ────────
+schedule.scheduleJob('check_hidepulsa_token', '0 8 * * *', async () => {
+  try {
+    db.get('SELECT refresh_expires_at FROM ppob_tokens WHERE id = 1', async (e, row) => {
+      if (!row) return;
+      const daysLeft = Math.ceil((row.refresh_expires_at - Date.now()) / (1000 * 60 * 60 * 24));
+      if (daysLeft <= 3) {
+        const admins = getNormalizedAdminIds();
+        for (const adminId of admins) {
+          try {
+            await bot.telegram.sendMessage(adminId,
+              '⚠️ <b>Token HidePulsa PPOB hampir expired!</b>\n\nSisa: <b>' + daysLeft + ' hari</b>\n\nSegera login OTP ulang:\nAdmin → Setting → HidePulsa PPOB → Login OTP',
+              { parse_mode: 'HTML' }
+            );
+          } catch(e) {}
+        }
+      }
+    });
+  } catch(e) { logger.error('[HidePulsa] Token check error: ' + e.message); }
+});
+logger.info('[HidePulsa] Token expiry checker aktif — setiap hari jam 08:00');
 
-logger.info('[AutoBackupSaldo] Scheduler aktif — setiap hari jam 02:00 WIB');
 
 // ── Notifikasi H-3 Expired Akun (setiap hari jam 09:00 WIB) ─────────────────
 async function runExpiryNotification() {
