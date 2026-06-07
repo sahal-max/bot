@@ -242,17 +242,32 @@ async function createudphttp(username, password, exp, iplimit, serverId, telegra
         const ipLimitText = LIMIT_IP === "0" ? "Unlimited" : LIMIT_IP;
         const copy = `${s.hostname}:${port}@${s.username}:${s.password}`;
 
-        const msg = `*UDP HTTP CUSTOM ACCOUNT*
+        const msg = `<code>╔══════════════════════════════════╗
+║  🟢  UDP HTTP PREMIUM ACCOUNT   ║
+╠══════════════════════════════════╣
+║  🖥  ${s.hostname}               ║
+╚══════════════════════════════════╝
 
-*Hostname*   : \`${s.hostname}\`
-*Username*   : \`${s.username}\`
-*Password*   : \`${s.password}\`
-*Port*       : \`${port}\`
-*Expired*    : \`${expired}\`
-*IP Limit*   : \`${ipLimitText}\`
+┌──────────────────────────────────┐
+│  👤  CREDENTIAL                  │
+├──────────────────────────────────┤
+│  User  │ ${s.username}           │
+│  Pass  │ ${s.password}           │
+│  Exp   │ 📅 ${expired}           │
+│  Limit │ 👥 ${ipLimitText} Pengguna │
+└──────────────────────────────────┘
 
-*Copy*:
-\`${copy}\``;
+┌──────────────────────────────────┐
+│  🔌  PORTS                       │
+├──────────────────────────────────┤
+│  UDP Custom │ ${port}            │
+└──────────────────────────────────┘
+
+┌──────────────────────────────────┐
+│  📋  COPY                        │
+├──────────────────────────────────┤
+│  ${copy}                         │
+└──────────────────────────────────┘</code>`;
 
         return resolve(msg);
       });

@@ -10624,9 +10624,9 @@ bot.action(/^ppob_konfirm_global_(.+)$/, async (ctx) => {
       return ctx.editMessageText('❌ Saldo tidak cukup.\nSaldo: Rp '+Number(saldo).toLocaleString('id-ID')+'\nDibutuhkan: Rp '+finalPrice.toLocaleString('id-ID'),
         { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Menu Akrab', callback_data: 'menu_akrab' }]] }});
     }
-    const refId = ppob.generateRefId('TRX');
-    const result = await ppob.beliProduk({ buyerSkuCode: item.buyer_sku_code, customerNo, refId, sellingPrice: finalPrice });
-    const txId = (result && result.ref_id) || refId;
+    const result = await ppob.createOrder(item.buyer_sku_code, customerNo);
+    const txId = (result && result.data && result.data.ref_id) || ('TRX'+Date.now());
+    await wallet.potongSaldo(db, userId, finalPrice, txId, 'ppob-global');
     await sendAkrabNotifToGroup(tipe, {
       userId, userName: ctx.from.username || ctx.from.first_name,
       produk: item.product_name, tujuan: customerNo, amount: finalPrice, reffId: txId,
