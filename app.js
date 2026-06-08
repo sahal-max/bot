@@ -11913,6 +11913,32 @@ bot.action('hapus_saldo', async (ctx) => {
   await ctx.reply(' *Masukkan ID Telegram user yang saldonya akan dihapus:*', { parse_mode: 'Markdown' });
 });
 
+
+// Tambah/Kurang Saldo Akrab & PPOB (Admin)
+bot.action('tambah_saldo_akrab', async (ctx) => {
+  await ctx.answerCbQuery();
+  if (!adminIds.includes(ctx.from.id)) return ctx.reply('❌ Tidak ada izin.');
+  userState[ctx.from.id] = { step: 'tambah_saldo_akrab_userid' };
+  await ctx.reply('Masukkan ID Telegram user yang ingin ditambah saldo Akrabnya:');
+});
+bot.action('kurang_saldo_akrab', async (ctx) => {
+  await ctx.answerCbQuery();
+  if (!adminIds.includes(ctx.from.id)) return ctx.reply('❌ Tidak ada izin.');
+  userState[ctx.from.id] = { step: 'kurang_saldo_akrab_userid' };
+  await ctx.reply('Masukkan ID Telegram user yang saldo Akrabnya akan dikurangi:');
+});
+bot.action('tambah_saldo_ppob', async (ctx) => {
+  await ctx.answerCbQuery();
+  if (!adminIds.includes(ctx.from.id)) return ctx.reply('❌ Tidak ada izin.');
+  userState[ctx.from.id] = { step: 'tambah_saldo_ppob_userid' };
+  await ctx.reply('Masukkan ID Telegram user yang ingin ditambah saldo PPOBnya:');
+});
+bot.action('kurang_saldo_ppob', async (ctx) => {
+  await ctx.answerCbQuery();
+  if (!adminIds.includes(ctx.from.id)) return ctx.reply('❌ Tidak ada izin.');
+  userState[ctx.from.id] = { step: 'kurang_saldo_ppob_userid' };
+  await ctx.reply('Masukkan ID Telegram user yang saldo PPOBnya akan dikurangi:');
+});
 //callback handller statistik reseller
 bot.action('reseller_stats', async (ctx) => {
   try {
@@ -14992,33 +15018,7 @@ bot.action(/^akrab_konfirmasi_(.+)$/, async (ctx) => {
 });
 
 // ── Admin: Markup Global Akrab ───────────────────────────
-bot.action('akrab_markup_menu', async (ctx) => {
-  await ctx.answerCbQuery();
-  const userId = ctx.from.id;
-  const isAdminUser = Array.isArray(adminIds) ? adminIds.includes(userId) : Number(adminIds) === userId;
-  if (!isAdminUser) return ctx.answerCbQuery('Tidak ada izin!', { show_alert: true });
 
-  const markup = await dbH.getMarkup(db, 'global', 'akrab', null).catch(() => null);
-  const statusText = markup
-    ? 'Saat ini: ' + (markup.type === 'pct' ? markup.value + '%' : 'Rp ' + Number(markup.value).toLocaleString('id-ID'))
-    : 'Belum ada markup';
-
-  await ctx.editMessageText(
-    ' <b>Markup Global Produk Akrab</b>\n\n' + statusText + '\n\n' +
-    '<i>Markup ini berlaku untuk member biasa.\nReseller pakai markup sendiri (tidak kena markup global).</i>\n\nPilih aksi:',
-    {
-      parse_mode: 'HTML',
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: ' Set Markup %', callback_data: 'akrab_markup_set_pct' }],
-          [{ text: ' Set Markup Flat (Rp)', callback_data: 'akrab_markup_set_flat' }],
-          [{ text: ' Hapus Markup', callback_data: 'akrab_markup_delete' }],
-          [{ text: '🔙 Kembali', callback_data: 'admin_menu_markup' }],
-        ],
-      },
-    }
-  );
-});
 
 bot.action('akrab_markup_set_pct', async (ctx) => {
   await ctx.answerCbQuery();
@@ -15303,56 +15303,6 @@ bot.on('text', async (ctx) => {
         const val = parseInt(text); if (isNaN(val)||val<=0) return ctx.reply('Tidak valid.');
         await dbH.setMarkup(db,'global','circle_global',null,'flat',val);
         await ctx.reply('✅ Markup Circle Rp'+val.toLocaleString('id-ID')+' disimpan.'); delete userState[ctx.chat.id]; return;
-      }
-      // ── Reseller markup Akrab V3 ──
-      if (akState.step === 'akrab_v3_reseller_markup_input_pct') {
-        const parts = text.trim().split(/\s+/);
-        if (parts.length < 2) return ctx.reply('Format salah. Contoh: 123456789 5');
-        const resellerUid = parseInt(parts[0]);
-        const val = parseFloat(parts[1]);
-        if (isNaN(resellerUid)||isNaN(val)||val<=0) return ctx.reply('Tidak valid.');
-        await dbH.setMarkup(db,'reseller','akrab_v3_global',resellerUid,'pct',val);
-        await ctx.reply('✅ Markup Akrab V3 reseller '+resellerUid+' set '+val+'%'); delete userState[ctx.chat.id]; return;
-      }
-      if (akState.step === 'akrab_v3_reseller_markup_input_flat') {
-        const parts = text.trim().split(/\s+/);
-        if (parts.length < 2) return ctx.reply('Format salah. Contoh: 123456789 3000');
-        const resellerUid = parseInt(parts[0]);
-        const val = parseInt(parts[1]);
-        if (isNaN(resellerUid)||isNaN(val)||val<=0) return ctx.reply('Tidak valid.');
-        await dbH.setMarkup(db,'reseller','akrab_v3_global',resellerUid,'flat',val);
-        await ctx.reply('✅ Markup Akrab V3 reseller '+resellerUid+' set Rp'+val.toLocaleString('id-ID')); delete userState[ctx.chat.id]; return;
-      }
-      if (akState.step === 'akrab_v3_reseller_markup_del') {
-        const resellerUid = parseInt(text.trim());
-        if (isNaN(resellerUid)) return ctx.reply('User ID tidak valid.');
-        await dbH.deleteMarkup(db,'reseller','akrab_v3_global',resellerUid);
-        await ctx.reply('✅ Markup Akrab V3 reseller '+resellerUid+' dihapus.'); delete userState[ctx.chat.id]; return;
-      }
-      // ── Reseller markup Circle ──
-      if (akState.step === 'circle_reseller_markup_input_pct') {
-        const parts = text.trim().split(/\s+/);
-        if (parts.length < 2) return ctx.reply('Format salah. Contoh: 123456789 5');
-        const resellerUid = parseInt(parts[0]);
-        const val = parseFloat(parts[1]);
-        if (isNaN(resellerUid)||isNaN(val)||val<=0) return ctx.reply('Tidak valid.');
-        await dbH.setMarkup(db,'reseller','circle_global',resellerUid,'pct',val);
-        await ctx.reply('✅ Markup Circle reseller '+resellerUid+' set '+val+'%'); delete userState[ctx.chat.id]; return;
-      }
-      if (akState.step === 'circle_reseller_markup_input_flat') {
-        const parts = text.trim().split(/\s+/);
-        if (parts.length < 2) return ctx.reply('Format salah. Contoh: 123456789 3000');
-        const resellerUid = parseInt(parts[0]);
-        const val = parseInt(parts[1]);
-        if (isNaN(resellerUid)||isNaN(val)||val<=0) return ctx.reply('Tidak valid.');
-        await dbH.setMarkup(db,'reseller','circle_global',resellerUid,'flat',val);
-        await ctx.reply('✅ Markup Circle reseller '+resellerUid+' set Rp'+val.toLocaleString('id-ID')); delete userState[ctx.chat.id]; return;
-      }
-      if (akState.step === 'circle_reseller_markup_del') {
-        const resellerUid = parseInt(text.trim());
-        if (isNaN(resellerUid)) return ctx.reply('User ID tidak valid.');
-        await dbH.deleteMarkup(db,'reseller','circle_global',resellerUid);
-        await ctx.reply('✅ Markup Circle reseller '+resellerUid+' dihapus.'); delete userState[ctx.chat.id]; return;
       }
 
       // ── Admin set markup reseller ──
@@ -17366,6 +17316,87 @@ if (state.step === 'add_server_batas') {
   if (!state) return; 
     const text = ctx.message.text.trim();
 
+
+  // TAMBAH SALDO AKRAB
+  if (state && state.step === 'tambah_saldo_akrab_userid') {
+    if (!/^[0-9]+$/.test(text)) return ctx.reply('❌ ID harus angka.');
+    const row = await new Promise(r => db.get('SELECT user_id, saldo_akrab FROM users WHERE user_id = ?', [text], (e, v) => r(v)));
+    if (!row) return ctx.reply('❌ User ' + text + ' tidak ditemukan.');
+    state.targetId = text; state.currentSaldo = row.saldo_akrab || 0; state.step = 'tambah_saldo_akrab_amount';
+    return ctx.reply('User ID: ' + text + '\nSaldo Akrab: Rp' + (row.saldo_akrab||0).toLocaleString('id-ID') + '\n\nMasukkan jumlah yang ingin ditambahkan:');
+  }
+  if (state && state.step === 'tambah_saldo_akrab_amount') {
+    const amount = parseInt(text);
+    if (isNaN(amount) || amount <= 0) return ctx.reply('❌ Jumlah harus angka positif.');
+    const targetId = state.targetId;
+    await dbH.updateSaldoAkrab(db, targetId, amount);
+    const updated = await dbH.getSaldoAkrab(db, targetId).catch(() => 0);
+    delete userState[ctx.from.id];
+    await ctx.reply('✅ Saldo Akrab +Rp' + amount.toLocaleString('id-ID') + ' ditambahkan ke user ' + targetId + '.\nSaldo sekarang: Rp' + updated.toLocaleString('id-ID'));
+    await bot.telegram.sendMessage(targetId, 'Saldo Akrab kamu ditambahkan admin.\nNominal: +Rp' + amount.toLocaleString('id-ID') + '\nSaldo sekarang: Rp' + updated.toLocaleString('id-ID')).catch(() => {});
+    return;
+  }
+  // KURANG SALDO AKRAB
+  if (state && state.step === 'kurang_saldo_akrab_userid') {
+    if (!/^[0-9]+$/.test(text)) return ctx.reply('❌ ID harus angka.');
+    const row = await new Promise(r => db.get('SELECT user_id, saldo_akrab FROM users WHERE user_id = ?', [text], (e, v) => r(v)));
+    if (!row) return ctx.reply('❌ User ' + text + ' tidak ditemukan.');
+    state.targetId = text; state.currentSaldo = row.saldo_akrab || 0; state.step = 'kurang_saldo_akrab_amount';
+    return ctx.reply('User ID: ' + text + '\nSaldo Akrab: Rp' + (row.saldo_akrab||0).toLocaleString('id-ID') + '\n\nMasukkan jumlah yang ingin dikurangi:');
+  }
+  if (state && state.step === 'kurang_saldo_akrab_amount') {
+    const amount = parseInt(text);
+    if (isNaN(amount) || amount <= 0) return ctx.reply('❌ Jumlah harus angka positif.');
+    const targetId = state.targetId; const current = state.currentSaldo;
+    if (amount > current) return ctx.reply('❌ Saldo tidak cukup. Saldo saat ini: Rp' + current.toLocaleString('id-ID'));
+    await dbH.updateSaldoAkrab(db, targetId, -amount);
+    const updated = await dbH.getSaldoAkrab(db, targetId).catch(() => 0);
+    delete userState[ctx.from.id];
+    await ctx.reply('✅ Saldo Akrab -Rp' + amount.toLocaleString('id-ID') + ' dikurangi dari user ' + targetId + '.\nSaldo sekarang: Rp' + updated.toLocaleString('id-ID'));
+    await bot.telegram.sendMessage(targetId, 'Saldo Akrab kamu dikurangi admin.\nNominal: -Rp' + amount.toLocaleString('id-ID') + '\nSaldo sekarang: Rp' + updated.toLocaleString('id-ID')).catch(() => {});
+    return;
+  }
+  // TAMBAH SALDO PPOB
+  if (state && state.step === 'tambah_saldo_ppob_userid') {
+    if (!/^[0-9]+$/.test(text)) return ctx.reply('❌ ID harus angka.');
+    const row = await new Promise(r => db.get('SELECT user_id, saldo FROM users WHERE user_id = ?', [text], (e, v) => r(v)));
+    if (!row) return ctx.reply('❌ User ' + text + ' tidak ditemukan.');
+    state.targetId = text; state.currentSaldo = row.saldo || 0; state.step = 'tambah_saldo_ppob_amount';
+    return ctx.reply('User ID: ' + text + '\nSaldo PPOB: Rp' + (row.saldo||0).toLocaleString('id-ID') + '\n\nMasukkan jumlah yang ingin ditambahkan:');
+  }
+  if (state && state.step === 'tambah_saldo_ppob_amount') {
+    const amount = parseInt(text);
+    if (isNaN(amount) || amount <= 0) return ctx.reply('❌ Jumlah harus angka positif.');
+    const targetId = state.targetId;
+    await dbH.updateSaldo(db, targetId, amount);
+    const row2 = await new Promise(r => db.get('SELECT saldo FROM users WHERE user_id = ?', [targetId], (e, v) => r(v)));
+    const updated = row2 ? row2.saldo : 0;
+    delete userState[ctx.from.id];
+    await ctx.reply('✅ Saldo PPOB +Rp' + amount.toLocaleString('id-ID') + ' ditambahkan ke user ' + targetId + '.\nSaldo sekarang: Rp' + updated.toLocaleString('id-ID'));
+    await bot.telegram.sendMessage(targetId, 'Saldo PPOB kamu ditambahkan admin.\nNominal: +Rp' + amount.toLocaleString('id-ID') + '\nSaldo sekarang: Rp' + updated.toLocaleString('id-ID')).catch(() => {});
+    return;
+  }
+  // KURANG SALDO PPOB
+  if (state && state.step === 'kurang_saldo_ppob_userid') {
+    if (!/^[0-9]+$/.test(text)) return ctx.reply('❌ ID harus angka.');
+    const row = await new Promise(r => db.get('SELECT user_id, saldo FROM users WHERE user_id = ?', [text], (e, v) => r(v)));
+    if (!row) return ctx.reply('❌ User ' + text + ' tidak ditemukan.');
+    state.targetId = text; state.currentSaldo = row.saldo || 0; state.step = 'kurang_saldo_ppob_amount';
+    return ctx.reply('User ID: ' + text + '\nSaldo PPOB: Rp' + (row.saldo||0).toLocaleString('id-ID') + '\n\nMasukkan jumlah yang ingin dikurangi:');
+  }
+  if (state && state.step === 'kurang_saldo_ppob_amount') {
+    const amount = parseInt(text);
+    if (isNaN(amount) || amount <= 0) return ctx.reply('❌ Jumlah harus angka positif.');
+    const targetId = state.targetId; const current = state.currentSaldo;
+    if (amount > current) return ctx.reply('❌ Saldo tidak cukup. Saldo saat ini: Rp' + current.toLocaleString('id-ID'));
+    await dbH.updateSaldo(db, targetId, -amount);
+    const row2 = await new Promise(r => db.get('SELECT saldo FROM users WHERE user_id = ?', [targetId], (e, v) => r(v)));
+    const updated = row2 ? row2.saldo : 0;
+    delete userState[ctx.from.id];
+    await ctx.reply('✅ Saldo PPOB -Rp' + amount.toLocaleString('id-ID') + ' dikurangi dari user ' + targetId + '.\nSaldo sekarang: Rp' + updated.toLocaleString('id-ID'));
+    await bot.telegram.sendMessage(targetId, 'Saldo PPOB kamu dikurangi admin.\nNominal: -Rp' + amount.toLocaleString('id-ID') + '\nSaldo sekarang: Rp' + updated.toLocaleString('id-ID')).catch(() => {});
+    return;
+  }
   // =================== HAPUS SALDO ===================
   if (state && state.step === 'hapus_saldo_userid') {
     const targetUserId = text;
