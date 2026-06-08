@@ -4142,8 +4142,7 @@ async function sendMainMenu(ctx) {
   // Jika user adalah reseller, tambahkan tombol khusus di bawah Akun VPN
   if (isReseller) {
     keyboard.splice(1, 0, [
-      { text: '📊 Statistik Saya', callback_data: 'reseller_stats' },
-      { text: '🏪 Menu Reseller', callback_data: 'menu_join_reseller' }
+      { text: '📊 Statistik Saya', callback_data: 'reseller_stats' }
     ]);
     logger.info(' Menu reseller ditampilkan untuk user: ' + userId);
   }
@@ -8712,7 +8711,7 @@ bot.action('menu_topup', async (ctx) => {
     keyboard.push([{ text: ' Top Up Saldo VPN (Manual QRIS)', callback_data: 'topup_manual' }]);
   }
   // Top Up Tembak Kuota (wallet Akrab)
-  keyboard.push([{ text: ' Top Up Saldo Tembak Kuota', callback_data: 'topup_akrab' }]);
+  keyboard.push([{ text: ' Top Up Saldo Tembak Otomatis', callback_data: 'topup_akrab' }]);
   keyboard.push([{ text: ' Menu Utama', callback_data: 'send_main_menu' }]);
 
   const msgText =
@@ -8722,7 +8721,7 @@ bot.action('menu_topup', async (ctx) => {
     '✦ Saldo Tembak Kuota : <code>Rp ' + Number(saldoAkrab || 0).toLocaleString('id-ID') + '</code>\n' +
     '<code>──────────────────────</code>\n' +
     '<i>VPN: Akun VPN + Suntik Followers</i>\n' +
-    '<i>Tembak Kuota: Akrab</i>\n\n' +
+    '<i>Tembak Kuota: Akrab, PPOB & Circle</i>\n\n' +
     '✦ Pilih jenis saldo yang ingin di-top up:';
 
   await ctx.editMessageText(msgText, { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } })
@@ -15077,7 +15076,7 @@ bot.action('topup_akrab', async (ctx) => {
   };
 
   await ctx.editMessageText(
-    ' <b>Top Up Saldo Tembak Kuota</b>\n\n' +
+    ' <b>Top Up Saldo Tembak Otomatis</b>\n\n' +
     'Saldo ini dipakai untuk: Akrab.\n\n' +
     `Masukkan jumlah top up (minimal Rp ${minTopupForMode.toLocaleString('id-ID')}):`,
     {
@@ -15086,7 +15085,7 @@ bot.action('topup_akrab', async (ctx) => {
     }
   ).catch(async () => {
     await ctx.reply(
-      ' <b>Top Up Saldo Tembak Kuota</b>\n\n' +
+      ' <b>Top Up Saldo Tembak Otomatis</b>\n\n' +
       'Saldo ini dipakai untuk: Akrab.\n\n' +
       `Masukkan jumlah top up (minimal Rp ${minTopupForMode.toLocaleString('id-ID')}):`,
       { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard_nomor() } }
