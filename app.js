@@ -5751,9 +5751,7 @@ bot.action('admin_markup_global_menu', async (ctx) => {
     `SMM  : ${fmtM(markupSMM)}\n` +
     `Akrab: ${fmtM(markupAkrab)}`;
   const replyMarkup = { inline_keyboard: [
-    [{ text: ' Markup SMM',   callback_data: 'smm_markup_menu'   }],
-    [{ text: ' Markup Akrab', callback_data: 'akrab_markup_menu' }],
-    [{ text: ' Menu Admin',   callback_data: 'admin_menu'        }]
+    [{ text: '🔙 Kembali ke Markup', callback_data: 'admin_menu_markup' }]
   ]};
 
   await ctx.editMessageText(msgText, { parse_mode: 'HTML', reply_markup: replyMarkup })
@@ -5811,7 +5809,6 @@ async function sendAdminSaldoMenu(ctx) {
   const keyboard = [
     [{ text: '🖼️ Upload QRIS', callback_data: 'upload_qris' }],
     [{ text: '🎁 Bonus Topup', callback_data: 'bonus_topup_menu' }],
-    [{ text: '💹 Markup PPOB', callback_data: 'ppob_markup_menu' }],
     [{ text: scNexusLabel, callback_data: 'toggle_sc_nexus_menu' }],
     [{ text: autoLabel, callback_data: 'toggle_topup_auto' }],
     [{ text: manualLabel, callback_data: 'toggle_topup_manual' }],
@@ -6090,10 +6087,40 @@ async function sendAdminSyncToggleMenu(ctx) {
 bot.action('admin_menu_markup', async (ctx) => {
   await ctx.answerCbQuery();
   if (!adminIds.includes(ctx.from.id)) return;
-  await ctx.editMessageText('📈 <b>Markup</b>\n\nPilih kategori markup:', { parse_mode: 'HTML', reply_markup: { inline_keyboard: [
-    [{ text: '📈 Markup Global VPN/SMM', callback_data: 'admin_markup_global_menu' }],
-    [{ text: '⚙️ Markup Akrab (V1/V2/V3/Circle)', callback_data: 'akrab_markup_menu' }],
-    [{ text: '💹 Markup PPOB', callback_data: 'ppob_markup_menu' }],
+  const mkVpn = await dbH.getMarkup(db, 'global', 'vpn', null).catch(()=>null);
+  const mkSmm = await dbH.getMarkup(db, 'global', 'smm', null).catch(()=>null);
+  const mkAkrab = await dbH.getMarkup(db, 'global', 'akrab', null).catch(()=>null);
+  const mkV3 = await dbH.getMarkup(db, 'global', 'akrab_v3_global', null).catch(()=>null);
+  const mkCircle = await dbH.getMarkup(db, 'global', 'circle_global', null).catch(()=>null);
+  const mkPpob = await dbH.getMarkup(db, 'global', 'ppob', null).catch(()=>null);
+  const fmt = mk => mk ? (mk.type==='pct' ? mk.value+'%' : 'Rp'+Number(mk.value).toLocaleString('id-ID')) : 'Belum diset';
+  const text =
+    '📈 <b>Pusat Markup</b>\n'+
+    '<code>──────────────────────</code>\n'+
+    '<b>🌐 Global (semua member)</b>\n'+
+    '├ VPN/SMM : '+fmt(mkVpn)+' / '+fmt(mkSmm)+'\n'+
+    '├ Akrab V1&V2 : '+fmt(mkAkrab)+'\n'+
+    '├ Akrab V3 : '+fmt(mkV3)+'\n'+
+    '└ Circle : '+fmt(mkCircle)+'\n\n'+
+    '<b>👤 Reseller</b>\n'+
+    '└ Markup per reseller diset di masing-masing menu\n\n'+
+    '<b>💹 PPOB</b>\n'+
+    '└ Global : '+fmt(mkPpob)+'\n\n'+
+    '✦ Pilih kategori:';
+  await ctx.editMessageText(text, { parse_mode: 'HTML', reply_markup: { inline_keyboard: [
+    [{ text: '━━━ 🌐 GLOBAL ━━━', callback_data: 'noop' }],
+    [{ text: '📈 VPN & SMM', callback_data: 'admin_markup_global_menu' }],
+    [{ text: '🔵 Akrab V1 & V2', callback_data: 'akrab_v12_markup_sub' }],
+    [{ text: '🟣 Akrab V3', callback_data: 'akrab_v3_global_markup_only' }],
+    [{ text: '🔴 Circle', callback_data: 'akrab_circle_global_markup_only' }],
+    [{ text: '💹 PPOB', callback_data: 'ppob_markup_menu' }],
+    [{ text: '━━━ 👤 RESELLER (per user) ━━━', callback_data: 'noop' }],
+    [{ text: '🔷 VPN',      callback_data: 'admin_reseller_markup_vpn'   },
+     { text: '🔵 Akrab',    callback_data: 'admin_reseller_markup_akrab' }],
+    [{ text: '🟣 Akrab V3', callback_data: 'akrab_v3_reseller_markup_menu' },
+     { text: '🔴 Circle',   callback_data: 'circle_reseller_markup_menu'  }],
+    [{ text: '📱 SMM',      callback_data: 'admin_reseller_markup_smm'   },
+     { text: '💹 PPOB',     callback_data: 'admin_reseller_markup_ppob'  }],
     [{ text: '🔙 Kembali', callback_data: 'admin_menu' }],
   ]}});
 });
@@ -10619,13 +10646,14 @@ bot.action(/^ppob_konfirm_global_(.+)$/, async (ctx) => {
   const tipe = brand.includes('CIRCLE') ? 'circle' : 'v3';
   delete userState[userId];
   try {
-    const saldo = await dbH.getSaldo(db, userId);
+    const saldo = await dbH.getSaldoAkrab(db, userId);
     if (saldo < finalPrice) {
-      return ctx.editMessageText('❌ Saldo tidak cukup.\nSaldo: Rp '+Number(saldo).toLocaleString('id-ID')+'\nDibutuhkan: Rp '+finalPrice.toLocaleString('id-ID'),
+      return ctx.editMessageText('❌ Saldo tembak kuota tidak cukup.\nSaldo: Rp '+Number(saldo).toLocaleString('id-ID')+'\nDibutuhkan: Rp '+finalPrice.toLocaleString('id-ID'),
         { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Menu Akrab', callback_data: 'menu_akrab' }]] }});
     }
     const refId = ppob.generateRefId('TRX');
     const result = await ppob.beliProduk({ buyerSkuCode: item.buyer_sku_code, customerNo, refId, sellingPrice: finalPrice });
+    await wallet.potongSaldoAkrab(db, userId, finalPrice, refId, tipe === "circle" ? "circle" : "akrab_v3");
     const txId = (result && result.ref_id) || refId;
     await sendAkrabNotifToGroup(tipe, {
       userId, userName: ctx.from.username || ctx.from.first_name,
@@ -10642,11 +10670,25 @@ bot.action(/^ppob_konfirm_global_(.+)$/, async (ctx) => {
       { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Menu Akrab', callback_data: 'menu_akrab' }]] }}
     );
   } catch(err) {
-    await ctx.editMessageText('❌ Transaksi gagal: '+err.message+'\nSaldo tidak terpotong.',
-      { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Menu Akrab', callback_data: 'menu_akrab' }]] }});
+    const errMsg = err.message || '';
+    let errInfo = '';
+    if (errMsg.includes('403')) {
+      errInfo = '\n⚠️ <b>Kemungkinan penyebab:</b>\n• Nomor tidak eligible (sudah pernah beli bulan ini)\n• Kartu dalam masa tenggang\n• Umur kartu kurang dari 60 hari';
+    } else if (errMsg.toLowerCase().includes('saldo') || errMsg.includes('402')) {
+      errInfo = '\n⚠️ Saldo HidePulsa tidak mencukupi. Hubungi admin.';
+    } else if (errMsg.includes('400')) {
+      errInfo = '\n⚠️ Nomor HP tidak valid atau format salah.';
+    } else if (errMsg.includes('timeout') || errMsg.includes('ECONNREFUSED')) {
+      errInfo = '\n⚠️ Koneksi timeout. Coba beberapa saat lagi.';
+    }
+    await ctx.editMessageText(
+      '❌ <b>Transaksi Gagal</b>\n<code>──────────────────────</code>\n'+
+      '📋 Error: <code>'+errMsg+'</code>'+errInfo+'\n\n💡 Saldo tidak terpotong.',
+      { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Menu Akrab', callback_data: 'menu_akrab' }]] }}
+    );
   }
-});
 
+});
 // ── Markup Akrab (gabung semua) ───────────────────────────────
 bot.action('akrab_markup_menu', async (ctx) => {
   await ctx.answerCbQuery();
@@ -10697,6 +10739,7 @@ bot.action('akrab_v3_markup_menu', async (ctx) => {
       [{ text: '📊 Set %', callback_data: 'akrab_v3_markup_set_pct' }],
       [{ text: '💰 Set Flat (Rp)', callback_data: 'akrab_v3_markup_set_flat' }],
       [{ text: '🗑️ Hapus', callback_data: 'akrab_v3_markup_delete' }],
+      [{ text: '👤 Markup Reseller', callback_data: 'akrab_v3_reseller_markup_menu' }],
       [{ text: '🔙 Kembali', callback_data: 'akrab_markup_menu' }],
     ]}}
   );
@@ -10714,6 +10757,7 @@ bot.action('akrab_circle_markup_menu', async (ctx) => {
       [{ text: '📊 Set %', callback_data: 'circle_markup_set_pct' }],
       [{ text: '💰 Set Flat (Rp)', callback_data: 'circle_markup_set_flat' }],
       [{ text: '🗑️ Hapus', callback_data: 'circle_markup_delete' }],
+      [{ text: '👤 Markup Reseller', callback_data: 'circle_reseller_markup_menu' }],
       [{ text: '🔙 Kembali', callback_data: 'akrab_markup_menu' }],
     ]}}
   );
@@ -10721,6 +10765,124 @@ bot.action('akrab_circle_markup_menu', async (ctx) => {
 bot.action('circle_markup_set_pct', async (ctx) => { await ctx.answerCbQuery(); userState[ctx.from.id] = { step: 'circle_markup_input_pct' }; await ctx.reply('Masukkan markup % untuk Circle:'); });
 bot.action('circle_markup_set_flat', async (ctx) => { await ctx.answerCbQuery(); userState[ctx.from.id] = { step: 'circle_markup_input_flat' }; await ctx.reply('Masukkan markup flat (Rp) untuk Circle:'); });
 bot.action('circle_markup_delete', async (ctx) => { await ctx.answerCbQuery(); await dbH.deleteMarkup(db,'global','circle_global',null); await ctx.reply('✅ Markup Circle dihapus.'); });
+
+// ── Handler noop (tombol label) ──────────────────────────────
+bot.action('noop', async (ctx) => { await ctx.answerCbQuery(); });
+
+// ── Admin: lihat & set markup reseller per user ───────────────
+async function showAdminResellerMarkup(ctx, service, label) {
+  await ctx.answerCbQuery();
+  userState[ctx.from.id] = { step: 'admin_reseller_markup_input', service, label };
+  await ctx.editMessageText(
+    '👤 <b>Markup Reseller — '+label+'</b>\n<code>──────────────────────</code>\n'+
+    '📌 Set markup per user reseller\n\n'+
+    'Format: <code>USER_ID NILAI</code>\n'+
+    'Contoh flat: <code>123456789 3000</code>\n'+
+    'Contoh persen: <code>123456789 5%</code>\n\n'+
+    'Ketik <code>hapus USER_ID</code> untuk hapus markup reseller.',
+    { parse_mode: 'HTML', reply_markup: { inline_keyboard: [
+      [{ text: '🔙 Kembali', callback_data: 'admin_menu_markup' }]
+    ]}}
+  );
+}
+bot.action('admin_reseller_markup_vpn',   async (ctx) => { await showAdminResellerMarkup(ctx, 'vpn',            'Akun VPN');         });
+bot.action('admin_reseller_markup_akrab', async (ctx) => { await showAdminResellerMarkup(ctx, 'akrab',          'Akrab V1&V2');      });
+bot.action('admin_reseller_markup_v3',    async (ctx) => { await showAdminResellerMarkup(ctx, 'akrab_v3_global','Akrab V3');         });
+bot.action('admin_reseller_markup_circle',async (ctx) => { await showAdminResellerMarkup(ctx, 'circle_global',  'Circle');           });
+bot.action('admin_reseller_markup_smm',   async (ctx) => { await showAdminResellerMarkup(ctx, 'smm',            'SMM');              });
+bot.action('admin_reseller_markup_ppob',  async (ctx) => { await showAdminResellerMarkup(ctx, 'ppob',           'PPOB');             });
+
+// ── Markup Akrab V3 Global only ───────────────────────────────
+bot.action('akrab_v3_global_markup_only', async (ctx) => {
+  await ctx.answerCbQuery();
+  const mk = await dbH.getMarkup(db, 'global', 'akrab_v3_global', null).catch(()=>null);
+  const s = mk ? (mk.type==='pct'?mk.value+'%':'Rp'+Number(mk.value).toLocaleString('id-ID')) : 'Belum diset';
+  await ctx.editMessageText(
+    '🟣 <b>Markup Akrab V3 — Global</b>\n<code>──────────────────────</code>\n'+
+    '📌 Berlaku untuk <b>semua member</b>\n\nSaat ini: <b>'+s+'</b>\n\nPilih aksi:',
+    { parse_mode: 'HTML', reply_markup: { inline_keyboard: [
+      [{ text: '📊 Set %', callback_data: 'akrab_v3_markup_set_pct' }],
+      [{ text: '💰 Set Flat (Rp)', callback_data: 'akrab_v3_markup_set_flat' }],
+      [{ text: '🗑️ Hapus', callback_data: 'akrab_v3_markup_delete' }],
+      [{ text: '🔙 Kembali', callback_data: 'admin_menu_markup' }],
+    ]}}
+  );
+});
+
+// ── Markup Circle Global only ─────────────────────────────────
+bot.action('akrab_circle_global_markup_only', async (ctx) => {
+  await ctx.answerCbQuery();
+  const mk = await dbH.getMarkup(db, 'global', 'circle_global', null).catch(()=>null);
+  const s = mk ? (mk.type==='pct'?mk.value+'%':'Rp'+Number(mk.value).toLocaleString('id-ID')) : 'Belum diset';
+  await ctx.editMessageText(
+    '🔴 <b>Markup Circle — Global</b>\n<code>──────────────────────</code>\n'+
+    '📌 Berlaku untuk <b>semua member</b>\n\nSaat ini: <b>'+s+'</b>\n\nPilih aksi:',
+    { parse_mode: 'HTML', reply_markup: { inline_keyboard: [
+      [{ text: '📊 Set %', callback_data: 'circle_markup_set_pct' }],
+      [{ text: '💰 Set Flat (Rp)', callback_data: 'circle_markup_set_flat' }],
+      [{ text: '🗑️ Hapus', callback_data: 'circle_markup_delete' }],
+      [{ text: '🔙 Kembali', callback_data: 'admin_menu_markup' }],
+    ]}}
+  );
+});
+
+// ── Markup Reseller Akrab V3 ──────────────────────────────────
+bot.action('akrab_v3_reseller_markup_menu', async (ctx) => {
+  await ctx.answerCbQuery();
+  await ctx.editMessageText(
+    '👤 <b>Markup Reseller Akrab V3</b>\n\nMasukkan User ID reseller terlebih dahulu.\n\nFormat input:\n<code>USER_ID NILAI</code>\nContoh: <code>123456789 3000</code> (flat Rp3000)\nContoh: <code>123456789 5%</code> (persen 5%)',
+    { parse_mode: 'HTML', reply_markup: { inline_keyboard: [
+      [{ text: '📊 Set % per Reseller', callback_data: 'akrab_v3_reseller_markup_set_pct' }],
+      [{ text: '💰 Set Flat per Reseller', callback_data: 'akrab_v3_reseller_markup_set_flat' }],
+      [{ text: '🗑️ Hapus Markup Reseller', callback_data: 'akrab_v3_reseller_markup_del' }],
+      [{ text: '🔙 Kembali', callback_data: 'akrab_v3_markup_menu' }],
+    ]}}
+  );
+});
+bot.action('akrab_v3_reseller_markup_set_pct', async (ctx) => {
+  await ctx.answerCbQuery();
+  userState[ctx.from.id] = { step: 'akrab_v3_reseller_markup_input_pct' };
+  await ctx.reply('Masukkan User ID reseller dan markup %:\n<code>USER_ID NILAI</code>\nContoh: <code>123456789 5</code>', { parse_mode: 'HTML' });
+});
+bot.action('akrab_v3_reseller_markup_set_flat', async (ctx) => {
+  await ctx.answerCbQuery();
+  userState[ctx.from.id] = { step: 'akrab_v3_reseller_markup_input_flat' };
+  await ctx.reply('Masukkan User ID reseller dan markup flat (Rp):\n<code>USER_ID NILAI</code>\nContoh: <code>123456789 3000</code>', { parse_mode: 'HTML' });
+});
+bot.action('akrab_v3_reseller_markup_del', async (ctx) => {
+  await ctx.answerCbQuery();
+  userState[ctx.from.id] = { step: 'akrab_v3_reseller_markup_del' };
+  await ctx.reply('Masukkan User ID reseller yang ingin dihapus markupnya:');
+});
+
+// ── Markup Reseller Circle ────────────────────────────────────
+bot.action('circle_reseller_markup_menu', async (ctx) => {
+  await ctx.answerCbQuery();
+  await ctx.editMessageText(
+    '👤 <b>Markup Reseller Circle</b>\n\nMasukkan User ID reseller terlebih dahulu.',
+    { parse_mode: 'HTML', reply_markup: { inline_keyboard: [
+      [{ text: '📊 Set % per Reseller', callback_data: 'circle_reseller_markup_set_pct' }],
+      [{ text: '💰 Set Flat per Reseller', callback_data: 'circle_reseller_markup_set_flat' }],
+      [{ text: '🗑️ Hapus Markup Reseller', callback_data: 'circle_reseller_markup_del' }],
+      [{ text: '🔙 Kembali', callback_data: 'akrab_circle_markup_menu' }],
+    ]}}
+  );
+});
+bot.action('circle_reseller_markup_set_pct', async (ctx) => {
+  await ctx.answerCbQuery();
+  userState[ctx.from.id] = { step: 'circle_reseller_markup_input_pct' };
+  await ctx.reply('Masukkan User ID reseller dan markup %:\n<code>USER_ID NILAI</code>\nContoh: <code>123456789 5</code>', { parse_mode: 'HTML' });
+});
+bot.action('circle_reseller_markup_set_flat', async (ctx) => {
+  await ctx.answerCbQuery();
+  userState[ctx.from.id] = { step: 'circle_reseller_markup_input_flat' };
+  await ctx.reply('Masukkan User ID reseller dan markup flat (Rp):\n<code>USER_ID NILAI</code>\nContoh: <code>123456789 3000</code>', { parse_mode: 'HTML' });
+});
+bot.action('circle_reseller_markup_del', async (ctx) => {
+  await ctx.answerCbQuery();
+  userState[ctx.from.id] = { step: 'circle_reseller_markup_del' };
+  await ctx.reply('Masukkan User ID reseller yang ingin dihapus markupnya:');
+});
 
 // ── Markup PPOB Admin ─────────────────────────────────────────
 bot.action('ppob_markup_menu', async (ctx) => {
@@ -12412,6 +12574,8 @@ bot.action('reseller_markup_ppob', async (ctx) => { await ctx.answerCbQuery().ca
 bot.action('reseller_markup_vpn',   async (ctx) => { await ctx.answerCbQuery().catch(() => {}); await showResellerMarkupMenu(ctx, 'vpn',   'Akun VPN'); });
 bot.action('reseller_markup_akrab', async (ctx) => { await ctx.answerCbQuery().catch(() => {}); await showResellerMarkupMenu(ctx, 'akrab', 'Akrab'); });
 bot.action('reseller_markup_smm',   async (ctx) => { await ctx.answerCbQuery().catch(() => {}); await showResellerMarkupMenu(ctx, 'smm',   'Suntik Followers'); });
+bot.action('reseller_markup_akrab_v3',  async (ctx) => { await ctx.answerCbQuery().catch(() => {}); await showResellerMarkupMenu(ctx, 'akrab_v3_global', 'Akrab V3'); });
+bot.action('reseller_markup_circle',    async (ctx) => { await ctx.answerCbQuery().catch(() => {}); await showResellerMarkupMenu(ctx, 'circle_global',  'Circle'); });
 
 // Set markup reseller per service (pct/flat)
 bot.action(/^reseller_markup_(vpn|akrab|smm|ppob)_set_(pct|flat)$/, async (ctx) => {
@@ -12429,7 +12593,7 @@ bot.action(/^reseller_markup_(vpn|akrab|smm|ppob)_set_(pct|flat)$/, async (ctx) 
     });
 });
 
-bot.action(/^reseller_markup_(vpn|akrab|smm|ppob)_delete$/, async (ctx) => {
+bot.action(/^reseller_markup_(vpn|akrab|akrab_v3_global|smm|ppob|circle_global)_delete$/, async (ctx) => {
   await ctx.answerCbQuery().catch(() => {});
   const userId = ctx.from.id;
   const service = ctx.match[1];
@@ -13392,7 +13556,7 @@ bot.action('smm_cek_saldo', async (ctx) => {
       reply_markup: {
         inline_keyboard: [
           [{ text: ' Top Up Saldo VPN', callback_data: 'topup_saldo' }],
-          [{ text: ' Kembali', callback_data: 'menu_suntik' }],
+          [{ text: '🔙 Kembali', callback_data: 'admin_menu_markup' }],
         ],
       },
     }
@@ -13619,7 +13783,7 @@ bot.action(/^smm_konfirmasi_(.+)$/, async (ctx) => {
           reply_markup: {
             inline_keyboard: [
               [{ text: ' Top Up VPN', callback_data: 'topup_saldo' }],
-              [{ text: ' Kembali', callback_data: 'menu_suntik' }],
+              [{ text: '🔙 Kembali', callback_data: 'admin_menu_markup' }],
             ],
           },
         }
@@ -13679,7 +13843,7 @@ bot.action('smm_markup_menu', async (ctx) => {
           [{ text: ' Set Markup %', callback_data: 'smm_markup_set_pct' }],
           [{ text: ' Set Markup Flat per 1000', callback_data: 'smm_markup_set_flat' }],
           [{ text: ' Hapus Markup', callback_data: 'smm_markup_delete' }],
-          [{ text: ' Kembali', callback_data: 'menu_suntik' }],
+          [{ text: '🔙 Kembali', callback_data: 'admin_menu_markup' }],
         ],
       },
     }
@@ -13827,7 +13991,7 @@ bot.action('menu_akrab', async (ctx) => {
     ],
   ];
   if (isAdminUser) {
-    keyboard.push([{ text: '⚙️ Markup Akrab', callback_data: 'akrab_markup_menu' }]);
+    keyboard.push([{ text: '⚙️ Markup', callback_data: 'admin_menu_markup' }]);
   }
   keyboard.push([{ text: '🔙 Menu Utama', callback_data: 'send_main_menu' }]);
 
@@ -14807,7 +14971,7 @@ bot.action(/^akrab_konfirmasi_(.+)$/, async (ctx) => {
           reply_markup: {
             inline_keyboard: [
               [{ text: ' Top Up Akrab', callback_data: 'topup_akrab' }],
-              [{ text: ' Kembali', callback_data: 'menu_akrab' }],
+              [{ text: '🔙 Kembali', callback_data: 'admin_menu_markup' }],
             ],
           },
         }
@@ -14874,7 +15038,7 @@ bot.action('akrab_markup_menu', async (ctx) => {
           [{ text: ' Set Markup %', callback_data: 'akrab_markup_set_pct' }],
           [{ text: ' Set Markup Flat (Rp)', callback_data: 'akrab_markup_set_flat' }],
           [{ text: ' Hapus Markup', callback_data: 'akrab_markup_delete' }],
-          [{ text: ' Kembali', callback_data: 'menu_akrab' }],
+          [{ text: '🔙 Kembali', callback_data: 'admin_menu_markup' }],
         ],
       },
     }
@@ -15164,6 +15328,86 @@ bot.on('text', async (ctx) => {
         const val = parseInt(text); if (isNaN(val)||val<=0) return ctx.reply('Tidak valid.');
         await dbH.setMarkup(db,'global','circle_global',null,'flat',val);
         await ctx.reply('✅ Markup Circle Rp'+val.toLocaleString('id-ID')+' disimpan.'); delete userState[ctx.chat.id]; return;
+
+      // ── Reseller markup Akrab V3 ──
+      if (akState.step === 'akrab_v3_reseller_markup_input_pct') {
+        const parts = text.trim().split(/\s+/);
+        if (parts.length < 2) return ctx.reply('Format salah. Contoh: 123456789 5');
+        const resellerUid = parseInt(parts[0]);
+        const val = parseFloat(parts[1]);
+        if (isNaN(resellerUid)||isNaN(val)||val<=0) return ctx.reply('Tidak valid.');
+        await dbH.setMarkup(db,'reseller','akrab_v3_global',resellerUid,'pct',val);
+        await ctx.reply('✅ Markup Akrab V3 reseller '+resellerUid+' set '+val+'%'); delete userState[ctx.chat.id]; return;
+      }
+      if (akState.step === 'akrab_v3_reseller_markup_input_flat') {
+        const parts = text.trim().split(/\s+/);
+        if (parts.length < 2) return ctx.reply('Format salah. Contoh: 123456789 3000');
+        const resellerUid = parseInt(parts[0]);
+        const val = parseInt(parts[1]);
+        if (isNaN(resellerUid)||isNaN(val)||val<=0) return ctx.reply('Tidak valid.');
+        await dbH.setMarkup(db,'reseller','akrab_v3_global',resellerUid,'flat',val);
+        await ctx.reply('✅ Markup Akrab V3 reseller '+resellerUid+' set Rp'+val.toLocaleString('id-ID')); delete userState[ctx.chat.id]; return;
+      }
+      if (akState.step === 'akrab_v3_reseller_markup_del') {
+        const resellerUid = parseInt(text.trim());
+        if (isNaN(resellerUid)) return ctx.reply('User ID tidak valid.');
+        await dbH.deleteMarkup(db,'reseller','akrab_v3_global',resellerUid);
+        await ctx.reply('✅ Markup Akrab V3 reseller '+resellerUid+' dihapus.'); delete userState[ctx.chat.id]; return;
+      }
+      // ── Reseller markup Circle ──
+      if (akState.step === 'circle_reseller_markup_input_pct') {
+        const parts = text.trim().split(/\s+/);
+        if (parts.length < 2) return ctx.reply('Format salah. Contoh: 123456789 5');
+        const resellerUid = parseInt(parts[0]);
+        const val = parseFloat(parts[1]);
+        if (isNaN(resellerUid)||isNaN(val)||val<=0) return ctx.reply('Tidak valid.');
+        await dbH.setMarkup(db,'reseller','circle_global',resellerUid,'pct',val);
+        await ctx.reply('✅ Markup Circle reseller '+resellerUid+' set '+val+'%'); delete userState[ctx.chat.id]; return;
+      }
+      if (akState.step === 'circle_reseller_markup_input_flat') {
+        const parts = text.trim().split(/\s+/);
+        if (parts.length < 2) return ctx.reply('Format salah. Contoh: 123456789 3000');
+        const resellerUid = parseInt(parts[0]);
+        const val = parseInt(parts[1]);
+        if (isNaN(resellerUid)||isNaN(val)||val<=0) return ctx.reply('Tidak valid.');
+        await dbH.setMarkup(db,'reseller','circle_global',resellerUid,'flat',val);
+        await ctx.reply('✅ Markup Circle reseller '+resellerUid+' set Rp'+val.toLocaleString('id-ID')); delete userState[ctx.chat.id]; return;
+      }
+      if (akState.step === 'circle_reseller_markup_del') {
+        const resellerUid = parseInt(text.trim());
+        if (isNaN(resellerUid)) return ctx.reply('User ID tidak valid.');
+        await dbH.deleteMarkup(db,'reseller','circle_global',resellerUid);
+        await ctx.reply('✅ Markup Circle reseller '+resellerUid+' dihapus.'); delete userState[ctx.chat.id]; return;
+
+      // ── Admin set markup reseller ──
+      if (akState.step === 'admin_reseller_markup_input') {
+        const { service, label } = akState;
+        const parts = text.trim().split(/\s+/);
+        if (parts.length < 2) return ctx.reply('Format salah.\nContoh: 123456789 3000\nAtau: hapus 123456789');
+        if (parts[0].toLowerCase() === 'hapus') {
+          const uid = parseInt(parts[1]);
+          if (isNaN(uid)) return ctx.reply('User ID tidak valid.');
+          await dbH.deleteMarkup(db, 'reseller', service, uid);
+          await ctx.reply('✅ Markup '+label+' reseller '+uid+' dihapus.');
+          delete userState[ctx.chat.id]; return;
+        }
+        const uid = parseInt(parts[0]);
+        const rawVal = parts[1];
+        if (isNaN(uid)) return ctx.reply('User ID tidak valid.');
+        if (rawVal.endsWith('%')) {
+          const val = parseFloat(rawVal);
+          if (isNaN(val)||val<=0) return ctx.reply('Nilai tidak valid.');
+          await dbH.setMarkup(db, 'reseller', service, uid, 'pct', val);
+          await ctx.reply('✅ Markup '+label+' reseller '+uid+' set '+val+'%');
+        } else {
+          const val = parseInt(rawVal);
+          if (isNaN(val)||val<=0) return ctx.reply('Nilai tidak valid.');
+          await dbH.setMarkup(db, 'reseller', service, uid, 'flat', val);
+          await ctx.reply('✅ Markup '+label+' reseller '+uid+' set Rp'+val.toLocaleString('id-ID'));
+        }
+        delete userState[ctx.chat.id]; return;
+      }
+      }
       }
       if (akState.step === 'ppob_markup_input_pct') {
         const val = parseFloat(text); if (isNaN(val)||val<=0) return ctx.reply('Tidak valid.');
