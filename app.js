@@ -3849,13 +3849,17 @@ bot.command(['start', 'menu'], async (ctx) => {
         try {
           await ctx.reply(
             `👋 *Selamat datang di ${NAMA_STORE}!*\n\n` +
-            `Halo *${userName}*, kamu adalah member baru kami 🎉\n\n` +
-            `📌 *Cara pakai bot ini:*\n` +
-            `1️⃣ Top up saldo via menu *💳 Top Up*\n` +
-            `2️⃣ Beli akun VPN via menu *🔑 Akun VPN*\n` +
-            `3️⃣ Beli kuota data via menu *🤝 Akrab*\n` +
-            `4️⃣ Suntik followers via menu *💉 Suntik*\n\n` +
-            `❓ Ada pertanyaan? Hubungi admin via menu *📞 Admin*\n\n` +
+            `👋 *Selamat datang di ${NAMA_STORE}!*\n\n` +
+            `Halo *${userName}*, terima kasih sudah bergabung! 🎉\n\n` +
+            `📌 *Cara mulai:*\n` +
+            `1️⃣ Top up saldo dulu via menu *💳 Top Up*\n` +
+            `   • Saldo VPN → beli akun VPN & suntik followers\n` +
+            `   • Saldo Tembak Kuota → beli Akrab, Circle & PPOB\n\n` +
+            `2️⃣ Pilih layanan:\n` +
+            `   🔑 *Akun VPN* → SSH, VMess, VLess, Trojan\n` +
+            `   🤝 *Akrab* → tembak kuota XL prabayar\n` +
+            `   💉 *Suntik* → tambah followers medsos\n\n` +
+            `❓ Butuh bantuan? Ketuk menu *📞 Hubungi Admin*\n` +
             `_Selamat berbelanja!_ 🛒`,
             { parse_mode: 'Markdown' }
           );
@@ -8770,8 +8774,9 @@ bot.action('menu_topup', async (ctx) => {
   const msgText =
     '💳 <b>TOP UP SALDO</b>\n' +
     '<code>──────────────────────</code>\n' +
-    '✦ Saldo VPN          : <code>Rp ' + Number(saldoVpn || 0).toLocaleString('id-ID') + '</code>\n' +
-    '✦ Saldo Tembak Kuota : <code>Rp ' + Number(saldoAkrab || 0).toLocaleString('id-ID') + '</code>\n' +
+    '<i>💡 Saldo VPN → Akun VPN & Suntik Followers</i>\n' +
+    '<i>💡 Saldo Tembak Kuota → Akrab, Circle & PPOB</i>\n\n' +
+    '✦ Pilih jenis saldo yang ingin di-top up:';
     '<code>──────────────────────</code>\n' +
     '<i>VPN: Akun VPN + Suntik Followers</i>\n' +
     '<i>Tembak Kuota: Akrab, PPOB & Circle</i>\n\n' +
@@ -14058,8 +14063,12 @@ bot.action('menu_akrab', async (ctx) => {
   keyboard.push([{ text: 'Menu Utama', callback_data: 'send_main_menu' }]);
 
   await ctx.editMessageText(
-    '<code>┌─────────────────────────┐</code>\n' +
-    '<code>│</code> <b>AKRAB & CIRCLE</b>\n' +
+    '<code>│</code> ✅ = Stok tersedia\n' +
+    '<code>│</code> ❌ = Stok kosong\n' +
+    '<code>│</code>\n' +
+    '<code>│</code> V1/V2 → pakai saldo Akrab\n' +
+    '<code>│</code> V3/Circle → pakai saldo Tembak Kuota\n' +
+    '<code>└─────────────────────────┘</code>',
     '<code>│─────────────────────────</code>\n' +
     '<code>│</code> Saldo : <code>Rp ' + Number(saldoAkrab || 0).toLocaleString('id-ID') + '</code>\n' +
     '<code>│─────────────────────────</code>\n' +
@@ -22161,6 +22170,66 @@ async function checkAkrabRestok() {
 
 // Cek restok setiap 10 menit
 setInterval(checkAkrabRestok, 10 * 60 * 1000);
+// ── Cek restok Akrab V3 & Circle dari HidePulsa ──────────────
+let _snapV3 = {}, _snapCircle = {};
+let _snapV3Init = false, _snapCircleInit = false;
+
+async function checkHidepulsaRestok() {
+  try {
+    const produk = await ppob.getProdukList('Global').catch(() => null);
+    if (!produk) return;
+    const akrabAll  = produk.filter(p => (p.brand||'').toUpperCase().includes('XL AKRAB'));
+    const circleAll = produk.filter(p => (p.brand||'').toUpperCase().includes('XL CIRCLE'));
+    const restokV3 = [];
+    for (const p of akrabAll) {
+      const sku = p.buyer_sku_code, stok = p.stock || 0;
+      const prev = _snapV3[sku] !== undefined ? _snapV3[sku] : -1;
+      if (_snapV3Init && prev === 0 && stok > 0) restokV3.push({ sku, nama: p.product_name, stok });
+      _snapV3[sku] = stok;
+    }
+    _snapV3Init = true;
+    const restokCircle = [];
+    for (const p of circleAll) {
+      const sku = p.buyer_sku_code, stok = p.stock || 0;
+      const prev = _snapCircle[sku] !== undefined ? _snapCircle[sku] : -1;
+      if (_snapCircleInit && prev === 0 && stok > 0) restokCircle.push({ sku, nama: p.product_name, stok });
+      _snapCircle[sku] = stok;
+    }
+    _snapCircleInit = true;
+    if (restokV3.length > 0) {
+      logger.info('Restok Akrab V3: ' + restokV3.map(p => p.sku).join(', '));
+      const stokText = restokV3.map(p => {
+        const m = p.nama.match(/(\d+GB[^|\n]*)/i);
+        return `✦ <b>${m ? m[0].trim() : p.nama.slice(0,35)}</b> — <b>${p.stok}</b> unit`;
+      }).join('\n');
+      await broadcastHidepulsaRestok(`🟣 <b>RESTOK AKRAB V3</b>\n<code>──────────────────────</code>\n${stokText}\n<code>──────────────────────</code>\n🛒 <i>Segera beli sebelum habis!</i>`);
+    }
+    if (restokCircle.length > 0) {
+      logger.info('Restok Circle: ' + restokCircle.map(p => p.sku).join(', '));
+      const stokText = restokCircle.map(p => {
+        const m = p.nama.match(/(\d+GB[^|\n]*)/i);
+        return `✦ <b>${m ? m[0].trim() : p.nama.slice(0,35)}</b> — <b>${p.stok}</b> unit`;
+      }).join('\n');
+      await broadcastHidepulsaRestok(`🔴 <b>RESTOK CIRCLE</b>\n<code>──────────────────────</code>\n${stokText}\n<code>──────────────────────</code>\n🛒 <i>Segera beli sebelum habis!</i>`);
+    }
+  } catch(err) { logger.error('checkHidepulsaRestok: ' + err.message); }
+}
+
+async function broadcastHidepulsaRestok(msg) {
+  try {
+    const rows = await new Promise((res, rej) => db.all('SELECT user_id FROM users', [], (e,r) => e ? rej(e) : res(r||[])));
+    let ok = 0, fail = 0;
+    for (const row of rows) {
+      try { await bot.telegram.sendMessage(row.user_id, msg, { parse_mode: 'HTML' }); ok++; await new Promise(r => setTimeout(r, 50)); }
+      catch(e) { fail++; }
+    }
+    logger.info(`broadcastHidepulsaRestok: ${ok} OK, ${fail} gagal`);
+  } catch(err) { logger.error('broadcastHidepulsaRestok: ' + err.message); }
+}
+
+setInterval(checkHidepulsaRestok, 10 * 60 * 1000);
+setTimeout(checkHidepulsaRestok, 60000);
+
 // Jalankan sekali setelah startup (delay 30 detik) untuk isi snapshot awal
 setTimeout(checkAkrabRestok, 30000);
 
@@ -22408,7 +22477,6 @@ async function sendPaymentSummary(deposit, transactionDetails) {
     `🕐 <b>Waktu</b>      : <code>${payTime}</code>\n` +
     `<code>──────────────────────────</code>\n` +
     `✅ <b>Status</b>     : VERIFIED & COMPLETED`;
-    `.trim();
     
     // Kirim ke admin/log channel jika ada
     if (GROUP_ID_NUM) {
