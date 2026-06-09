@@ -7055,6 +7055,39 @@ bot.action('notif_settings_menu', async (ctx) => {
   });
 });
 
+
+// ── Setting Notif Group VPN ──────────────────────────────────
+bot.action('admin_notif_group_menu', async (ctx) => {
+  await ctx.answerCbQuery();
+  if (!adminIds.includes(ctx.from.id)) return ctx.reply('❌ Tidak ada izin.');
+  const currentId = vars.GROUP_ID || 'Belum diset';
+  await ctx.editMessageText(
+    '*⚙️ Setting Notif Group VPN*\n\n' +
+    'Group ID saat ini: `' + currentId + '`\n\n' +
+    'Kirim Group ID baru untuk notifikasi akun VPN.\nContoh: `-1001234567890`\nKetik *batal* untuk membatalkan.',
+    { parse_mode: 'Markdown', reply_markup: { inline_keyboard: [
+      [{ text: '🔙 Kembali', callback_data: 'admin_menu' }]
+    ]}}
+  );
+  userState[ctx.chat.id] = { step: 'admin_set_vpn_notif_group' };
+});
+
+// ── Setting Notif Group Akrab ─────────────────────────────────
+bot.action('admin_akrab_notif_group_menu', async (ctx) => {
+  await ctx.answerCbQuery();
+  if (!adminIds.includes(ctx.from.id)) return ctx.reply('❌ Tidak ada izin.');
+  const currentId = vars.AKRAB_NOTIF_GROUP_ID || 'Belum diset';
+  await ctx.editMessageText(
+    '*⚙️ Setting Notif Group Akrab*\n\n' +
+    'Group ID saat ini: `' + currentId + '`\n\n' +
+    'Kirim Group ID baru untuk notifikasi transaksi Akrab.\nContoh: `-1001234567890`\nKetik *batal* untuk membatalkan.',
+    { parse_mode: 'Markdown', reply_markup: { inline_keyboard: [
+      [{ text: '🔙 Kembali', callback_data: 'admin_menu' }]
+    ]}}
+  );
+  userState[ctx.chat.id] = { step: 'admin_input_akrab_notif_group' };
+});
+
 bot.action('notif_set_global_group', async (ctx) => {
   await ctx.answerCbQuery();
   const adminId = ctx.from.id;
@@ -15291,6 +15324,14 @@ bot.on('text', async (ctx) => {
       }
 
       // State markup V1&V2, V3, Circle, PPOB
+      if (akState.step === 'admin_set_vpn_notif_group') {
+        const gid = text.trim();
+        if (gid.toLowerCase() === 'batal') { delete userState[ctx.chat.id]; return ctx.reply('❌ Dibatalkan.'); }
+        vars.GROUP_ID = gid;
+        fs.writeFileSync(varsPath, JSON.stringify(vars, null, 2));
+        await ctx.reply('✅ Notif VPN akan dikirim ke group: ' + gid);
+        delete userState[ctx.chat.id]; return;
+      }
       if (akState.step === 'admin_input_akrab_notif_group') {
         const gid = text.trim();
         vars.AKRAB_NOTIF_GROUP_ID = gid;
