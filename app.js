@@ -797,9 +797,23 @@ function formatMissingGatewayConfig(readiness) {
 
 function formatDateId(date) {
   try {
-    return date.toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' });
+    return date.toLocaleDateString('id-ID', {
+      timeZone: 'Asia/Jakarta',
+      day: '2-digit', month: 'short', year: 'numeric'
+    });
   } catch (e) {
     return date.toISOString().slice(0, 10);
+  }
+}
+function formatDateTimeId(date) {
+  try {
+    return date.toLocaleString('id-ID', {
+      timeZone: 'Asia/Jakarta',
+      day: '2-digit', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+  } catch (e) {
+    return date.toISOString().slice(0, 16).replace('T', ' ');
   }
 }
 
@@ -1030,21 +1044,25 @@ setInterval(cleanupExpiredAccounts, 6 * 60 * 60 * 1000);
 async function sendNonResellerCreateNotification(payload) {
   if (!NOTIF_BOT_TOKEN || !NOTIF_CHAT_ID) return;
   try {
+    const now2 = new Date().toLocaleString('id-ID',{timeZone:'Asia/Jakarta',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
     const text =
-      ` NOTIFIKASI AKUN BARU (NON-RESELLER)\n\n` +
-      `Layanan: ${payload.service}\n` +
-      `Server: ${payload.serverName || '-'}\n` +
-      `Domain: ${payload.domain || '-'}\n` +
-      `Username: ${payload.accountUsername}\n` +
-      `Password: ${payload.accountPassword || '-'}\n` +
-      `Masa Aktif: ${payload.expDays} hari\n` +
-      `Expired: ${payload.expiredDate}\n\n` +
-      `Pembuat: ${payload.creatorLabel}\n` +
-      `User ID: ${payload.creatorId}`;
+      `🔔 <b>Akun Baru (Non-Reseller)</b>\n` +
+      `<code>──────────────────────────</code>\n` +
+      `🛠 <b>Layanan</b> : ${payload.service}\n` +
+      `🖥 <b>Server</b>  : ${payload.serverName || '-'}\n` +
+      `🌐 <b>Domain</b>  : ${payload.domain || '-'}\n` +
+      `👤 <b>Username</b>: ${payload.accountUsername}\n` +
+      `🔑 <b>Password</b>: ${payload.accountPassword || '-'}\n` +
+      `⏳ <b>Durasi</b>  : ${payload.expDays} hari\n` +
+      `📅 <b>Expired</b> : ${payload.expiredDate}\n` +
+      `<code>──────────────────────────</code>\n` +
+      `👤 <b>Pembuat</b> : ${payload.creatorLabel}\n` +
+      `🆔 <b>User ID</b> : ${payload.creatorId}\n` +
+      `🕐 <b>Waktu</b>   : ${now2}`;
 
     await axios.post(
       `https://api.telegram.org/bot${NOTIF_BOT_TOKEN}/sendMessage`,
-      { chat_id: NOTIF_CHAT_ID, text }
+      { chat_id: NOTIF_CHAT_ID, text, parse_mode: 'HTML' }
     );
   } catch (err) {
     logger.error(' Gagal kirim notif create non-reseller:', err.message);
@@ -9821,44 +9839,69 @@ async function renderLocalOwnedAccountsPage(ctx, listType = 'active', page = 0) 
       .replace(/'/g, '&#039;');
   };
 
+  const typeIcon = { ssh:'🔵', vmess:'🟡', vless:'🟣', trojan:'🔴', zivpn:'🟠', udp_http:'🟢', shadowsocks:'⚪' };
   const blocks = rows.map((row, idx) => {
     const number = start + idx + 1;
-    const expText = row.expires_at ? formatDateId(new Date(row.expires_at)) : '-';
-    const linkLines = [];
-    if (row.link_tls) linkLines.push(`- <b>Link TLS</b>: <code>${escapeHtmlLocal(row.link_tls)}</code>`);
-    if (row.link_none) linkLines.push(`- <b>Link NTLS</b>: <code>${escapeHtmlLocal(row.link_none)}</code>`);
-    if (row.link_grpc) linkLines.push(`- <b>Link GRPC</b>: <code>${escapeHtmlLocal(row.link_grpc)}</code>`);
-
-    const isZivpn = String(row.type || '').toLowerCase() === 'zivpn';
-    const accountLabel = isZivpn ? 'UDP Password' : 'Username';
-    const passwordLine = (!isZivpn && row.password)
-      ? `- <b>Password:</b> ${escapeHtmlLocal(row.password)}\n`
-      : '';
-
-    return (
-      `#${number}\n` +
-      `- <b>Layanan:</b> ${escapeHtmlLocal(row.type).toUpperCase()}\n` +
-      `- <b>${accountLabel}:</b> ${escapeHtmlLocal(row.username)}\n` +
-      passwordLine +
-      `- <b>Server:</b> ${escapeHtmlLocal(row.server_name || row.domain || '-')}\n` +
-      `- <b>Domain:</b> ${escapeHtmlLocal(row.domain || '-')}\n` +
-      `- <b>Expired:</b> ${escapeHtmlLocal(expText)}` +
-      (linkLines.length ? `\n${linkLines.join('\n')}` : '')
-    );
+    const expDate = row.expires_at ? new Date(row.expires_at) : null;
+    const expText = expDate ? formatDateTimeId(expDate) : '-';
+    const nowMs = Date.now();
+    const sisaHari = expDate ? Math.ceil((expDate.getTime() - nowMs) / 86400000) : null;
+    const expWarn = sisaHari !== null && sisaHari <= 3 ? ' ⚠️' : '';
+    const type = String(row.type || '').toLowerCase();
+    const icon = typeIcon[type] || '⚪';
+    const serverName = escapeHtmlLocal(row.server_name || row.domain || '-');
+    const domain = escapeHtmlLocal(row.domain || '-');
+    const username = escapeHtmlLocal(row.username || '-');
+    const password = escapeHtmlLocal(row.password || '');
+    const hasLinks = row.link_tls || row.link_none || row.link_grpc || row.link_uptls || row.link_upntls;
+    let block = `<code>┌──────────────────────────────────┐</code>
+`;
+    block += `<code>│ #${number} · ${icon} ${type.toUpperCase()}</code>
+`;
+    block += `<code>├──────────────────────────────────┤</code>
+`;
+    block += `🖥  ${serverName}
+`;
+    block += `🌐  <code>${domain}</code>
+`;
+    block += `👤  <code>${username}</code>
+`;
+    if (password) block += `🔑  <code>${password}</code>
+`;
+    block += `📅  ${expText}${expWarn}
+`;
+    if (sisaHari !== null) block += `⏳  ${sisaHari > 0 ? sisaHari+' hari lagi' : 'Sudah expired'}
+`;
+    if (hasLinks) {
+      block += `<code>├──────────────────────────────────┤</code>
+`;
+      if (row.link_tls)    block += `🔗 TLS: <code>${escapeHtmlLocal(row.link_tls)}</code>
+`;
+      if (row.link_none)   block += `🔗 NTLS: <code>${escapeHtmlLocal(row.link_none)}</code>
+`;
+      if (row.link_grpc)   block += `🔗 GRPC: <code>${escapeHtmlLocal(row.link_grpc)}</code>
+`;
+      if (row.link_uptls)  block += `🔗 UPTLS: <code>${escapeHtmlLocal(row.link_uptls)}</code>
+`;
+      if (row.link_upntls) block += `🔗 UPNTLS: <code>${escapeHtmlLocal(row.link_upntls)}</code>
+`;
+    }
+    block += `<code>└──────────────────────────────────┘</code>`;
+    return block;
   });
-
-  const title = listType === 'expired' ? 'Akun Expired' : 'Akun Aktif';
+  const title = listType === 'expired' ? '📋 Akun Expired' : '📋 Akun Aktif';
   const text =
-    `<b>${title}</b>\n` +
-    `<i>Halaman ${safePage + 1}/${totalPages}</i>\n\n` +
+    `<b>${title}</b> — <i>Hal. ${safePage + 1}/${totalPages}</i>\n\n` +
+
     blocks.join('\n\n');
 
+
   const nav = [];
-  if (safePage > 0) nav.push({ text: 'Sebelumnya', callback_data: `view_accounts_local_page_${listType}_${safePage - 1}` });
-  if (safePage < totalPages - 1) nav.push({ text: 'Selanjutnya', callback_data: `view_accounts_local_page_${listType}_${safePage + 1}` });
+  if (safePage > 0) nav.push({ text: '\u25c0\ufe0f Sebelumnya', callback_data: `view_accounts_local_page_${listType}_${safePage - 1}` });
+  if (safePage < totalPages - 1) nav.push({ text: 'Selanjutnya \u25b6\ufe0f', callback_data: `view_accounts_local_page_${listType}_${safePage + 1}` });
   const keyboard = [];
   if (nav.length) keyboard.push(nav);
-  keyboard.push([{ text: 'Kembali', callback_data: 'view_accounts' }]);
+  keyboard.push([{ text: '🔙 Kembali', callback_data: 'view_accounts' }]);
 
   return ctx.reply(text, {
     parse_mode: 'HTML',
@@ -10502,7 +10545,7 @@ bot.action(/^ppob_listed_(.+)$/, async (ctx) => {
 });
 
 bot.action(/^ppob_beli_(?!global_)(.+)$/, async (ctx) => {
-  await ctx.answerCbQuery();
+  await ctx.answerCbQuery('⏳ Memuat...');
   const userId = ctx.from.id;
   const sku = ctx.match[1];
 
@@ -10546,13 +10589,18 @@ async function sendAkrabNotifToGroup(tipe, data) {
     if (!gid || isNaN(gid)) return;
     const icon = tipe==='v1'?'🔵':tipe==='v2'?'🟢':tipe==='v3'?'🟣':'🔴';
     const label = tipe==='v1'?'Akrab V1':tipe==='v2'?'Akrab V2':tipe==='v3'?'Akrab V3':'Circle';
-    const msg = icon+' <b>Transaksi '+label+'</b>\n<code>──────────────────────</code>\n'+
-      '👤 User: <code>'+(data.userName||data.userId)+'</code>\n'+
-      '📦 Produk: '+data.produk+'\n'+
-      '📱 Tujuan: <code>'+data.tujuan+'</code>\n'+
-      '💰 Nominal: Rp '+Number(data.amount).toLocaleString('id-ID')+'\n'+
-      '🔖 Reff ID: <code>'+data.reffId+'</code>\n'+
-      '📊 Status: '+(data.status||'pending');
+    const now = new Date().toLocaleString('id-ID',{timeZone:'Asia/Jakarta',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    const msg =
+      icon+' <b>Transaksi '+label+'</b>\n'+
+      '<code>──────────────────────────</code>\n'+
+      '👤 <b>User</b>  : <code>'+(data.userName||data.userId)+'</code>\n'+
+      '🆔 <b>ID</b>    : <code>'+data.userId+'</code>\n'+
+      '📦 <b>Produk</b>: '+data.produk+'\n'+
+      '📱 <b>Tujuan</b>: <code>'+data.tujuan+'</code>\n'+
+      '💰 <b>Nominal</b>: Rp '+Number(data.amount).toLocaleString('id-ID')+'\n'+
+      '🔖 <b>Ref ID</b> : <code>'+data.reffId+'</code>\n'+
+      '📊 <b>Status</b> : '+(data.status||'⏳ pending')+'\n'+
+      '🕐 <b>Waktu</b>  : '+now;
     await bot.telegram.sendMessage(gid, msg, { parse_mode: 'HTML' });
   } catch(e) { logger.error('sendAkrabNotifToGroup: '+e.message); }
 }
@@ -10636,7 +10684,8 @@ bot.action(/^ppob_beli_global_(.+)$/, async (ctx) => {
 
 // ── Konfirmasi beli HidePulsa Global ─────────────────────────
 bot.action(/^ppob_konfirm_global_(.+)$/, async (ctx) => {
-  await ctx.answerCbQuery('Memproses...');
+  await ctx.answerCbQuery('⏳ Memproses...');
+  await ctx.editMessageText('⏳ <b>Memproses transaksi...</b>\nMohon tunggu sebentar.', { parse_mode: 'HTML' }).catch(()=>{});
   const userId = ctx.from.id;
   const state = userState[userId];
   if (!state || !state.item || !state.customerNo) return ctx.reply('❌ Sesi expired. Ulangi dari menu.');
@@ -22310,7 +22359,7 @@ async function sendPaymentSummary(deposit, transactionDetails) {
     
     // Kirim ke admin/log channel jika ada
     if (GROUP_ID_NUM) {
-      await bot.telegram.sendMessage(GROUP_ID_NUM, summary, { parse_mode: 'Markdown' });
+      await bot.telegram.sendMessage(GROUP_ID_NUM, summary, { parse_mode: 'HTML' });
     }
     
     logger.info(` Payment summary logged`);
