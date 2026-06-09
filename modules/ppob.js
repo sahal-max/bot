@@ -220,6 +220,14 @@ function formatRupiah(n) {
   return `Rp ${Number(n).toLocaleString('id-ID')}`;
 }
 
+function clearTokens() {
+  _accessToken = null;
+  _refreshToken = null;
+  _accessTokenExpiresAt = 0;
+  _refreshTokenExpiresAt = 0;
+  db.run('DELETE FROM ppob_tokens WHERE id = 1');
+}
+
 module.exports = {
   registerAndRequestOtp,
   verifyOtp,
@@ -236,5 +244,6 @@ module.exports = {
   setBotTelegramUserId,
   getBotTelegramUserId,
   formatRupiah,
+  clearTokens,
   db
 };
