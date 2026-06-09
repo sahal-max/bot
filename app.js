@@ -1095,22 +1095,24 @@ async function sendGlobalCreateAccountNotification(payload) {
   const groupId = Number(String(GLOBAL_CREATE_NOTIF_GROUP_ID || '').trim());
   if (!Number.isFinite(groupId) || groupId === 0) return;
 
+  const now1 = new Date().toLocaleString('id-ID',{timeZone:'Asia/Jakarta',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
   const text =
-    '*AKUN BERHASIL DIBUAT !!*\n\n' +
-    '```Informasi\n' +
-    `ID TELE PEMBUAT : ${payload.creatorId || '-'}\n` +
-    `USERNAME TELE   : ${payload.creatorUsername || '-'}\n` +
-    `SERVER          : ${payload.serverName || '-'}\n` +
-    `JENIS AKUN      : ${payload.accountType || '-'}\n` +
-    `ROLE            : ${payload.role || '-'}\n` +
-    `REMAKS          : ${payload.remarks || '-'}\n` +
-    `MASA AKTIF      : (${payload.expDays || 0} Hari)\n` +
-    `EXPIRED         : ${payload.expiredDate || '-'}\n` +
-    `PEMBAYARAN      : ${payload.payment || '-'}\n` +
-    '```';
-
+    `✅ <b>AKUN BERHASIL DIBUAT</b>\n` +
+    `<code>──────────────────────────</code>\n` +
+    `👤 <b>Pembuat</b>  : <code>${payload.creatorUsername || '-'}</code>\n` +
+    `🆔 <b>ID Tele</b>  : <code>${payload.creatorId || '-'}</code>\n` +
+    `<code>──────────────────────────</code>\n` +
+    `🛠 <b>Layanan</b>  : <code>${payload.accountType || '-'}</code>\n` +
+    `🖥 <b>Server</b>   : <code>${payload.serverName || '-'}</code>\n` +
+    `👥 <b>Role</b>     : <code>${payload.role || '-'}</code>\n` +
+    `📝 <b>Remarks</b>  : <code>${payload.remarks || '-'}</code>\n` +
+    `<code>──────────────────────────</code>\n` +
+    `⏳ <b>Durasi</b>   : <code>${payload.expDays || 0} hari</code>\n` +
+    `📅 <b>Expired</b>  : <code>${payload.expiredDate || '-'}</code>\n` +
+    `💰 <b>Bayar</b>    : <code>${payload.payment || '-'}</code>\n` +
+    `🕐 <b>Waktu</b>    : <code>${now1}</code>`;
   try {
-    await bot.telegram.sendMessage(groupId, text, { parse_mode: 'Markdown' });
+    await bot.telegram.sendMessage(groupId, text, { parse_mode: 'HTML' });
   } catch (err) {
     logger.error('Gagal kirim notif create akun ke grup global:', err.message);
   }
@@ -1532,21 +1534,23 @@ async function notifyGroupAccountDeleted(payload) {
   try {
     const actorName = payload.actorUsername ? '@' + String(payload.actorUsername).replace(/^@/, '') : '-';
     const deletedName = payload.deletedUsername ? '@' + String(payload.deletedUsername).replace(/^@/, '') : '-';
+    const nowDel = new Date().toLocaleString('id-ID',{timeZone:'Asia/Jakarta',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
     const text =
-      'NOTIFIKASI HAPUS AKUN\n\n' +
-      'Aksi: ' + (payload.action || 'delete') + '\n' +
-      'Pelaku ID: ' + String(payload.actorId || '-') + '\n' +
-      'Pelaku Username: ' + actorName + '\n' +
-      'Target User ID: ' + String(payload.targetUserId || '-') + '\n' +
-      'Username Akun: ' + String(payload.accountUsername || '-') + '\n' +
-      'Layanan: ' + String(payload.service || '-') + '\n' +
-      'Server: ' + String(payload.serverName || '-') + '\n' +
-      'Refund Saldo: Rp ' + Number(payload.refund || 0).toLocaleString('id-ID') + '\n' +
-      'Sisa Hari: ' + Number(payload.remainingDays || 0) + ' hari\n' +
-      'Waktu: ' + new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + '\n' +
-      'Keterangan: ' + String(payload.note || '-');
-
-    await bot.telegram.sendMessage(GROUP_ID_NUM, text);
+      `🗑️ <b>AKUN DIHAPUS</b>\n` +
+      `<code>──────────────────────────</code>\n` +
+      `👤 <b>Pelaku</b>    : <code>${actorName}</code>\n` +
+      `🆔 <b>ID Pelaku</b> : <code>${payload.actorId || '-'}</code>\n` +
+      `🎯 <b>Target ID</b> : <code>${payload.targetUserId || '-'}</code>\n` +
+      `<code>──────────────────────────</code>\n` +
+      `🛠 <b>Layanan</b>   : <code>${payload.service || '-'}</code>\n` +
+      `👤 <b>Username</b>  : <code>${payload.accountUsername || '-'}</code>\n` +
+      `🖥 <b>Server</b>    : <code>${payload.serverName || '-'}</code>\n` +
+      `<code>──────────────────────────</code>\n` +
+      `💰 <b>Refund</b>    : <code>Rp ${Number(payload.refund||0).toLocaleString('id-ID')}</code>\n` +
+      `⏳ <b>Sisa Hari</b> : <code>${Number(payload.remainingDays||0)} hari</code>\n` +
+      `📝 <b>Ket</b>       : <code>${payload.note || '-'}</code>\n` +
+      `🕐 <b>Waktu</b>     : <code>${nowDel}</code>`;
+    await bot.telegram.sendMessage(GROUP_ID_NUM, text, { parse_mode: 'HTML' });
   } catch (err) {
     logger.warn('Gagal kirim notif hapus akun ke grup: ' + err.message);
   }
@@ -22388,26 +22392,22 @@ function validatePaymentSecurity(deposit, matchingTransaction) {
 //  FUNGSI UNTUK SEND PAYMENT SUMMARY
 async function sendPaymentSummary(deposit, transactionDetails) {
   try {
-    const summary = `
- *PAYMENT SUMMARY*
-
- User: ${deposit.userId}
- Base Amount: ${deposit.originalAmount}
- Admin Fee: ${deposit.amount - deposit.originalAmount}
- Total: ${deposit.amount}
-🆔 Reference: ${deposit.referenceId}
-
- Timing:
-• QR Created: ${new Date(deposit.createdAt).toLocaleTimeString('id-ID')}
-• Payment Time: ${new Date(transactionDetails.timestamp).toLocaleTimeString('id-ID')}
-• Delay: ${Math.round((transactionDetails.timestamp - deposit.createdAt)/1000)}s
-
- Transaction Details:
-• Amount: ${transactionDetails.kredit}
-• Time: ${new Date(transactionDetails.timestamp).toLocaleString('id-ID')}
-• Description: ${transactionDetails.deskripsi?.substring(0, 50) || 'N/A'}...
-
- Status: VERIFIED & COMPLETED
+  const payTime = new Date(transactionDetails.timestamp).toLocaleString('id-ID',{timeZone:'Asia/Jakarta',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  const summary =
+    `💳 <b>TOP UP BERHASIL</b>\n` +
+    `<code>──────────────────────────</code>\n` +
+    `🆔 <b>User ID</b>    : <code>${deposit.userId}</code>\n` +
+    `🔖 <b>Ref ID</b>     : <code>${deposit.referenceId}</code>\n` +
+    `<code>──────────────────────────</code>\n` +
+    `💵 <b>Nominal</b>    : <code>Rp ${Number(deposit.originalAmount||0).toLocaleString('id-ID')}</code>\n` +
+    `🏦 <b>Admin Fee</b>  : <code>Rp ${Number((deposit.amount||0)-(deposit.originalAmount||0)).toLocaleString('id-ID')}</code>\n` +
+    `💰 <b>Total</b>      : <code>Rp ${Number(deposit.amount||0).toLocaleString('id-ID')}</code>\n` +
+    `<code>──────────────────────────</code>\n` +
+    `⏱ <b>Delay</b>      : <code>${Math.round((transactionDetails.timestamp - deposit.createdAt)/1000)}s</code>\n` +
+    `📝 <b>Keterangan</b> : <code>${(transactionDetails.deskripsi||'').substring(0,40)||'N/A'}</code>\n` +
+    `🕐 <b>Waktu</b>      : <code>${payTime}</code>\n` +
+    `<code>──────────────────────────</code>\n` +
+    `✅ <b>Status</b>     : VERIFIED & COMPLETED`;
     `.trim();
     
     // Kirim ke admin/log channel jika ada
