@@ -54,17 +54,11 @@ function saveTokens({ accessToken, refreshToken, accessExpiresIn, refreshExpires
   _refreshToken = refreshToken;
   _accessTokenExpiresAt = Date.now() + (accessExpiresIn - 30) * 1000;
   _refreshTokenExpiresAt = Date.now() + (refreshExpiresIn - 60) * 1000;
-  return new Promise((resolve, reject) => {
-    db.run(
-      `INSERT OR REPLACE INTO ppob_tokens (id, access_token, refresh_token, access_expires_at, refresh_expires_at, updated_at)
-       VALUES (1, ?, ?, ?, ?, ?)`,
-      [_accessToken, _refreshToken, _accessTokenExpiresAt, _refreshTokenExpiresAt, Date.now()],
-      function(err) {
-        if (err) { console.error("[HidePulsa] ❌ Gagal simpan token ke DB:", err.message); reject(err); }
-        else { console.log("[HidePulsa] 💾 Token tersimpan ke DB, access expired:", new Date(_accessTokenExpiresAt).toLocaleString("id-ID")); resolve(); }
-      }
-    );
-  });
+  db.run(
+    `INSERT OR REPLACE INTO ppob_tokens (id, access_token, refresh_token, access_expires_at, refresh_expires_at, updated_at)
+     VALUES (1, ?, ?, ?, ?, ?)`,
+    [_accessToken, _refreshToken, _accessTokenExpiresAt, _refreshTokenExpiresAt, Date.now()]
+  );
 }
 
 function isAccessTokenValid() {
@@ -94,7 +88,7 @@ async function refreshAccessToken() {
   if (!isRefreshTokenValid()) throw new Error('Refresh token expired, perlu login ulang.');
   const res = await hidepulsaPost('/auth/refresh', { refresh_token: _refreshToken }, false);
   if (!res.ok) throw new Error('Gagal refresh token HidePulsa.');
-  await saveTokens({
+  saveTokens({
     accessToken: res.access_token,
     refreshToken: res.refresh_token,
     accessExpiresIn: res.expires_in,
@@ -119,7 +113,7 @@ async function registerAndRequestOtp(telegramUserId) {
 async function verifyOtp(challengeToken, otp) {
   const res = await hidepulsaPost('/auth/otp/verify', { challenge_token: challengeToken, otp });
   if (!res.ok) throw new Error(res.message || 'OTP salah atau expired.');
-  await saveTokens({
+  saveTokens({
     accessToken: res.access_token,
     refreshToken: res.refresh_token,
     accessExpiresIn: res.expires_in,
@@ -234,41 +228,6 @@ function clearTokens() {
   db.run('DELETE FROM ppob_tokens WHERE id = 1');
 }
 
-// ── Auto-Refresh Token (setiap 10 menit) ────────────────────
-let _autoRefreshInterval = null;
-function startAutoRefresh() {
-  if (_autoRefreshInterval) return; // sudah jalan
-  _autoRefreshInterval = setInterval(async () => {
-    try {
-      if (!isRefreshTokenValid()) {
-        console.warn("[HidePulsa] ⚠️  Refresh token expired! Perlu login ulang via OTP.");
-        stopAutoRefresh();
-        return;
-      }
-      // Refresh 5 menit sebelum access token expired (buffer aman)
-      const now = Date.now();
-      const fiveMinMs = 5 * 60 * 1000;
-      if (_accessTokenExpiresAt - now < fiveMinMs) {
-        console.log("[HidePulsa] 🔄 Auto-refresh access token...");
-        await refreshAccessToken();
-        console.log("[HidePulsa] ✅ Token refreshed, valid sampai:", new Date(_accessTokenExpiresAt).toLocaleString("id-ID"));
-      } else {
-        console.log("[HidePulsa] ✅ Token masih valid, skip refresh");
-      }
-    } catch (e) {
-      console.error("[HidePulsa] ❌ Gagal auto-refresh:", e.message);
-    }
-  }, 10 * 60 * 1000); // setiap 10 menit
-  console.log("[HidePulsa] 🕐 Auto-refresh scheduler aktif (setiap 10 menit)");
-}
-function stopAutoRefresh() {
-  if (_autoRefreshInterval) {
-    clearInterval(_autoRefreshInterval);
-    _autoRefreshInterval = null;
-    console.log("[HidePulsa] ⏹  Auto-refresh scheduler dihentikan");
-  }
-}
-
 module.exports = {
   registerAndRequestOtp,
   verifyOtp,
@@ -286,7 +245,5 @@ module.exports = {
   getBotTelegramUserId,
   formatRupiah,
   clearTokens,
-  startAutoRefresh,
-  stopAutoRefresh,
   db
 };

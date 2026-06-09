@@ -1095,22 +1095,24 @@ async function sendGlobalCreateAccountNotification(payload) {
   const groupId = Number(String(GLOBAL_CREATE_NOTIF_GROUP_ID || '').trim());
   if (!Number.isFinite(groupId) || groupId === 0) return;
 
+  const now1 = new Date().toLocaleString('id-ID',{timeZone:'Asia/Jakarta',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
   const text =
-    '*AKUN BERHASIL DIBUAT !!*\n\n' +
-    '```Informasi\n' +
-    `ID TELE PEMBUAT : ${payload.creatorId || '-'}\n` +
-    `USERNAME TELE   : ${payload.creatorUsername || '-'}\n` +
-    `SERVER          : ${payload.serverName || '-'}\n` +
-    `JENIS AKUN      : ${payload.accountType || '-'}\n` +
-    `ROLE            : ${payload.role || '-'}\n` +
-    `REMAKS          : ${payload.remarks || '-'}\n` +
-    `MASA AKTIF      : (${payload.expDays || 0} Hari)\n` +
-    `EXPIRED         : ${payload.expiredDate || '-'}\n` +
-    `PEMBAYARAN      : ${payload.payment || '-'}\n` +
-    '```';
-
+    `✅ <b>AKUN BERHASIL DIBUAT</b>\n` +
+    `<code>──────────────────────────</code>\n` +
+    `👤 <b>Pembuat</b>  : <code>${payload.creatorUsername || '-'}</code>\n` +
+    `🆔 <b>ID Tele</b>  : <code>${payload.creatorId || '-'}</code>\n` +
+    `<code>──────────────────────────</code>\n` +
+    `🛠 <b>Layanan</b>  : <code>${payload.accountType || '-'}</code>\n` +
+    `🖥 <b>Server</b>   : <code>${payload.serverName || '-'}</code>\n` +
+    `👥 <b>Role</b>     : <code>${payload.role || '-'}</code>\n` +
+    `📝 <b>Remarks</b>  : <code>${payload.remarks || '-'}</code>\n` +
+    `<code>──────────────────────────</code>\n` +
+    `⏳ <b>Durasi</b>   : <code>${payload.expDays || 0} hari</code>\n` +
+    `📅 <b>Expired</b>  : <code>${payload.expiredDate || '-'}</code>\n` +
+    `💰 <b>Bayar</b>    : <code>${payload.payment || '-'}</code>\n` +
+    `🕐 <b>Waktu</b>    : <code>${now1}</code>`;
   try {
-    await bot.telegram.sendMessage(groupId, text, { parse_mode: 'Markdown' });
+    await bot.telegram.sendMessage(groupId, text, { parse_mode: 'HTML' });
   } catch (err) {
     logger.error('Gagal kirim notif create akun ke grup global:', err.message);
   }
@@ -1532,21 +1534,23 @@ async function notifyGroupAccountDeleted(payload) {
   try {
     const actorName = payload.actorUsername ? '@' + String(payload.actorUsername).replace(/^@/, '') : '-';
     const deletedName = payload.deletedUsername ? '@' + String(payload.deletedUsername).replace(/^@/, '') : '-';
+    const nowDel = new Date().toLocaleString('id-ID',{timeZone:'Asia/Jakarta',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
     const text =
-      'NOTIFIKASI HAPUS AKUN\n\n' +
-      'Aksi: ' + (payload.action || 'delete') + '\n' +
-      'Pelaku ID: ' + String(payload.actorId || '-') + '\n' +
-      'Pelaku Username: ' + actorName + '\n' +
-      'Target User ID: ' + String(payload.targetUserId || '-') + '\n' +
-      'Username Akun: ' + String(payload.accountUsername || '-') + '\n' +
-      'Layanan: ' + String(payload.service || '-') + '\n' +
-      'Server: ' + String(payload.serverName || '-') + '\n' +
-      'Refund Saldo: Rp ' + Number(payload.refund || 0).toLocaleString('id-ID') + '\n' +
-      'Sisa Hari: ' + Number(payload.remainingDays || 0) + ' hari\n' +
-      'Waktu: ' + new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + '\n' +
-      'Keterangan: ' + String(payload.note || '-');
-
-    await bot.telegram.sendMessage(GROUP_ID_NUM, text);
+      `🗑️ <b>AKUN DIHAPUS</b>\n` +
+      `<code>──────────────────────────</code>\n` +
+      `👤 <b>Pelaku</b>    : <code>${actorName}</code>\n` +
+      `🆔 <b>ID Pelaku</b> : <code>${payload.actorId || '-'}</code>\n` +
+      `🎯 <b>Target ID</b> : <code>${payload.targetUserId || '-'}</code>\n` +
+      `<code>──────────────────────────</code>\n` +
+      `🛠 <b>Layanan</b>   : <code>${payload.service || '-'}</code>\n` +
+      `👤 <b>Username</b>  : <code>${payload.accountUsername || '-'}</code>\n` +
+      `🖥 <b>Server</b>    : <code>${payload.serverName || '-'}</code>\n` +
+      `<code>──────────────────────────</code>\n` +
+      `💰 <b>Refund</b>    : <code>Rp ${Number(payload.refund||0).toLocaleString('id-ID')}</code>\n` +
+      `⏳ <b>Sisa Hari</b> : <code>${Number(payload.remainingDays||0)} hari</code>\n` +
+      `📝 <b>Ket</b>       : <code>${payload.note || '-'}</code>\n` +
+      `🕐 <b>Waktu</b>     : <code>${nowDel}</code>`;
+    await bot.telegram.sendMessage(GROUP_ID_NUM, text, { parse_mode: 'HTML' });
   } catch (err) {
     logger.warn('Gagal kirim notif hapus akun ke grup: ' + err.message);
   }
@@ -3845,13 +3849,17 @@ bot.command(['start', 'menu'], async (ctx) => {
         try {
           await ctx.reply(
             `👋 *Selamat datang di ${NAMA_STORE}!*\n\n` +
-            `Halo *${userName}*, kamu adalah member baru kami 🎉\n\n` +
-            `📌 *Cara pakai bot ini:*\n` +
-            `1️⃣ Top up saldo via menu *💳 Top Up*\n` +
-            `2️⃣ Beli akun VPN via menu *🔑 Akun VPN*\n` +
-            `3️⃣ Beli kuota data via menu *🤝 Akrab*\n` +
-            `4️⃣ Suntik followers via menu *💉 Suntik*\n\n` +
-            `❓ Ada pertanyaan? Hubungi admin via menu *📞 Admin*\n\n` +
+            `👋 *Selamat datang di ${NAMA_STORE}!*\n\n` +
+            `Halo *${userName}*, terima kasih sudah bergabung! 🎉\n\n` +
+            `📌 *Cara mulai:*\n` +
+            `1️⃣ Top up saldo dulu via menu *💳 Top Up*\n` +
+            `   • Saldo VPN → beli akun VPN & suntik followers\n` +
+            `   • Saldo Tembak Kuota → beli Akrab, Circle & PPOB\n\n` +
+            `2️⃣ Pilih layanan:\n` +
+            `   🔑 *Akun VPN* → SSH, VMess, VLess, Trojan\n` +
+            `   🤝 *Akrab* → tembak kuota XL prabayar\n` +
+            `   💉 *Suntik* → tambah followers medsos\n\n` +
+            `❓ Butuh bantuan? Ketuk menu *📞 Hubungi Admin*\n` +
             `_Selamat berbelanja!_ 🛒`,
             { parse_mode: 'Markdown' }
           );
@@ -7055,6 +7063,39 @@ bot.action('notif_settings_menu', async (ctx) => {
   });
 });
 
+
+// ── Setting Notif Group VPN ──────────────────────────────────
+bot.action('admin_notif_group_menu', async (ctx) => {
+  await ctx.answerCbQuery();
+  if (!adminIds.includes(ctx.from.id)) return ctx.reply('❌ Tidak ada izin.');
+  const currentId = vars.GROUP_ID || 'Belum diset';
+  await ctx.editMessageText(
+    '*⚙️ Setting Notif Group VPN*\n\n' +
+    'Group ID saat ini: `' + currentId + '`\n\n' +
+    'Kirim Group ID baru untuk notifikasi akun VPN.\nContoh: `-1001234567890`\nKetik *batal* untuk membatalkan.',
+    { parse_mode: 'Markdown', reply_markup: { inline_keyboard: [
+      [{ text: '🔙 Kembali', callback_data: 'admin_menu' }]
+    ]}}
+  );
+  userState[ctx.chat.id] = { step: 'admin_set_vpn_notif_group' };
+});
+
+// ── Setting Notif Group Akrab ─────────────────────────────────
+bot.action('admin_akrab_notif_group_menu', async (ctx) => {
+  await ctx.answerCbQuery();
+  if (!adminIds.includes(ctx.from.id)) return ctx.reply('❌ Tidak ada izin.');
+  const currentId = vars.AKRAB_NOTIF_GROUP_ID || 'Belum diset';
+  await ctx.editMessageText(
+    '*⚙️ Setting Notif Group Akrab*\n\n' +
+    'Group ID saat ini: `' + currentId + '`\n\n' +
+    'Kirim Group ID baru untuk notifikasi transaksi Akrab.\nContoh: `-1001234567890`\nKetik *batal* untuk membatalkan.',
+    { parse_mode: 'Markdown', reply_markup: { inline_keyboard: [
+      [{ text: '🔙 Kembali', callback_data: 'admin_menu' }]
+    ]}}
+  );
+  userState[ctx.chat.id] = { step: 'admin_input_akrab_notif_group' };
+});
+
 bot.action('notif_set_global_group', async (ctx) => {
   await ctx.answerCbQuery();
   const adminId = ctx.from.id;
@@ -8733,8 +8774,9 @@ bot.action('menu_topup', async (ctx) => {
   const msgText =
     '💳 <b>TOP UP SALDO</b>\n' +
     '<code>──────────────────────</code>\n' +
-    '✦ Saldo VPN          : <code>Rp ' + Number(saldoVpn || 0).toLocaleString('id-ID') + '</code>\n' +
-    '✦ Saldo Tembak Kuota : <code>Rp ' + Number(saldoAkrab || 0).toLocaleString('id-ID') + '</code>\n' +
+    '<i>💡 Saldo VPN → Akun VPN & Suntik Followers</i>\n' +
+    '<i>💡 Saldo Tembak Kuota → Akrab, Circle & PPOB</i>\n\n' +
+    '✦ Pilih jenis saldo yang ingin di-top up:';
     '<code>──────────────────────</code>\n' +
     '<i>VPN: Akun VPN + Suntik Followers</i>\n' +
     '<i>Tembak Kuota: Akrab, PPOB & Circle</i>\n\n' +
@@ -11221,9 +11263,11 @@ bot.action(/^ppob_gen_brand_(.+)__(.+)$/, async (ctx) => {
     } else {
       // Tidak perlu nomor HP — langsung tampil produk
       ppobBeliState[userId] = { step: 'pilih_produk_langsung', brand, type: category, products: active };
+      const mkGdirect = await dbH.getMarkup(db, 'global', 'ppob', null).catch(()=>null);
+      const mkRdirect = await dbH.getMarkup(db, 'reseller', 'ppob', userId).catch(()=>null);
       const rows = active.map(p => {
-        const stok = p.unlimited_stock ? 'unlimited' : (p.stock || 0);
-        return [{ text: p.product_name + ' — ' + ppob.formatRupiah(p.price), callback_data: 'ppob_listed_direct_' + p.buyer_sku_code }];
+        const fpDirect = wallet.getEffectivePrice(Number(p.price||0), mkGdirect, mkRdirect);
+        return [{ text: p.product_name + ' — ' + ppob.formatRupiah(fpDirect), callback_data: 'ppob_listed_direct_' + p.buyer_sku_code }];
       });
       rows.push([{ text: '🔙 Kembali', callback_data: 'menu_ppob' }]);
       await ctx.reply('📦 *' + brand.toUpperCase() + '*\n\nPilih produk:', { parse_mode: 'Markdown', reply_markup: { inline_keyboard: rows } });
@@ -11350,7 +11394,12 @@ bot.on('text', async (ctx, next) => {
     const label = isGame ? '🎮 *Pilih Voucher untuk ID ' + noHp + ':*' : '📶 *Pilih Paket untuk ' + noHp + ':*';
     const keyboard = {
       inline_keyboard: [
-        ...products.map(p => [{ text: p.product_name + ' — ' + ppob.formatRupiah(p.price), callback_data: 'ppob_listed_' + p.buyer_sku_code }]),
+        ...(await Promise.all(products.map(async p => {
+          const mkG = await dbH.getMarkup(db, 'global', 'ppob', null).catch(()=>null);
+          const mkR = await dbH.getMarkup(db, 'reseller', 'ppob', userId).catch(()=>null);
+          const fp = wallet.getEffectivePrice(Number(p.price||0), mkG, mkR);
+          return [{ text: p.product_name + ' — ' + ppob.formatRupiah(fp), callback_data: 'ppob_listed_' + p.buyer_sku_code }];
+        }))),
         [{ text: '❌ Batal', callback_data: 'ppob_batal' }]
       ]
     };
@@ -11385,11 +11434,14 @@ bot.on('text', async (ctx, next) => {
       const refId = ppob.generateRefId('CEK');
       const data = await ppob.cekTagihan({ buyerSkuCode: state.sku, customerNo: text, refId });
       state.tagihan = data;
-      state.sellingPrice = data.selling_price;
+      const mkGt = await dbH.getMarkup(db, 'global', 'ppob', null).catch(()=>null);
+      const mkRt = await dbH.getMarkup(db, 'reseller', 'ppob', userId).catch(()=>null);
+      const markedPrice = wallet.getEffectivePrice(Number(data.selling_price||0), mkGt, mkRt);
+      state.sellingPrice = markedPrice;
       state.step = 'confirm_tagihan';
       const keyboard = {
         inline_keyboard: [
-          [{ text: `✅ Bayar ${ppob.formatRupiah(data.selling_price)}`, callback_data: 'ppob_confirm_tagihan' }],
+          [{ text: `✅ Bayar ${ppob.formatRupiah(markedPrice)}`, callback_data: 'ppob_confirm_tagihan' }],
           [{ text: '❌ Batal', callback_data: 'ppob_batal' }]
         ]
       };
@@ -11398,7 +11450,7 @@ bot.on('text', async (ctx, next) => {
         `Produk    : *${state.productName}*\n` +
         `Pelanggan : *${data.customer_name || text}*\n` +
         `No        : \`${text}\`\n` +
-        `Tagihan   : *${ppob.formatRupiah(data.selling_price)}*\n\n` +
+        `Tagihan   : *${ppob.formatRupiah(markedPrice)}*\n\n` +
         `Lanjutkan bayar?`,
         { parse_mode: 'Markdown', reply_markup: keyboard }
       );
@@ -14011,13 +14063,13 @@ bot.action('menu_akrab', async (ctx) => {
   keyboard.push([{ text: 'Menu Utama', callback_data: 'send_main_menu' }]);
 
   await ctx.editMessageText(
-    '<code>┌─────────────────────────┐</code>\n' +
-    '<code>│</code> <b>AKRAB & CIRCLE</b>\n' +
     '<code>│─────────────────────────</code>\n' +
     '<code>│</code> Saldo : <code>Rp ' + Number(saldoAkrab || 0).toLocaleString('id-ID') + '</code>\n' +
     '<code>│─────────────────────────</code>\n' +
-    '<code>│</code> ✅ = Tersedia\n' +
-    '<code>│</code> ❌ = Kosong\n' +
+    '<code>│</code> ✅ = Stok tersedia\n' +
+    '<code>│</code> ❌ = Stok kosong\n' +
+    '<code>│</code>\n' +
+    '<code>│</code> V1/V2/V3/Circle → pakai saldo Tembak Kuota\n' +
     '<code>└─────────────────────────┘</code>',
     { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } }
   );
@@ -15281,6 +15333,14 @@ bot.on('text', async (ctx) => {
       }
 
       // State markup V1&V2, V3, Circle, PPOB
+      if (akState.step === 'admin_set_vpn_notif_group') {
+        const gid = text.trim();
+        if (gid.toLowerCase() === 'batal') { delete userState[ctx.chat.id]; return ctx.reply('❌ Dibatalkan.'); }
+        vars.GROUP_ID = gid;
+        fs.writeFileSync(varsPath, JSON.stringify(vars, null, 2));
+        await ctx.reply('✅ Notif VPN akan dikirim ke group: ' + gid);
+        delete userState[ctx.chat.id]; return;
+      }
       if (akState.step === 'admin_input_akrab_notif_group') {
         const gid = text.trim();
         vars.AKRAB_NOTIF_GROUP_ID = gid;
@@ -22106,6 +22166,66 @@ async function checkAkrabRestok() {
 
 // Cek restok setiap 10 menit
 setInterval(checkAkrabRestok, 10 * 60 * 1000);
+// ── Cek restok Akrab V3 & Circle dari HidePulsa ──────────────
+let _snapV3 = {}, _snapCircle = {};
+let _snapV3Init = false, _snapCircleInit = false;
+
+async function checkHidepulsaRestok() {
+  try {
+    const produk = await ppob.getProdukList('Global').catch(() => null);
+    if (!produk) return;
+    const akrabAll  = produk.filter(p => (p.brand||'').toUpperCase().includes('XL AKRAB'));
+    const circleAll = produk.filter(p => (p.brand||'').toUpperCase().includes('XL CIRCLE'));
+    const restokV3 = [];
+    for (const p of akrabAll) {
+      const sku = p.buyer_sku_code, stok = p.stock || 0;
+      const prev = _snapV3[sku] !== undefined ? _snapV3[sku] : -1;
+      if (_snapV3Init && prev === 0 && stok > 0) restokV3.push({ sku, nama: p.product_name, stok });
+      _snapV3[sku] = stok;
+    }
+    _snapV3Init = true;
+    const restokCircle = [];
+    for (const p of circleAll) {
+      const sku = p.buyer_sku_code, stok = p.stock || 0;
+      const prev = _snapCircle[sku] !== undefined ? _snapCircle[sku] : -1;
+      if (_snapCircleInit && prev === 0 && stok > 0) restokCircle.push({ sku, nama: p.product_name, stok });
+      _snapCircle[sku] = stok;
+    }
+    _snapCircleInit = true;
+    if (restokV3.length > 0) {
+      logger.info('Restok Akrab V3: ' + restokV3.map(p => p.sku).join(', '));
+      const stokText = restokV3.map(p => {
+        const m = p.nama.match(/(\d+GB[^|\n]*)/i);
+        return `✦ <b>${m ? m[0].trim() : p.nama.slice(0,35)}</b> — <b>${p.stok}</b> unit`;
+      }).join('\n');
+      await broadcastHidepulsaRestok(`🟣 <b>RESTOK AKRAB V3</b>\n<code>──────────────────────</code>\n${stokText}\n<code>──────────────────────</code>\n🛒 <i>Segera beli sebelum habis!</i>`);
+    }
+    if (restokCircle.length > 0) {
+      logger.info('Restok Circle: ' + restokCircle.map(p => p.sku).join(', '));
+      const stokText = restokCircle.map(p => {
+        const m = p.nama.match(/(\d+GB[^|\n]*)/i);
+        return `✦ <b>${m ? m[0].trim() : p.nama.slice(0,35)}</b> — <b>${p.stok}</b> unit`;
+      }).join('\n');
+      await broadcastHidepulsaRestok(`🔴 <b>RESTOK CIRCLE</b>\n<code>──────────────────────</code>\n${stokText}\n<code>──────────────────────</code>\n🛒 <i>Segera beli sebelum habis!</i>`);
+    }
+  } catch(err) { logger.error('checkHidepulsaRestok: ' + err.message); }
+}
+
+async function broadcastHidepulsaRestok(msg) {
+  try {
+    const rows = await new Promise((res, rej) => db.all('SELECT user_id FROM users', [], (e,r) => e ? rej(e) : res(r||[])));
+    let ok = 0, fail = 0;
+    for (const row of rows) {
+      try { await bot.telegram.sendMessage(row.user_id, msg, { parse_mode: 'HTML' }); ok++; await new Promise(r => setTimeout(r, 50)); }
+      catch(e) { fail++; }
+    }
+    logger.info(`broadcastHidepulsaRestok: ${ok} OK, ${fail} gagal`);
+  } catch(err) { logger.error('broadcastHidepulsaRestok: ' + err.message); }
+}
+
+setInterval(checkHidepulsaRestok, 10 * 60 * 1000);
+setTimeout(checkHidepulsaRestok, 60000);
+
 // Jalankan sekali setelah startup (delay 30 detik) untuk isi snapshot awal
 setTimeout(checkAkrabRestok, 30000);
 
@@ -22337,27 +22457,22 @@ function validatePaymentSecurity(deposit, matchingTransaction) {
 //  FUNGSI UNTUK SEND PAYMENT SUMMARY
 async function sendPaymentSummary(deposit, transactionDetails) {
   try {
-    const summary = `
- *PAYMENT SUMMARY*
-
- User: ${deposit.userId}
- Base Amount: ${deposit.originalAmount}
- Admin Fee: ${deposit.amount - deposit.originalAmount}
- Total: ${deposit.amount}
-🆔 Reference: ${deposit.referenceId}
-
- Timing:
-• QR Created: ${new Date(deposit.createdAt).toLocaleTimeString('id-ID')}
-• Payment Time: ${new Date(transactionDetails.timestamp).toLocaleTimeString('id-ID')}
-• Delay: ${Math.round((transactionDetails.timestamp - deposit.createdAt)/1000)}s
-
- Transaction Details:
-• Amount: ${transactionDetails.kredit}
-• Time: ${new Date(transactionDetails.timestamp).toLocaleString('id-ID')}
-• Description: ${transactionDetails.deskripsi?.substring(0, 50) || 'N/A'}...
-
- Status: VERIFIED & COMPLETED
-    `.trim();
+  const payTime = new Date(transactionDetails.timestamp).toLocaleString('id-ID',{timeZone:'Asia/Jakarta',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  const summary =
+    `💳 <b>TOP UP BERHASIL</b>\n` +
+    `<code>──────────────────────────</code>\n` +
+    `🆔 <b>User ID</b>    : <code>${deposit.userId}</code>\n` +
+    `🔖 <b>Ref ID</b>     : <code>${deposit.referenceId}</code>\n` +
+    `<code>──────────────────────────</code>\n` +
+    `💵 <b>Nominal</b>    : <code>Rp ${Number(deposit.originalAmount||0).toLocaleString('id-ID')}</code>\n` +
+    `🏦 <b>Admin Fee</b>  : <code>Rp ${Number((deposit.amount||0)-(deposit.originalAmount||0)).toLocaleString('id-ID')}</code>\n` +
+    `💰 <b>Total</b>      : <code>Rp ${Number(deposit.amount||0).toLocaleString('id-ID')}</code>\n` +
+    `<code>──────────────────────────</code>\n` +
+    `⏱ <b>Delay</b>      : <code>${Math.round((transactionDetails.timestamp - deposit.createdAt)/1000)}s</code>\n` +
+    `📝 <b>Keterangan</b> : <code>${(transactionDetails.deskripsi||'').substring(0,40)||'N/A'}</code>\n` +
+    `🕐 <b>Waktu</b>      : <code>${payTime}</code>\n` +
+    `<code>──────────────────────────</code>\n` +
+    `✅ <b>Status</b>     : VERIFIED & COMPLETED`;
     
     // Kirim ke admin/log channel jika ada
     if (GROUP_ID_NUM) {

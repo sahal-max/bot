@@ -650,6 +650,7 @@ function reloadRuntimePaymentConfig() {
   ORDERKUOTA_CREATE_MODE = String(current.ORDERKUOTA_CREATE_MODE || ORDERKUOTA_CREATE_MODE || 'local').trim().toLowerCase();
   HIDEPULSA_TELEGRAM_USER_ID = String(current.HIDEPULSA_TELEGRAM_USER_ID || '').trim();
   if (HIDEPULSA_TELEGRAM_USER_ID) ppob.setBotTelegramUserId(Number(HIDEPULSA_TELEGRAM_USER_ID));
+  ppob.startAutoRefresh();
   if (!['local', 'gateway'].includes(ORDERKUOTA_CREATE_MODE)) {
     ORDERKUOTA_CREATE_MODE = 'local';
   }
@@ -14063,17 +14064,13 @@ bot.action('menu_akrab', async (ctx) => {
   keyboard.push([{ text: 'Menu Utama', callback_data: 'send_main_menu' }]);
 
   await ctx.editMessageText(
-    '<code>│</code> ✅ = Stok tersedia\n' +
-    '<code>│</code> ❌ = Stok kosong\n' +
-    '<code>│</code>\n' +
-    '<code>│</code> V1/V2 → pakai saldo Akrab\n' +
-    '<code>│</code> V3/Circle → pakai saldo Tembak Kuota\n' +
-    '<code>└─────────────────────────┘</code>',
     '<code>│─────────────────────────</code>\n' +
     '<code>│</code> Saldo : <code>Rp ' + Number(saldoAkrab || 0).toLocaleString('id-ID') + '</code>\n' +
     '<code>│─────────────────────────</code>\n' +
-    '<code>│</code> ✅ = Tersedia\n' +
-    '<code>│</code> ❌ = Kosong\n' +
+    '<code>│</code> ✅ = Stok tersedia\n' +
+    '<code>│</code> ❌ = Stok kosong\n' +
+    '<code>│</code>\n' +
+    '<code>│</code> V1/V2/V3/Circle → pakai saldo Tembak Kuota\n' +
     '<code>└─────────────────────────┘</code>',
     { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } }
   );
