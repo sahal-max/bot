@@ -8465,10 +8465,10 @@ bot.on('photo', async (ctx) => {
   delete userState[adminId];
 });
 
-bot.on('document', async (ctx, next) => {
+bot.on('document', async (ctx) => {
   const adminId = ctx.from.id;
   const state = userState[adminId];
-  if (!state) return next();
+  if (!state) return;
 
   if (state.step === 'admin_config_upload_document') {
     if (!adminIds.includes(adminId)) {
@@ -8564,7 +8564,7 @@ const QRCode = require('qrcode');
   }
   // ─────────────────────────────────────────────────────────────────────────
 
-  if (state.step !== 'restore_db_upload') return next();
+  if (state.step !== 'restore_db_upload') return;
 
   if (!adminIds.includes(adminId)) {
     return ctx.reply('Anda tidak memiliki izin untuk restore database.');
