@@ -1,5 +1,5 @@
 // ============================================================
-// modules/ppob.js — Integrasi HidePulsa PPOB
+// modules/ppob.js — Integrasi HidePulsa PPOB (FIXED)
 // ============================================================
 const axios = require('axios');
 const sqlite3 = require('sqlite3').verbose();
@@ -12,7 +12,9 @@ let _accessToken = null;
 let _refreshToken = null;
 let _accessTokenExpiresAt = 0;
 let _refreshTokenExpiresAt = 0;
-let _botTelegramUserId = null; // diisi dari .vars.json
+let _botTelegramUserId = null;
+let _refreshRetries = 0;
+const MAX_REFRESH_RETRIES = 3;
 
 // ── DB Migration ─────────────────────────────────────────────
 db.run(`CREATE TABLE IF NOT EXISTS ppob_tokens (
@@ -23,13 +25,15 @@ db.run(`CREATE TABLE IF NOT EXISTS ppob_tokens (
   refresh_expires_at INTEGER,
   updated_at INTEGER
 )`, () => {
-  // Load token dari DB
   db.get('SELECT * FROM ppob_tokens WHERE id = 1', [], (err, row) => {
     if (row) {
       _accessToken = row.access_token;
       _refreshToken = row.refresh_token;
       _accessTokenExpiresAt = row.access_expires_at || 0;
       _refreshTokenExpiresAt = row.refresh_expires_at || 0;
+      console.log("[HidePulsa] 📂 Token dimuat dari DB");
+      console.log("[HidePulsa]    Access expired:", new Date(_accessTokenExpiresAt).toLocaleString("id-ID"));
+      console.log("[HidePulsa]    Refresh expired:", new Date(_refreshTokenExpiresAt).toLocaleString("id-ID"));
     }
   });
 });
@@ -54,6 +58,7 @@ function saveTokens({ accessToken, refreshToken, accessExpiresIn, refreshExpires
   _refreshToken = refreshToken;
   _accessTokenExpiresAt = Date.now() + (accessExpiresIn - 30) * 1000;
   _refreshTokenExpiresAt = Date.now() + (refreshExpiresIn - 60) * 1000;
+  _refreshRetries = 0; // reset retries on success
   return new Promise((resolve, reject) => {
     db.run(
       `INSERT OR REPLACE INTO ppob_tokens (id, access_token, refresh_token, access_expires_at, refresh_expires_at, updated_at)
@@ -61,7 +66,12 @@ function saveTokens({ accessToken, refreshToken, accessExpiresIn, refreshExpires
       [_accessToken, _refreshToken, _accessTokenExpiresAt, _refreshTokenExpiresAt, Date.now()],
       function(err) {
         if (err) { console.error("[HidePulsa] ❌ Gagal simpan token ke DB:", err.message); reject(err); }
-        else { console.log("[HidePulsa] 💾 Token tersimpan ke DB, access expired:", new Date(_accessTokenExpiresAt).toLocaleString("id-ID")); resolve(); }
+        else {
+          console.log("[HidePulsa] 💾 Token tersimpan ke DB");
+          console.log("[HidePulsa]    Access expired:", new Date(_accessTokenExpiresAt).toLocaleString("id-ID"));
+          console.log("[HidePulsa]    Refresh expired:", new Date(_refreshTokenExpiresAt).toLocaleString("id-ID"));
+          resolve();
+        }
       }
     );
   });
@@ -92,15 +102,37 @@ async function hidepulsaGet(path, params = {}, auth = true) {
 // ── Auth Flow ─────────────────────────────────────────────────
 async function refreshAccessToken() {
   if (!isRefreshTokenValid()) throw new Error('Refresh token expired, perlu login ulang.');
-  const res = await hidepulsaPost('/auth/refresh', { refresh_token: _refreshToken }, false);
-  if (!res.ok) throw new Error('Gagal refresh token HidePulsa.');
-  await saveTokens({
-    accessToken: res.access_token,
-    refreshToken: res.refresh_token,
-    accessExpiresIn: res.expires_in,
-    refreshExpiresIn: res.refresh_expires_in
-  });
-  return res.access_token;
+  
+  console.log("[HidePulsa] 🔄 Memanggil API /auth/refresh...");
+  
+  try {
+    const res = await hidepulsaPost('/auth/refresh', { refresh_token: _refreshToken }, false);
+    
+    if (!res.ok) {
+      const errMsg = res.message || 'Gagal refresh token HidePulsa';
+      console.error("[HidePulsa] ❌ API response:", JSON.stringify(res).substring(0, 200));
+      throw new Error(errMsg);
+    }
+    
+    await saveTokens({
+      accessToken: res.access_token,
+      refreshToken: res.refresh_token,
+      accessExpiresIn: res.expires_in,
+      refreshExpiresIn: res.refresh_expires_in
+    });
+    return res.access_token;
+    
+  } catch (e) {
+    _refreshRetries++;
+    console.error(`[HidePulsa] ❌ Gagal refresh (attempt ${_refreshRetries}/${MAX_REFRESH_RETRIES}):`, e.message);
+    
+    if (e.response) {
+      console.error("[HidePulsa]    HTTP Status:", e.response.status);
+      console.error("[HidePulsa]    Response:", JSON.stringify(e.response.data).substring(0, 200));
+    }
+    
+    throw e;
+  }
 }
 
 async function ensureToken() {
@@ -208,7 +240,7 @@ function generateRefId(prefix = 'TRX') {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
 }
 
-// ── Set bot telegram user id (dipanggil dari app.js) ─────────
+// ── Set bot telegram user id ──────────────────────────────────
 function setBotTelegramUserId(id) {
   _botTelegramUserId = id;
 }
@@ -234,38 +266,69 @@ function clearTokens() {
   db.run('DELETE FROM ppob_tokens WHERE id = 1');
 }
 
-// ── Auto-Refresh Token (setiap 10 menit) ────────────────────
+// ── Auto-Refresh Token (FIXED: 5 menit interval, 8 menit buffer, retry) ──
 let _autoRefreshInterval = null;
-function startAutoRefresh() {
-  if (_autoRefreshInterval) return; // sudah jalan
-  _autoRefreshInterval = setInterval(async () => {
-    try {
-      if (!isRefreshTokenValid()) {
-        console.warn("[HidePulsa] ⚠️  Refresh token expired! Perlu login ulang via OTP.");
-        stopAutoRefresh();
-        return;
-      }
-      // Refresh 5 menit sebelum access token expired (buffer aman)
-      const now = Date.now();
-      const fiveMinMs = 5 * 60 * 1000;
-      if (_accessTokenExpiresAt - now < fiveMinMs) {
-        console.log("[HidePulsa] 🔄 Auto-refresh access token...");
-        await refreshAccessToken();
-        console.log("[HidePulsa] ✅ Token refreshed, valid sampai:", new Date(_accessTokenExpiresAt).toLocaleString("id-ID"));
-      } else {
-        console.log("[HidePulsa] ✅ Token masih valid, skip refresh");
-      }
-    } catch (e) {
-      console.error("[HidePulsa] ❌ Gagal auto-refresh:", e.message);
+
+async function doAutoRefresh() {
+  try {
+    if (!isRefreshTokenValid()) {
+      console.warn("[HidePulsa] ⚠️ Refresh token expired! Perlu login ulang via OTP.");
+      stopAutoRefresh();
+      return;
     }
-  }, 10 * 60 * 1000); // setiap 10 menit
-  console.log("[HidePulsa] 🕐 Auto-refresh scheduler aktif (setiap 10 menit)");
+
+    const now = Date.now();
+    const eightMinMs = 8 * 60 * 1000; // buffer 8 menit (access token ~15 menit)
+    
+    if (_accessTokenExpiresAt - now < eightMinMs || !isAccessTokenValid()) {
+      console.log("[HidePulsa] 🔄 Auto-refresh access token...");
+      console.log("[HidePulsa]    Access valid sampai:", new Date(_accessTokenExpiresAt).toLocaleString("id-ID"));
+      console.log("[HidePulsa]    Sisa waktu:", Math.round((_accessTokenExpiresAt - now) / 1000), "detik");
+      
+      try {
+        await refreshAccessToken();
+        console.log("[HidePulsa] ✅ Token berhasil di-refresh!");
+        console.log("[HidePulsa]    Valid sampai:", new Date(_accessTokenExpiresAt).toLocaleString("id-ID"));
+      } catch (refreshErr) {
+        if (_refreshRetries >= MAX_REFRESH_RETRIES) {
+          console.error("[HidePulsa] 🚨 Gagal refresh", MAX_REFRESH_RETRIES, "x berturut-turut!");
+          console.error("[HidePulsa] 🚨 Refresh token mungkin invalid. Perlu login ulang via OTP.");
+          _refreshRetries = 0; // reset supaya bisa retry lagi nanti
+        }
+        // Jangan stop scheduler, tetap retry di interval berikutnya
+      }
+    } else {
+      const sisaMin = Math.round((_accessTokenExpiresAt - now) / 60000);
+      console.log(`[HidePulsa] ✅ Token masih valid (${sisaMin} menit lagi), skip refresh`);
+    }
+  } catch (e) {
+    console.error("[HidePulsa] ❌ Error di auto-refresh:", e.message);
+  }
 }
+
+function startAutoRefresh() {
+  if (_autoRefreshInterval) {
+    console.log("[HidePulsa] 🕐 Auto-refresh sudah berjalan, skip start");
+    return;
+  }
+  
+  console.log("[HidePulsa] 🕐 Auto-refresh scheduler dimulai (setiap 5 menit)");
+  
+  // IMMEDIATE refresh saat start (tunggu 3 detik untuk DB load)
+  setTimeout(() => {
+    console.log("[HidePulsa] 🚀 Initial refresh saat startup...");
+    doAutoRefresh();
+  }, 3000);
+  
+  // Periodic refresh setiap 5 menit
+  _autoRefreshInterval = setInterval(doAutoRefresh, 5 * 60 * 1000);
+}
+
 function stopAutoRefresh() {
   if (_autoRefreshInterval) {
     clearInterval(_autoRefreshInterval);
     _autoRefreshInterval = null;
-    console.log("[HidePulsa] ⏹  Auto-refresh scheduler dihentikan");
+    console.log("[HidePulsa] ⏹ Auto-refresh scheduler dihentikan");
   }
 }
 

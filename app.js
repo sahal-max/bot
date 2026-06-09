@@ -3354,8 +3354,6 @@ bot.command('hapussaldo', async (ctx) => {
       // Cek apakah saldo mencukupi
       if (user.saldo < amount) {
         return ctx.reply('❌ <b>Saldo Tidak Cukup</b>\n<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n┃ 💳 <b>Saldo User</b>  : <code>Rp '+user.saldo.toLocaleString('id-ID')+'</code>\n┃ 💰 <b>Jumlah Hapus</b>: <code>Rp '+amount.toLocaleString('id-ID')+'</code>\n┃ 📉 <b>Kekurangan</b>  : <code>Rp '+(amount - user.saldo).toLocaleString('id-ID')+'</code>\n<code>━━━━━━━━━━━━━━━━━━━━━━</code>', { parse_mode: 'HTML' });
-          parse_mode: 'Markdown' 
-        });
       }
       
       // Lakukan pengurangan saldo
@@ -10677,7 +10675,7 @@ async function showHidepulsaGlobal(ctx, brandFilter, label, markupKey) {
     });
     rows.push([{ text: '🔙 Kembali', callback_data: 'menu_akrab' }]);
     await ctx.editMessageText(
-      label+'\n<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n┃ 📦 <b>'+filtered.length+'</b> produk tersedia | Total stok: <b>'+totalStok+'</b>\n<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n┃ ✦ Pilih produk:'
+      label+'\n<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n┃ 📦 <b>'+filtered.length+'</b> produk tersedia | Total stok: <b>'+totalStok+'</b>\n<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n┃ ✦ Pilih produk:',
       { parse_mode: 'HTML', reply_markup: { inline_keyboard: rows } }
     ).catch(()=>ctx.reply(label, { reply_markup: { inline_keyboard: rows } }));
   } catch(err) { await ctx.reply('❌ Gagal: '+err.message); }
