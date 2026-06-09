@@ -3353,7 +3353,7 @@ bot.command('hapussaldo', async (ctx) => {
       
       // Cek apakah saldo mencukupi
       if (user.saldo < amount) {
-        return ctx.reply('❌ <b>Saldo Tidak Cukup</b>\n<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n┃ 💳 <b>Saldo User</b>  : <code>Rp '+user.saldo.toLocaleString('id-ID')+'</code>\n┃ 💰 <b>Jumlah Hapus</b>: <code>Rp '+amount.toLocaleString('id-ID')+'</code>\n┃ 📉 <b>Kekurangan</b>  : <code>Rp '+(amount - user.saldo).toLocaleString('id-ID')+'</code>\n<code>━━━━━━━━━━━━━━━━━━━━━━</code>', { parse_mode: 'HTML' });
+        return ctx.reply(` *Saldo user tidak mencukupi!*\n\nSaldo user: Rp ${user.saldo.toLocaleString('id-ID')}\nJumlah hapus: Rp ${amount.toLocaleString('id-ID')}\nKekurangan: Rp ${(amount - user.saldo).toLocaleString('id-ID')}`, { 
           parse_mode: 'Markdown' 
         });
       }
@@ -7762,7 +7762,7 @@ bot.action('admin_preorder_list', async (ctx) => {
 
   const text =
     `📋 <b>Antrian Pre-Order Aktif</b>\n` +
-    `<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n` +
+    `<code>──────────────────────</code>\n` +
     formatList(ordersXla, '🔵 XLA — Akrab V1') + '\n\n' +
     formatList(ordersXda, '🟢 XDA — Akrab V2');
 
@@ -7813,7 +7813,7 @@ bot.action('test_akrab_v3_start', async (ctx) => {
     if (!aktif.length) return ctx.editMessageText('<code>❌ Tidak ada produk Akrab V3 tersedia.</code>', { parse_mode:'HTML', reply_markup:{inline_keyboard:[[{text:'🔙',callback_data:'admin_test_menu'}]]}});
     const s = aktif[0]; const harga = Number(s.price||0);
     userState[userId] = { step:'test_akrab_v3_input_nomor', testProduct:s, testFinalPrice:harga };
-    await ctx.editMessageText('🧪 <b>TEST AKRAB V3 — DRY RUN</b>\n<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n┃ 📦 <b>Produk</b> : <code>'+s.product_name.slice(0,30)+'</code>\n┃ 📊 <b>Stok</b>   : <code>'+(s.unlimited_stock?'unlimited':s.stock)+'</code> unit\n┃ 💰 <b>Harga</b>  : <code>Rp '+harga.toLocaleString('id-ID')+'</code>\n<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n┃ 📱 Masukkan nomor HP test:',
+    await ctx.editMessageText('<code>🧪 TEST AKRAB V3 — DRY RUN</code>\n<code>──────────</code>\n<code>Produk: '+s.product_name.slice(0,30)+'</code>\n<code>Stok: '+(s.unlimited_stock?'unlimited':s.stock)+'</code>\n<code>Harga: Rp '+harga.toLocaleString('id-ID')+'</code>\n<code>──────────</code>\n<code>Masukkan nomor HP test:</code>',
       { parse_mode:'HTML', reply_markup:{inline_keyboard:[[{text:'🔙 Batal',callback_data:'admin_test_menu'}]]}});
   } catch(e) { await ctx.editMessageText('<code>❌ '+e.message+'</code>', {parse_mode:'HTML', reply_markup:{inline_keyboard:[[{text:'🔙',callback_data:'admin_test_menu'}]]}}); }
 });
@@ -7827,7 +7827,7 @@ bot.action('test_circle_start', async (ctx) => {
     if (!aktif.length) return ctx.editMessageText('<code>❌ Tidak ada produk Circle tersedia.</code>', { parse_mode:'HTML', reply_markup:{inline_keyboard:[[{text:'🔙',callback_data:'admin_test_menu'}]]}});
     const s = aktif[0]; const harga = Number(s.price||0);
     userState[userId] = { step:'test_circle_input_nomor', testProduct:s, testFinalPrice:harga };
-    await ctx.editMessageText('🔴 <b>TEST CIRCLE — DRY RUN</b>\n<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n┃ 📦 <b>Produk</b> : <code>'+s.product_name.slice(0,30)+'</code>\n┃ 📊 <b>Stok</b>   : <code>'+(s.unlimited_stock?'unlimited':s.stock)+'</code> unit\n┃ 💰 <b>Harga</b>  : <code>Rp '+harga.toLocaleString('id-ID')+'</code>\n<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n┃ 📱 Masukkan nomor HP test:',
+    await ctx.editMessageText('<code>🧪 TEST CIRCLE — DRY RUN</code>\n<code>──────────</code>\n<code>Produk: '+s.product_name.slice(0,30)+'</code>\n<code>Stok: '+(s.unlimited_stock?'unlimited':s.stock)+'</code>\n<code>Harga: Rp '+harga.toLocaleString('id-ID')+'</code>\n<code>──────────</code>\n<code>Masukkan nomor HP test:</code>',
       { parse_mode:'HTML', reply_markup:{inline_keyboard:[[{text:'🔙 Batal',callback_data:'admin_test_menu'}]]}});
   } catch(e) { await ctx.editMessageText('<code>❌ '+e.message+'</code>', {parse_mode:'HTML', reply_markup:{inline_keyboard:[[{text:'🔙',callback_data:'admin_test_menu'}]]}}); }
 });
@@ -7841,7 +7841,7 @@ bot.action('test_ppob_start', async (ctx) => {
     if (!aktif.length) return ctx.editMessageText('<code>❌ Tidak ada produk PPOB tersedia.</code>', { parse_mode:'HTML', reply_markup:{inline_keyboard:[[{text:'🔙',callback_data:'admin_test_menu'}]]}});
     const s = aktif[0]; const harga = Number(s.price||0);
     userState[userId] = { step:'test_ppob_input_nomor', testProduct:s, testFinalPrice:harga };
-    await ctx.editMessageText('📱 <b>TEST PPOB — DRY RUN</b>\n<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n┃ 📦 <b>Produk</b>   : <code>'+s.product_name.slice(0,30)+'</code>\n┃ 🏷 <b>Kategori</b> : <code>'+s.category+'</code>\n┃ 📊 <b>Stok</b>     : <code>'+(s.unlimited_stock?'unlimited':s.stock)+'</code> unit\n┃ 💰 <b>Harga</b>    : <code>Rp '+harga.toLocaleString('id-ID')+'</code>\n<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n┃ 📱 Masukkan nomor HP test:',
+    await ctx.editMessageText('<code>🧪 TEST PPOB — DRY RUN</code>\n<code>──────────</code>\n<code>Produk: '+s.product_name.slice(0,30)+'</code>\n<code>Kategori: '+s.category+'</code>\n<code>Stok: '+(s.unlimited_stock?'unlimited':s.stock)+'</code>\n<code>Harga: Rp '+harga.toLocaleString('id-ID')+'</code>\n<code>──────────</code>\n<code>Masukkan nomor HP test:</code>',
       { parse_mode:'HTML', reply_markup:{inline_keyboard:[[{text:'🔙 Batal',callback_data:'admin_test_menu'}]]}});
   } catch(e) { await ctx.editMessageText('<code>❌ '+e.message+'</code>', {parse_mode:'HTML', reply_markup:{inline_keyboard:[[{text:'🔙',callback_data:'admin_test_menu'}]]}}); }
 });
@@ -8318,10 +8318,10 @@ bot.action('reseller_terms_menu', async (ctx) => {
 
     const terms = loadResellerTerms();
     const message =
-      '📋 <b>SYARAT RESELLER</b>\n<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n┃ 💰 <b>Top Up Awal</b>   : <code>'+formatRupiah(terms.join_topup_min)+'</code>\n┃ 📅 <b>Top Up Bulanan</b> : <code>'+formatRupiah(terms.min_topup)+'</code>\n<code>━━━━━━━━━━━━━━━━━━━━━━</code>\nGunakan tombol di bawah untuk mengubah syarat.';
-
-
-
+      '*SYARAT RESELLER*\n\n' +
+      `Minimal top up jadi reseller: ${formatRupiah(terms.join_topup_min)}\n` +
+      `Minimal top up per bulan: ${formatRupiah(terms.min_topup)}\n\n` +
+      'Gunakan tombol di bawah untuk mengubah syarat.';
 
     const keyboard = [
       [{ text: 'Set Minimal TopUp Jadi Reseller', callback_data: 'reseller_terms_set_join' }],
@@ -10743,7 +10743,7 @@ bot.action(/^ppob_konfirm_global_(.+)$/, async (ctx) => {
   try {
     const saldo = await dbH.getSaldoAkrab(db, userId);
     if (saldo < finalPrice) {
-      return ctx.editMessageText('❌ <b>Saldo Tidak Cukup</b>\n<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n┃ 💳 <b>Saldo</b>     : <code>Rp '+Number(saldo).toLocaleString('id-ID')+'</code>\n┃ 💰 <b>Dibutuhkan</b>: <code>Rp '+finalPrice.toLocaleString('id-ID')+'</code>\n┃ 📉 <b>Kekurangan</b>: <code>Rp '+(finalPrice - Number(saldo)).toLocaleString('id-ID')+'</code>\n<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n┃ ⚠️ Top up saldo terlebih dahulu.',
+      return ctx.editMessageText('❌ Saldo tembak kuota tidak cukup.\nSaldo: Rp '+Number(saldo).toLocaleString('id-ID')+'\nDibutuhkan: Rp '+finalPrice.toLocaleString('id-ID'),
         { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Menu Akrab', callback_data: 'menu_akrab' }]] }});
     }
     const refId = ppob.generateRefId('TRX');
@@ -10757,11 +10757,11 @@ bot.action(/^ppob_konfirm_global_(.+)$/, async (ctx) => {
     });
     await ctx.editMessageText(
       '✅ <b>Transaksi Berhasil!</b>\n<code>──────────────────────</code>\n'+
-      '┃ 📦 <b>Produk</b>   : <code>'+item.product_name+'</code>\n'+
-      '┃ 📱 <b>Tujuan</b>   : <code>'+customerNo+'</code>\n'+
-      '┃ 💰 <b>Nominal</b>  : <code>Rp '+finalPrice.toLocaleString('id-ID')+'</code>\n'+
-      '┃ 🔖 <b>Ref ID</b>   : <code>'+txId+'</code>\n'+
-      '┃ 📊 <b>Status</b>   : '+(result&&result.data&&result.data.message||'pending')+'\n<code>━━━━━━━━━━━━━━━━━━━━━━</code>',
+      '📦 '+item.product_name+'\n'+
+      '📱 Tujuan: <code>'+customerNo+'</code>\n'+
+      '💰 Nominal: Rp '+finalPrice.toLocaleString('id-ID')+'\n'+
+      '🔖 Ref ID: <code>'+txId+'</code>\n'+
+      '📊 Status: '+(result&&result.data&&result.data.message||'pending'),
       { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Menu Akrab', callback_data: 'menu_akrab' }]] }}
     );
   } catch(err) {
