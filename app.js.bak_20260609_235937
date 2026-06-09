@@ -7053,7 +7053,7 @@ bot.action('notif_settings_menu', async (ctx) => {
     [{ text: 'Set Token Bot', callback_data: 'notif_set_token' }],
     [{ text: 'Set Chat ID', callback_data: 'notif_set_chat' }],
     [{ text: 'Set Group Global Create', callback_data: 'notif_set_global_group' }],
-    [{ text: 'Kembali', callback_data: 'admin_menu_notif' }]
+    [{ text: 'Kembali', callback_data: 'admin_menu' }]
   ];
 
   await ctx.editMessageText(message, {
@@ -7073,7 +7073,7 @@ bot.action('admin_notif_group_menu', async (ctx) => {
     'Group ID saat ini: `' + currentId + '`\n\n' +
     'Kirim Group ID baru untuk notifikasi akun VPN.\nContoh: `-1001234567890`\nKetik *batal* untuk membatalkan.',
     { parse_mode: 'Markdown', reply_markup: { inline_keyboard: [
-      [{ text: '🔙 Kembali', callback_data: 'admin_menu_notif' }]
+      [{ text: '🔙 Kembali', callback_data: 'admin_menu' }]
     ]}}
   );
   userState[ctx.chat.id] = { step: 'admin_set_vpn_notif_group' };
@@ -7089,7 +7089,7 @@ bot.action('admin_akrab_notif_group_menu', async (ctx) => {
     'Group ID saat ini: `' + currentId + '`\n\n' +
     'Kirim Group ID baru untuk notifikasi transaksi Akrab.\nContoh: `-1001234567890`\nKetik *batal* untuk membatalkan.',
     { parse_mode: 'Markdown', reply_markup: { inline_keyboard: [
-      [{ text: '🔙 Kembali', callback_data: 'admin_menu_notif' }]
+      [{ text: '🔙 Kembali', callback_data: 'admin_menu' }]
     ]}}
   );
   userState[ctx.chat.id] = { step: 'admin_input_akrab_notif_group' };
@@ -10934,7 +10934,7 @@ bot.action('ppob_markup_menu', async (ctx) => {
       [{ text: '📊 Set %', callback_data: 'ppob_markup_set_pct' }],
       [{ text: '💰 Set Flat (Rp)', callback_data: 'ppob_markup_set_flat' }],
       [{ text: '🗑️ Hapus', callback_data: 'ppob_markup_delete' }],
-      [{ text: '🔙 Kembali', callback_data: 'admin_menu_markup' }],
+      [{ text: '🔙 Kembali', callback_data: 'admin_menu_saldo' }],
     ]}}
   );
 });
@@ -13625,7 +13625,7 @@ bot.action('smm_cek_saldo', async (ctx) => {
       reply_markup: {
         inline_keyboard: [
           [{ text: ' Top Up Saldo VPN', callback_data: 'topup_saldo' }],
-          [{ text: '🔙 Kembali', callback_data: 'menu_suntik' }],
+          [{ text: '🔙 Kembali', callback_data: 'admin_menu_markup' }],
         ],
       },
     }
@@ -13852,7 +13852,7 @@ bot.action(/^smm_konfirmasi_(.+)$/, async (ctx) => {
           reply_markup: {
             inline_keyboard: [
               [{ text: ' Top Up VPN', callback_data: 'topup_saldo' }],
-              [{ text: '🔙 Kembali', callback_data: 'menu_suntik' }],
+              [{ text: '🔙 Kembali', callback_data: 'admin_menu_markup' }],
             ],
           },
         }
@@ -15038,7 +15038,7 @@ bot.action(/^akrab_konfirmasi_(.+)$/, async (ctx) => {
           reply_markup: {
             inline_keyboard: [
               [{ text: ' Top Up Akrab', callback_data: 'topup_akrab' }],
-              [{ text: '🔙 Kembali', callback_data: 'menu_akrab' }],
+              [{ text: '🔙 Kembali', callback_data: 'admin_menu_markup' }],
             ],
           },
         }
