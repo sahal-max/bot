@@ -10683,6 +10683,7 @@ async function showHidepulsaGlobal(ctx, brandFilter, label, markupKey) {
 
 // ── Akrab V3 dari HidePulsa Global ───────────────────────────
 bot.action('akrab_grup_v3_global', async (ctx) => {
+  console.log('DEBUG: akrab_grup_v3_global dipanggil');
   await ctx.answerCbQuery('Memuat...');
   await showHidepulsaGlobal(ctx, ['XL AKRAB'], '🟣 <b>Akrab V3</b>', 'akrab_v3_global');
 });
@@ -23000,18 +23001,6 @@ app.listen(port, async () => {
 // Di app.listen() - bagian yang kirim notifikasi ke admin:
 const adminMessage = 
   ` *PERINGATAN SISTEM PEMBAYARAN* \n\n` +
-
-// ── Unhandled Exception Handlers ─────────────────────────────
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('[FATAL] Unhandled Rejection at:', promise, 'reason:', reason);
-  if (typeof logger !== 'undefined') logger.error('Unhandled Rejection:', reason);
-});
-
-process.on('uncaughtException', (error) => {
-  console.error('[FATAL] Uncaught Exception:', error);
-  if (typeof logger !== 'undefined') logger.error('Uncaught Exception:', error);
-  setTimeout(() => process.exit(1), 2000);
-});
   `Tidak ada payment gateway aktif yang siap.\n\n` +
   `Detail:\n\`\`\`\n${formatMissingGatewayConfig(readiness)}\n\`\`\`\n\n` +
   `User TIDAK BISA top-up otomatis.\n\n` +
