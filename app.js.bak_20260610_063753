@@ -9862,7 +9862,7 @@ async function renderLocalOwnedAccountsPage(ctx, listType = 'active', page = 0) 
     return ctx.reply(' Daftar akun sudah berubah. Buka ulang dari menu "Lihat Akun Saya".');
   }
 
-  const pageSize = Number(state.pageSize || 2);
+  const pageSize = Number(state.pageSize || 4);
   const total = state.rows.length;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const safePage = Math.max(0, Math.min(Number(page) || 0, totalPages - 1));
@@ -9931,26 +9931,23 @@ async function renderLocalOwnedAccountsPage(ctx, listType = 'active', page = 0) 
     return block;
   });
   const title = listType === 'expired' ? '📋 Akun Expired' : '📋 Akun Aktif';
-  const header = `<b>${title}</b> — <i>Hal. ${safePage + 1}/${totalPages}</i>\n\n`;
-  const text = header + blocks.join('\n\n');
+  const text =
+    `<b>${title}</b> — <i>Hal. ${safePage + 1}/${totalPages}</i>\n\n` +
+
+    blocks.join('\n\n');
+
+
   const nav = [];
   if (safePage > 0) nav.push({ text: '\u25c0\ufe0f Sebelumnya', callback_data: `view_accounts_local_page_${listType}_${safePage - 1}` });
   if (safePage < totalPages - 1) nav.push({ text: 'Selanjutnya \u25b6\ufe0f', callback_data: `view_accounts_local_page_${listType}_${safePage + 1}` });
   const keyboard = [];
   if (nav.length) keyboard.push(nav);
   keyboard.push([{ text: '🔙 Kembali', callback_data: 'view_accounts' }]);
-  const replyOpts = { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } };
-  // Auto-split jika pesan terlalu panjang (> 4000 char, aman di bawah limit Telegram 4096)
-  if (text.length > 4000) {
-    for (let i = 0; i < blocks.length; i++) {
-      const isFirst = i === 0;
-      const isLast = i === blocks.length - 1;
-      const chunk = (isFirst ? header : '') + blocks[i];
-      await ctx.reply(chunk, isLast ? replyOpts : { parse_mode: 'HTML' });
-    }
-    return;
-  }
-  return ctx.reply(text, replyOpts);
+
+  return ctx.reply(text, {
+    parse_mode: 'HTML',
+    reply_markup: { inline_keyboard: keyboard }
+  });
 }
 
 function normalizeRenewAccountType(rawType) {
@@ -10229,7 +10226,7 @@ async function sendAccountList(ctx, isExpired, limit = 10) {
     userState[ctx.chat.id].local_owned_accounts = {
       type: isExpired ? 'expired' : 'active',
       rows,
-      pageSize: 2
+      pageSize: 4
     };
     await renderLocalOwnedAccountsPage(ctx, isExpired ? 'expired' : 'active', 0);
   });
@@ -14964,18 +14961,19 @@ async function _autoBuyPreordersInner(tipe, stokItems) {
   }
 }
 
-// ── Fungsi broadcast restok ke SEMUA user ──────────────────────────────────
+// ── Fungsi broadcast restok ke user preorder ──────────────────────────────────
 async function broadcastRestok(tipe, stokItems) {
   const label = tipe === 'xla' ? 'Akrab V1 (XLA)' : 'Akrab V2 (XDA)';
   const emoji = tipe === 'xla' ? '🔵' : '🟢';
 
-  // Broadcast ke SEMUA user (bukan hanya yang pre-order)
-  const allUserIds = await new Promise((resolve) => {
-    db.all('SELECT user_id FROM users', [], (err, rows) => {
-      resolve(err ? [] : (rows || []).map(r => r.user_id));
-    });
-  });
-  if (!allUserIds.length) return;
+  // Hanya broadcast ke user yang produknya ada di stokItems
+  const restokKodes = new Set(stokItems.map(it => String(it.type || '').toUpperCase()));
+  const allOrders = await dbGetAllPreorders(tipe);
+  // Filter: hanya user yang pre-order produk yang baru restok
+  const relevantOrders = allOrders.filter(o => restokKodes.has(String(o.produk_kode || '').toUpperCase()));
+  const relevantUserIds = [...new Set(relevantOrders.map(o => o.user_id))];
+
+  if (!relevantUserIds.length) return;
 
   // Ambil nama produk dari API untuk tampilan lebih detail
   let produkMap = {};
@@ -15003,7 +15001,7 @@ async function broadcastRestok(tipe, stokItems) {
     `🛒 <i>Segera beli sebelum habis!</i>`;
 
   let ok = 0, fail = 0;
-  for (const userId of allUserIds) {
+  for (const userId of relevantUserIds) {
     try {
       await bot.telegram.sendMessage(userId, msg, { parse_mode: 'HTML' });
       ok++;
@@ -15013,7 +15011,7 @@ async function broadcastRestok(tipe, stokItems) {
     }
   }
 
-  logger.info(`broadcastRestok ${tipe}: ${ok} berhasil, ${fail} gagal dari ${allUserIds.length} total user`);
+  logger.info(`broadcastRestok ${tipe}: ${ok} berhasil, ${fail} gagal (${relevantUserIds.length} user relevan dari ${allOrders.length} total preorder)`);
 }
 
 bot.action(/^akrab_konfirmasi_(.+)$/, async (ctx) => {
@@ -22096,10 +22094,6 @@ async function checkAkrabRestok() {
       akrabModule.getProducts(KHFY_ENDPOINT, KHFY_API_KEY).catch((e) => { logger.warn('getProducts error: ' + e.message); return []; }),
     ]);
 
-    // Debug: log raw response
-    logger.info('checkAkrabRestok raw V1: ' + JSON.stringify(stokV1Resp).slice(0, 500));
-    logger.info('checkAkrabRestok raw V2: ' + JSON.stringify(stokV2Resp).slice(0, 500));
-
     // Build map kode → nama produk dari getProducts()
     const namaMap = {};
     (products || []).forEach(p => {
@@ -22157,13 +22151,13 @@ async function checkAkrabRestok() {
 
     if (restokXla.length > 0) {
       logger.info(`Restok XLA terdeteksi: ${restokXla.map(i => i.type).join(', ')}`);
-      await broadcastRestok('xla', restokXla);
       await autoBuyPreorders('xla', restokXla);
+      await broadcastRestok('xla', restokXla);
     }
     if (restokXda.length > 0) {
       logger.info(`Restok XDA terdeteksi: ${restokXda.map(i => i.type).join(', ')}`);
-      await broadcastRestok('xda', restokXda);
       await autoBuyPreorders('xda', restokXda);
+      await broadcastRestok('xda', restokXda);
     }
   } catch (err) {
     logger.error('checkAkrabRestok error: ' + (err && err.message ? err.message : err));

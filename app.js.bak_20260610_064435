@@ -9862,7 +9862,7 @@ async function renderLocalOwnedAccountsPage(ctx, listType = 'active', page = 0) 
     return ctx.reply(' Daftar akun sudah berubah. Buka ulang dari menu "Lihat Akun Saya".');
   }
 
-  const pageSize = Number(state.pageSize || 2);
+  const pageSize = Number(state.pageSize || 4);
   const total = state.rows.length;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const safePage = Math.max(0, Math.min(Number(page) || 0, totalPages - 1));
@@ -9931,26 +9931,23 @@ async function renderLocalOwnedAccountsPage(ctx, listType = 'active', page = 0) 
     return block;
   });
   const title = listType === 'expired' ? '📋 Akun Expired' : '📋 Akun Aktif';
-  const header = `<b>${title}</b> — <i>Hal. ${safePage + 1}/${totalPages}</i>\n\n`;
-  const text = header + blocks.join('\n\n');
+  const text =
+    `<b>${title}</b> — <i>Hal. ${safePage + 1}/${totalPages}</i>\n\n` +
+
+    blocks.join('\n\n');
+
+
   const nav = [];
   if (safePage > 0) nav.push({ text: '\u25c0\ufe0f Sebelumnya', callback_data: `view_accounts_local_page_${listType}_${safePage - 1}` });
   if (safePage < totalPages - 1) nav.push({ text: 'Selanjutnya \u25b6\ufe0f', callback_data: `view_accounts_local_page_${listType}_${safePage + 1}` });
   const keyboard = [];
   if (nav.length) keyboard.push(nav);
   keyboard.push([{ text: '🔙 Kembali', callback_data: 'view_accounts' }]);
-  const replyOpts = { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } };
-  // Auto-split jika pesan terlalu panjang (> 4000 char, aman di bawah limit Telegram 4096)
-  if (text.length > 4000) {
-    for (let i = 0; i < blocks.length; i++) {
-      const isFirst = i === 0;
-      const isLast = i === blocks.length - 1;
-      const chunk = (isFirst ? header : '') + blocks[i];
-      await ctx.reply(chunk, isLast ? replyOpts : { parse_mode: 'HTML' });
-    }
-    return;
-  }
-  return ctx.reply(text, replyOpts);
+
+  return ctx.reply(text, {
+    parse_mode: 'HTML',
+    reply_markup: { inline_keyboard: keyboard }
+  });
 }
 
 function normalizeRenewAccountType(rawType) {
@@ -10229,7 +10226,7 @@ async function sendAccountList(ctx, isExpired, limit = 10) {
     userState[ctx.chat.id].local_owned_accounts = {
       type: isExpired ? 'expired' : 'active',
       rows,
-      pageSize: 2
+      pageSize: 4
     };
     await renderLocalOwnedAccountsPage(ctx, isExpired ? 'expired' : 'active', 0);
   });
