@@ -11221,11 +11221,9 @@ bot.action(/^ppob_gen_brand_(.+)__(.+)$/, async (ctx) => {
     } else {
       // Tidak perlu nomor HP — langsung tampil produk
       ppobBeliState[userId] = { step: 'pilih_produk_langsung', brand, type: category, products: active };
-      const mkGdirect = await dbH.getMarkup(db, 'global', 'ppob', null).catch(()=>null);
-      const mkRdirect = await dbH.getMarkup(db, 'reseller', 'ppob', userId).catch(()=>null);
       const rows = active.map(p => {
-        const fpDirect = wallet.getEffectivePrice(Number(p.price||0), mkGdirect, mkRdirect);
-        return [{ text: p.product_name + ' — ' + ppob.formatRupiah(fpDirect), callback_data: 'ppob_listed_direct_' + p.buyer_sku_code }];
+        const stok = p.unlimited_stock ? 'unlimited' : (p.stock || 0);
+        return [{ text: p.product_name + ' — ' + ppob.formatRupiah(p.price), callback_data: 'ppob_listed_direct_' + p.buyer_sku_code }];
       });
       rows.push([{ text: '🔙 Kembali', callback_data: 'menu_ppob' }]);
       await ctx.reply('📦 *' + brand.toUpperCase() + '*\n\nPilih produk:', { parse_mode: 'Markdown', reply_markup: { inline_keyboard: rows } });
@@ -11352,12 +11350,7 @@ bot.on('text', async (ctx, next) => {
     const label = isGame ? '🎮 *Pilih Voucher untuk ID ' + noHp + ':*' : '📶 *Pilih Paket untuk ' + noHp + ':*';
     const keyboard = {
       inline_keyboard: [
-        ...(await Promise.all(products.map(async p => {
-          const mkG = await dbH.getMarkup(db, 'global', 'ppob', null).catch(()=>null);
-          const mkR = await dbH.getMarkup(db, 'reseller', 'ppob', userId).catch(()=>null);
-          const fp = wallet.getEffectivePrice(Number(p.price||0), mkG, mkR);
-          return [{ text: p.product_name + ' — ' + ppob.formatRupiah(fp), callback_data: 'ppob_listed_' + p.buyer_sku_code }];
-        }))),
+        ...products.map(p => [{ text: p.product_name + ' — ' + ppob.formatRupiah(p.price), callback_data: 'ppob_listed_' + p.buyer_sku_code }]),
         [{ text: '❌ Batal', callback_data: 'ppob_batal' }]
       ]
     };
@@ -11392,14 +11385,11 @@ bot.on('text', async (ctx, next) => {
       const refId = ppob.generateRefId('CEK');
       const data = await ppob.cekTagihan({ buyerSkuCode: state.sku, customerNo: text, refId });
       state.tagihan = data;
-      const mkGt = await dbH.getMarkup(db, 'global', 'ppob', null).catch(()=>null);
-      const mkRt = await dbH.getMarkup(db, 'reseller', 'ppob', userId).catch(()=>null);
-      const markedPrice = wallet.getEffectivePrice(Number(data.selling_price||0), mkGt, mkRt);
-      state.sellingPrice = markedPrice;
+      state.sellingPrice = data.selling_price;
       state.step = 'confirm_tagihan';
       const keyboard = {
         inline_keyboard: [
-          [{ text: `✅ Bayar ${ppob.formatRupiah(markedPrice)}`, callback_data: 'ppob_confirm_tagihan' }],
+          [{ text: `✅ Bayar ${ppob.formatRupiah(data.selling_price)}`, callback_data: 'ppob_confirm_tagihan' }],
           [{ text: '❌ Batal', callback_data: 'ppob_batal' }]
         ]
       };
@@ -11408,7 +11398,7 @@ bot.on('text', async (ctx, next) => {
         `Produk    : *${state.productName}*\n` +
         `Pelanggan : *${data.customer_name || text}*\n` +
         `No        : \`${text}\`\n` +
-        `Tagihan   : *${ppob.formatRupiah(markedPrice)}*\n\n` +
+        `Tagihan   : *${ppob.formatRupiah(data.selling_price)}*\n\n` +
         `Lanjutkan bayar?`,
         { parse_mode: 'Markdown', reply_markup: keyboard }
       );
