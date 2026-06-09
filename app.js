@@ -10538,9 +10538,12 @@ bot.action(/^ppob_listed_(.+)$/, async (ctx) => {
     const allProduk = await ppob.getProdukList();
     const produk = allProduk.find(p => p.buyer_sku_code === sku);
     if (!produk) return ctx.reply('❌ Produk tidak ditemukan.');
-    ppobBeliState[userId] = { sku, productName: produk.product_name, price: produk.price, customerNo: state.customerNo, step: 'confirm' };
+    const mkGlobal1 = await dbH.getMarkup(db, 'global', 'ppob', null).catch(()=>null);
+    const mkReseller1 = await dbH.getMarkup(db, 'reseller', 'ppob', userId).catch(()=>null);
+    const finalPrice1 = wallet.getEffectivePrice(Number(produk.price||0), mkGlobal1, mkReseller1);
+    ppobBeliState[userId] = { sku, productName: produk.product_name, price: finalPrice1, customerNo: state.customerNo, step: 'confirm' };
     const keyboard = { inline_keyboard: [[{ text: '✅ Konfirmasi Beli', callback_data: 'ppob_confirm_beli' }],[{ text: '❌ Batal', callback_data: 'ppob_batal' }]] };
-    return ctx.reply('📦 *Konfirmasi*\n\nProduk : *' + produk.product_name + '*\nNomor  : `' + state.customerNo + '`\nHarga  : *' + ppob.formatRupiah(produk.price) + '*\n\nLanjutkan?', { parse_mode: 'Markdown', reply_markup: keyboard });
+    return ctx.reply('Konfirmasi\nProduk: ' + produk.product_name + '\nNomor: ' + state.customerNo + '\nHarga: ' + ppob.formatRupiah(finalPrice1) + '\nLanjutkan?', { parse_mode: 'Markdown', reply_markup: keyboard });
   } catch (err) { await ctx.reply('❌ Gagal: ' + err.message); }
 });
 
@@ -10551,15 +10554,14 @@ bot.action(/^ppob_beli_(?!global_)(.+)$/, async (ctx) => {
 
   try {
     const allProduk = await ppob.getProdukList();
+    await ctx.reply(`📦 *${produk.product_name}*\n💰 Harga: *${ppob.formatRupiah(finalPrice2)}*\n\nKirim nomor tujuan (contoh: 08xxxxxxxxxx):`, { parse_mode: "Markdown" });
     const produk = allProduk.find(p => p.buyer_sku_code === sku);
     if (!produk) return ctx.reply('❌ Produk tidak ditemukan.');
-
-    ppobBeliState[userId] = { sku, productName: produk.product_name, price: produk.price, step: 'input_no' };
-
-    await ctx.reply(
-      `📦 *${produk.product_name}*\n💰 Harga: *${ppob.formatRupiah(produk.price)}*\n\nKirim nomor tujuan (contoh: 08xxxxxxxxxx):`,
-      { parse_mode: 'Markdown' }
-    );
+    const mkGlobal2 = await dbH.getMarkup(db, 'global', 'ppob', null).catch(()=>null);
+    const mkReseller2 = await dbH.getMarkup(db, 'reseller', 'ppob', userId).catch(()=>null);
+    const finalPrice2 = wallet.getEffectivePrice(Number(produk.price||0), mkGlobal2, mkReseller2);
+    ppobBeliState[userId] = { sku, productName: produk.product_name, price: finalPrice2, step: 'input_no' };
+    await ctx.reply('Produk: ' + produk.product_name + '\nHarga: ' + ppob.formatRupiah(finalPrice2) + '\nKirim nomor tujuan:', { parse_mode: 'Markdown' });
   } catch (err) {
     await ctx.reply(`❌ Gagal: ${err.message}`);
   }
