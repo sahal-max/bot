@@ -14517,7 +14517,7 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
     // Pisahkan produk — XLA, XDA, dan XCLP.
     const xlaProducts = (products || []).filter(p => /^XLA/i.test(getKode(p)));
     const xdaProducts = (products || []).filter(p => /^XDA/i.test(getKode(p)));
-
+console.log("XDA API data:", JSON.stringify(xdaProducts, null, 2));
     const xclpProducts = (products || []).filter(p => /^XCLP/i.test(getKode(p)));
 
     const now = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
@@ -14574,8 +14574,8 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
         const prod = xlaProducts.find(p => getKode(p) === kode);
         const tersedia = (slot !== undefined) ? slot > 0 : (prod ? !isKosongProduk(prod) : false);
         const qty = (slot !== undefined && slot > 0) ? String(slot) : '';
-        if (tersedia) { ready.push({ icon: '\u2705 ', label: nama, qty }); totalReady++; }
-        else { kosong.push(nama); }
+        if (tersedia) { ready.push({ icon: '\u2705 ', label: nama, qty }); totalReady++; } else { kosong.push(nama); }
+        else { kosong.push(nama); totalKosong++; }
       });
       let xlaBody = '';
       if (ready.length) {
@@ -14586,24 +14586,24 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
       } else {
         xlaBody += 'Tidak ada data';
       }
-      body += `\n\ud83d\udfe2 <b>XLA</b>\n<code>` + xlaBody + `</code>\n\n`;
+      body += `\n\ud83d\udd35 <b>XLA</b>\n<code>` + xlaBody + `</code>\n\n`;
     }
+
     // ── XDA ── ringkas + info kuota lokal
     if (Object.keys(xdaSlotMap).length || xdaProducts.length) {
       const namaMapXda = {};
       xdaProducts.forEach(p => { namaMapXda[getKode(p)] = shortName(p.nama_produk || p.name || getKode(p)); });
       const kodeFromSlot = Object.keys(xdaSlotMap);
-      const kodeFromProd = xdaProducts.map(p => getKode(p)).filter(k => !xdaSlotMap.hasOwnProperty(k) && /^XDA/i.test(k));
+      const kodeFromProd = xdaProducts.map(getKode).filter(k => !xdaSlotMap.hasOwnProperty(k));
+        const slot = xdaSlotMap[kode];
       const allKode = [...kodeFromSlot, ...kodeFromProd];
       const ready = [], kosong = [];
       allKode.forEach(kode => {
-        const nama = namaMapXda[kode] || kode;
-        const slot = xdaSlotMap[kode];
+      const kodeFromProd = xdaProducts.map(p => getKode(p)).filter(k => !xdaSlotMap.hasOwnProperty(k) && /^XDA/i.test(k));
         const prod = xdaProducts.find(p => getKode(p) === kode);
         const tersedia = (slot !== undefined) ? slot > 0 : (prod ? !isKosongProduk(prod) : false);
         const qty = (slot !== undefined && slot > 0) ? String(slot) : '';
         if (tersedia) { ready.push({ icon: '\u2705 ', label: nama, qty, _kode: kode }); totalReady++; }
-        else { kosong.push(nama); }
       });
       const XDA_AREA = { 'XDA13':{a1:13,a4:30}, 'XDA25':{a1:25,a4:42}, 'XDA31':{a1:31,a4:48}, 'XDA38':{a1:38,a4:55}, 'XDA63':{a1:63,a4:80}, 'XDA88':{a1:88,a4:105} };
       let xdaBody = '';
@@ -14615,6 +14615,7 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
       } else {
         xdaBody += 'Tidak ada data';
       }
+      // Info kuota per area
       const xdaInfos = [];
       Object.keys(XDA_AREA).forEach(k => {
         const info = XDA_AREA[k];
@@ -14623,6 +14624,7 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
       if (xdaInfos.length) xdaBody += '\n\n\ud83d\udccd <i>Kuota per area (A1\u2192A4):</i>\n' + xdaInfos.join(' | ');
       body += `\n\ud83d\udfe2 <b>XDA</b>\n<code>` + xdaBody + `</code>\n\n`;
     }
+
     // ── XCLP (Circle) ── tampilkan dari slot map + produk list.
     if (Object.keys(xclpSlotMap).length || xclpProducts.length) {
       const namaMapXclp = {};

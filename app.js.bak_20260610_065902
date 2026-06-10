@@ -7053,7 +7053,7 @@ bot.action('notif_settings_menu', async (ctx) => {
     [{ text: 'Set Token Bot', callback_data: 'notif_set_token' }],
     [{ text: 'Set Chat ID', callback_data: 'notif_set_chat' }],
     [{ text: 'Set Group Global Create', callback_data: 'notif_set_global_group' }],
-    [{ text: 'Kembali', callback_data: 'admin_menu' }]
+    [{ text: 'Kembali', callback_data: 'admin_menu_notif' }]
   ];
 
   await ctx.editMessageText(message, {
@@ -7073,7 +7073,7 @@ bot.action('admin_notif_group_menu', async (ctx) => {
     'Group ID saat ini: `' + currentId + '`\n\n' +
     'Kirim Group ID baru untuk notifikasi akun VPN.\nContoh: `-1001234567890`\nKetik *batal* untuk membatalkan.',
     { parse_mode: 'Markdown', reply_markup: { inline_keyboard: [
-      [{ text: '🔙 Kembali', callback_data: 'admin_menu' }]
+      [{ text: '🔙 Kembali', callback_data: 'admin_menu_notif' }]
     ]}}
   );
   userState[ctx.chat.id] = { step: 'admin_set_vpn_notif_group' };
@@ -7089,7 +7089,7 @@ bot.action('admin_akrab_notif_group_menu', async (ctx) => {
     'Group ID saat ini: `' + currentId + '`\n\n' +
     'Kirim Group ID baru untuk notifikasi transaksi Akrab.\nContoh: `-1001234567890`\nKetik *batal* untuk membatalkan.',
     { parse_mode: 'Markdown', reply_markup: { inline_keyboard: [
-      [{ text: '🔙 Kembali', callback_data: 'admin_menu' }]
+      [{ text: '🔙 Kembali', callback_data: 'admin_menu_notif' }]
     ]}}
   );
   userState[ctx.chat.id] = { step: 'admin_input_akrab_notif_group' };
@@ -9862,7 +9862,7 @@ async function renderLocalOwnedAccountsPage(ctx, listType = 'active', page = 0) 
     return ctx.reply(' Daftar akun sudah berubah. Buka ulang dari menu "Lihat Akun Saya".');
   }
 
-  const pageSize = Number(state.pageSize || 4);
+  const pageSize = Number(state.pageSize || 2);
   const total = state.rows.length;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const safePage = Math.max(0, Math.min(Number(page) || 0, totalPages - 1));
@@ -9931,23 +9931,26 @@ async function renderLocalOwnedAccountsPage(ctx, listType = 'active', page = 0) 
     return block;
   });
   const title = listType === 'expired' ? '📋 Akun Expired' : '📋 Akun Aktif';
-  const text =
-    `<b>${title}</b> — <i>Hal. ${safePage + 1}/${totalPages}</i>\n\n` +
-
-    blocks.join('\n\n');
-
-
+  const header = `<b>${title}</b> — <i>Hal. ${safePage + 1}/${totalPages}</i>\n\n`;
+  const text = header + blocks.join('\n\n');
   const nav = [];
   if (safePage > 0) nav.push({ text: '\u25c0\ufe0f Sebelumnya', callback_data: `view_accounts_local_page_${listType}_${safePage - 1}` });
   if (safePage < totalPages - 1) nav.push({ text: 'Selanjutnya \u25b6\ufe0f', callback_data: `view_accounts_local_page_${listType}_${safePage + 1}` });
   const keyboard = [];
   if (nav.length) keyboard.push(nav);
   keyboard.push([{ text: '🔙 Kembali', callback_data: 'view_accounts' }]);
-
-  return ctx.reply(text, {
-    parse_mode: 'HTML',
-    reply_markup: { inline_keyboard: keyboard }
-  });
+  const replyOpts = { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } };
+  // Auto-split jika pesan terlalu panjang (> 4000 char, aman di bawah limit Telegram 4096)
+  if (text.length > 4000) {
+    for (let i = 0; i < blocks.length; i++) {
+      const isFirst = i === 0;
+      const isLast = i === blocks.length - 1;
+      const chunk = (isFirst ? header : '') + blocks[i];
+      await ctx.reply(chunk, isLast ? replyOpts : { parse_mode: 'HTML' });
+    }
+    return;
+  }
+  return ctx.reply(text, replyOpts);
 }
 
 function normalizeRenewAccountType(rawType) {
@@ -10226,7 +10229,7 @@ async function sendAccountList(ctx, isExpired, limit = 10) {
     userState[ctx.chat.id].local_owned_accounts = {
       type: isExpired ? 'expired' : 'active',
       rows,
-      pageSize: 4
+      pageSize: 2
     };
     await renderLocalOwnedAccountsPage(ctx, isExpired ? 'expired' : 'active', 0);
   });
@@ -10683,7 +10686,6 @@ async function showHidepulsaGlobal(ctx, brandFilter, label, markupKey) {
 
 // ── Akrab V3 dari HidePulsa Global ───────────────────────────
 bot.action('akrab_grup_v3_global', async (ctx) => {
-  console.log('DEBUG: akrab_grup_v3_global dipanggil');
   await ctx.answerCbQuery('Memuat...');
   await showHidepulsaGlobal(ctx, ['XL AKRAB'], '🟣 <b>Akrab V3</b>', 'akrab_v3_global');
 });
@@ -10935,7 +10937,7 @@ bot.action('ppob_markup_menu', async (ctx) => {
       [{ text: '📊 Set %', callback_data: 'ppob_markup_set_pct' }],
       [{ text: '💰 Set Flat (Rp)', callback_data: 'ppob_markup_set_flat' }],
       [{ text: '🗑️ Hapus', callback_data: 'ppob_markup_delete' }],
-      [{ text: '🔙 Kembali', callback_data: 'admin_menu_saldo' }],
+      [{ text: '🔙 Kembali', callback_data: 'admin_menu_markup' }],
     ]}}
   );
 });
@@ -13626,7 +13628,7 @@ bot.action('smm_cek_saldo', async (ctx) => {
       reply_markup: {
         inline_keyboard: [
           [{ text: ' Top Up Saldo VPN', callback_data: 'topup_saldo' }],
-          [{ text: '🔙 Kembali', callback_data: 'admin_menu_markup' }],
+          [{ text: '🔙 Kembali', callback_data: 'menu_suntik' }],
         ],
       },
     }
@@ -13853,7 +13855,7 @@ bot.action(/^smm_konfirmasi_(.+)$/, async (ctx) => {
           reply_markup: {
             inline_keyboard: [
               [{ text: ' Top Up VPN', callback_data: 'topup_saldo' }],
-              [{ text: '🔙 Kembali', callback_data: 'admin_menu_markup' }],
+              [{ text: '🔙 Kembali', callback_data: 'menu_suntik' }],
             ],
           },
         }
@@ -14382,34 +14384,6 @@ bot.action(/^akrab_beli_(.+)$/, async (ctx) => {
 
   const namaProduk = product ? (product.nama_produk || product.name || product.nama || produkCode) : produkCode;
   const deskripsi = product && product.deskripsi ? ('\n\n<i>' + String(product.deskripsi).slice(0, 300) + '</i>') : '';
-  // Parse XDA area dari deskripsi
-  const isXda = /^XDA/i.test(produkCode || '');
-  let xdaAreaInfo = '';
-  if (isXda && product && product.deskripsi) {
-    const desc = String(product.deskripsi);
-    const areas = [];
-    const areaMatch = desc.match(/Area\s*([1-4])\s*=\s*(\d+)\s*GB/gi);
-    if (areaMatch) {
-      areaMatch.forEach(m => {
-        const match = m.match(/Area\s*([1-4])\s*=\s*(\d+)/i);
-        if (match) areas.push('A' + match[1] + ': ' + match[2] + ' GB');
-      });
-      if (areas.length) {
-        xdaAreaInfo = '\n\n<code>│</code> 📍 <b>Kuota per Area:</b>\n' +
-          '<code>│</code>    ' + areas.join(' · ');
-      }
-    }
-  }
-
-  // Keterangan khusus XDA
-  const xdaKeterangan = isXda ? `\n\n` +
-    `⚠️ <b>Keterangan XDA:</b>\n` +
-    `• Rewards tidak masuk, tunggu 1 x 24 jam, baru komplen\n` +
-    `• Official, resmi, bergaransi\n` +
-    `• Masa aktif 27-30 hari\n` +
-    `• Pastikan nomor tidak memiliki paket akrab/bonus paket akrab,\n` +
-    `  jika masih ada orderan otomatis akan gagal.\n` +
-    `• ⚠️ Pastikan nomer tujuan benar, nomer yang salah tidak bisa diganti.` : '';
 
   await ctx.editMessageText(
     `<code>┌─────────────────────────┐</code>\n` +
@@ -14417,9 +14391,9 @@ bot.action(/^akrab_beli_(.+)$/, async (ctx) => {
     `<code>│─────────────────────────</code>\n` +
     `<code>│</code> Produk : <b>${namaProduk}</b>\n` +
     `<code>│</code> Harga  : <code>Rp ${Number(finalPrice).toLocaleString('id-ID')}</code>` +
-    (deskripsi ? `\n<code>│</code> <i>${String(product.deskripsi).slice(0, 150)}</i>` : '') + xdaAreaInfo +
+    (deskripsi ? `\n<code>│</code> <i>${String(product.deskripsi).slice(0, 150)}</i>` : '') +
     `\n<code>└─────────────────────────┘</code>\n\n` +
-    `Masukkan nomor tujuan:` + xdaKeterangan,
+    `Masukkan nomor tujuan:`,
     {
       parse_mode: 'HTML',
       reply_markup: { inline_keyboard: [[{ text: ' Batal', callback_data: 'menu_akrab' }]] },
@@ -14517,7 +14491,6 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
     // Pisahkan produk — XLA, XDA, dan XCLP.
     const xlaProducts = (products || []).filter(p => /^XLA/i.test(getKode(p)));
     const xdaProducts = (products || []).filter(p => /^XDA/i.test(getKode(p)));
-
     const xclpProducts = (products || []).filter(p => /^XCLP/i.test(getKode(p)));
 
     const now = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
@@ -14560,69 +14533,49 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
 <code>┗━━━━━━━━━━━━━━━━━━━━━┛</code>
 🕐 <i>${now}</i>\n\n`;
 
-    // ── XLA ── ringkas
+    // ── XLA ── tampilkan SEMUA produk dari slot map API (data asli provider).
+    // Nama diambil dari getProducts() jika ada, kalau tidak pakai kode.
     if (Object.keys(xlaSlotMap).length || xlaProducts.length) {
       const namaMapXla = {};
       xlaProducts.forEach(p => { namaMapXla[getKode(p)] = shortName(p.nama_produk || p.name || getKode(p)); });
       const kodeFromSlot = Object.keys(xlaSlotMap);
       const kodeFromProd = xlaProducts.map(getKode).filter(k => !xlaSlotMap.hasOwnProperty(k));
       const allKode = [...kodeFromSlot, ...kodeFromProd];
-      const ready = [], kosong = [];
-      allKode.forEach(kode => {
+
+      const items = allKode.map(kode => {
         const nama = namaMapXla[kode] || kode;
         const slot = xlaSlotMap[kode];
         const prod = xlaProducts.find(p => getKode(p) === kode);
         const tersedia = (slot !== undefined) ? slot > 0 : (prod ? !isKosongProduk(prod) : false);
+        const icon = tersedia ? '✅' : '❌';
         const qty = (slot !== undefined && slot > 0) ? String(slot) : '';
-        if (tersedia) { ready.push({ icon: '\u2705 ', label: nama, qty }); totalReady++; }
-        else { kosong.push(nama); }
+        if (tersedia) totalReady++; else totalKosong++;
+        return { icon, label: nama, qty };
       });
-      let xlaBody = '';
-      if (ready.length) {
-        xlaBody += formatPair(ready);
-        if (kosong.length) xlaBody += '\n\u274c ' + kosong.join(', ');
-      } else if (kosong.length) {
-        xlaBody += '\u274c Semua Kosong (' + kosong.length + ' produk)';
-      } else {
-        xlaBody += 'Tidak ada data';
-      }
-      body += `\n\ud83d\udfe2 <b>XLA</b>\n<code>` + xlaBody + `</code>\n\n`;
+      body += `🔵 <b>XLA</b>\n<code>${formatPair(items)}</code>\n\n`;
     }
-    // ── XDA ── ringkas + info kuota lokal
+
+    // ── XDA ── tampilkan SEMUA produk dari slot map API (data asli provider).
     if (Object.keys(xdaSlotMap).length || xdaProducts.length) {
       const namaMapXda = {};
       xdaProducts.forEach(p => { namaMapXda[getKode(p)] = shortName(p.nama_produk || p.name || getKode(p)); });
       const kodeFromSlot = Object.keys(xdaSlotMap);
-      const kodeFromProd = xdaProducts.map(p => getKode(p)).filter(k => !xdaSlotMap.hasOwnProperty(k) && /^XDA/i.test(k));
+      const kodeFromProd = xdaProducts.map(getKode).filter(k => !xdaSlotMap.hasOwnProperty(k));
       const allKode = [...kodeFromSlot, ...kodeFromProd];
-      const ready = [], kosong = [];
-      allKode.forEach(kode => {
+
+      const items = allKode.map(kode => {
         const nama = namaMapXda[kode] || kode;
         const slot = xdaSlotMap[kode];
         const prod = xdaProducts.find(p => getKode(p) === kode);
         const tersedia = (slot !== undefined) ? slot > 0 : (prod ? !isKosongProduk(prod) : false);
+        const icon = tersedia ? '✅' : '❌';
         const qty = (slot !== undefined && slot > 0) ? String(slot) : '';
-        if (tersedia) { ready.push({ icon: '\u2705 ', label: nama, qty, _kode: kode }); totalReady++; }
-        else { kosong.push(nama); }
+        if (tersedia) totalReady++; else totalKosong++;
+        return { icon, label: nama, qty };
       });
-      const XDA_AREA = { 'XDA13':{a1:13,a4:30}, 'XDA25':{a1:25,a4:42}, 'XDA31':{a1:31,a4:48}, 'XDA38':{a1:38,a4:55}, 'XDA63':{a1:63,a4:80}, 'XDA88':{a1:88,a4:105} };
-      let xdaBody = '';
-      if (ready.length) {
-        xdaBody += formatPair(ready);
-        if (kosong.length) xdaBody += '\n\u274c ' + kosong.join(', ');
-      } else if (kosong.length) {
-        xdaBody += '\u274c Semua Kosong (' + kosong.length + ' produk)';
-      } else {
-        xdaBody += 'Tidak ada data';
-      }
-      const xdaInfos = [];
-      Object.keys(XDA_AREA).forEach(k => {
-        const info = XDA_AREA[k];
-        xdaInfos.push(k.replace(/^XDA/i,'') + 'GB: ' + info.a1 + '\u2192' + info.a4);
-      });
-      if (xdaInfos.length) xdaBody += '\n\n\ud83d\udccd <i>Kuota per area (A1\u2192A4):</i>\n' + xdaInfos.join(' | ');
-      body += `\n\ud83d\udfe2 <b>XDA</b>\n<code>` + xdaBody + `</code>\n\n`;
+      body += `🟢 <b>XDA</b>\n<code>${formatPair(items)}</code>\n\n`;
     }
+
     // ── XCLP (Circle) ── tampilkan dari slot map + produk list.
     if (Object.keys(xclpSlotMap).length || xclpProducts.length) {
       const namaMapXclp = {};
@@ -14647,7 +14600,7 @@ bot.action('akrab_cek_stock_all', async (ctx) => {
     
     try {
       const gProduk = await ppob.getProdukList('Global');
-      const shortNameG = (nama) => { let c = String(nama||'-').replace(/^XL\s*/i,'').replace(/^XLAXL\s*/i,'').replace(/^Paket\s*(Data\s*)?/i,'').replace(/^Akrab\s*/i,'').replace(/^Internet\s*/i,'').replace(/^[\s\-|]+/,'').trim(); const m = c.match(/(\d+)\s*GB/i); if(m){const g=m[1]; if(/super/i.test(c))return 'SUPER '+g+' GB'; if(/mega/i.test(c))return 'MEGA '+g+' GB'; if(/jumbo/i.test(c))return 'JUMBO '+g+' GB'; if(/big/i.test(c))return 'BIG '+g+' GB'; if(/mini/i.test(c))return 'MINI '+g+' GB'; return g+' GB';} return c.replace(/XL CIRCLE /gi,'').replace(/XL AKRAB /gi,'').replace(/FULL KUOTA UTAMA REGULER/gi,'').replace(/PROMO/gi,'P').replace(/\s+/g,' ').trim().slice(0,18); };
+      const shortNameG = (nama) => String(nama||'-').replace(/XL CIRCLE /gi,'').replace(/XL AKRAB /gi,'').replace(/FULL KUOTA UTAMA REGULER/gi,'').replace(/PROMO/gi,'P').replace(/\\s+/g,' ').trim().slice(0,18);
       const akrabAll = gProduk.filter(p=>(p.brand||'').toUpperCase().includes('XL AKRAB'));
       if (akrabAll.length) {
         const akrabItems = akrabAll.map(p => {
@@ -15011,19 +14964,18 @@ async function _autoBuyPreordersInner(tipe, stokItems) {
   }
 }
 
-// ── Fungsi broadcast restok ke user preorder ──────────────────────────────────
+// ── Fungsi broadcast restok ke SEMUA user ──────────────────────────────────
 async function broadcastRestok(tipe, stokItems) {
   const label = tipe === 'xla' ? 'Akrab V1 (XLA)' : 'Akrab V2 (XDA)';
   const emoji = tipe === 'xla' ? '🔵' : '🟢';
 
-  // Hanya broadcast ke user yang produknya ada di stokItems
-  const restokKodes = new Set(stokItems.map(it => String(it.type || '').toUpperCase()));
-  const allOrders = await dbGetAllPreorders(tipe);
-  // Filter: hanya user yang pre-order produk yang baru restok
-  const relevantOrders = allOrders.filter(o => restokKodes.has(String(o.produk_kode || '').toUpperCase()));
-  const relevantUserIds = [...new Set(relevantOrders.map(o => o.user_id))];
-
-  if (!relevantUserIds.length) return;
+  // Broadcast ke SEMUA user (bukan hanya yang pre-order)
+  const allUserIds = await new Promise((resolve) => {
+    db.all('SELECT user_id FROM users', [], (err, rows) => {
+      resolve(err ? [] : (rows || []).map(r => r.user_id));
+    });
+  });
+  if (!allUserIds.length) return;
 
   // Ambil nama produk dari API untuk tampilan lebih detail
   let produkMap = {};
@@ -15051,7 +15003,7 @@ async function broadcastRestok(tipe, stokItems) {
     `🛒 <i>Segera beli sebelum habis!</i>`;
 
   let ok = 0, fail = 0;
-  for (const userId of relevantUserIds) {
+  for (const userId of allUserIds) {
     try {
       await bot.telegram.sendMessage(userId, msg, { parse_mode: 'HTML' });
       ok++;
@@ -15061,7 +15013,7 @@ async function broadcastRestok(tipe, stokItems) {
     }
   }
 
-  logger.info(`broadcastRestok ${tipe}: ${ok} berhasil, ${fail} gagal (${relevantUserIds.length} user relevan dari ${allOrders.length} total preorder)`);
+  logger.info(`broadcastRestok ${tipe}: ${ok} berhasil, ${fail} gagal dari ${allUserIds.length} total user`);
 }
 
 bot.action(/^akrab_konfirmasi_(.+)$/, async (ctx) => {
@@ -15088,7 +15040,7 @@ bot.action(/^akrab_konfirmasi_(.+)$/, async (ctx) => {
           reply_markup: {
             inline_keyboard: [
               [{ text: ' Top Up Akrab', callback_data: 'topup_akrab' }],
-              [{ text: '🔙 Kembali', callback_data: 'admin_menu_markup' }],
+              [{ text: '🔙 Kembali', callback_data: 'menu_akrab' }],
             ],
           },
         }
@@ -22144,6 +22096,10 @@ async function checkAkrabRestok() {
       akrabModule.getProducts(KHFY_ENDPOINT, KHFY_API_KEY).catch((e) => { logger.warn('getProducts error: ' + e.message); return []; }),
     ]);
 
+    // Debug: log raw response
+    logger.info('checkAkrabRestok raw V1: ' + JSON.stringify(stokV1Resp).slice(0, 500));
+    logger.info('checkAkrabRestok raw V2: ' + JSON.stringify(stokV2Resp).slice(0, 500));
+
     // Build map kode → nama produk dari getProducts()
     const namaMap = {};
     (products || []).forEach(p => {
@@ -22201,13 +22157,13 @@ async function checkAkrabRestok() {
 
     if (restokXla.length > 0) {
       logger.info(`Restok XLA terdeteksi: ${restokXla.map(i => i.type).join(', ')}`);
-      await autoBuyPreorders('xla', restokXla);
       await broadcastRestok('xla', restokXla);
+      await autoBuyPreorders('xla', restokXla);
     }
     if (restokXda.length > 0) {
       logger.info(`Restok XDA terdeteksi: ${restokXda.map(i => i.type).join(', ')}`);
-      await autoBuyPreorders('xda', restokXda);
       await broadcastRestok('xda', restokXda);
+      await autoBuyPreorders('xda', restokXda);
     }
   } catch (err) {
     logger.error('checkAkrabRestok error: ' + (err && err.message ? err.message : err));
@@ -23050,6 +23006,18 @@ app.listen(port, async () => {
 // Di app.listen() - bagian yang kirim notifikasi ke admin:
 const adminMessage = 
   ` *PERINGATAN SISTEM PEMBAYARAN* \n\n` +
+
+// ── Unhandled Exception Handlers ─────────────────────────────
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[FATAL] Unhandled Rejection at:', promise, 'reason:', reason);
+  if (typeof logger !== 'undefined') logger.error('Unhandled Rejection:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('[FATAL] Uncaught Exception:', error);
+  if (typeof logger !== 'undefined') logger.error('Uncaught Exception:', error);
+  setTimeout(() => process.exit(1), 2000);
+});
   `Tidak ada payment gateway aktif yang siap.\n\n` +
   `Detail:\n\`\`\`\n${formatMissingGatewayConfig(readiness)}\n\`\`\`\n\n` +
   `User TIDAK BISA top-up otomatis.\n\n` +
