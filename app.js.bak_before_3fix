@@ -7808,12 +7808,12 @@ bot.action('test_akrab_v3_start', async (ctx) => {
   try {
     const produk = await ppob.getProdukList('Global');
     const aktif = produk.filter(p => (p.brand||'').toUpperCase().includes('AKRAB') && p.seller_product_status && p.buyer_product_status && (p.unlimited_stock||(p.stock||0)>0));
-    if (!aktif.length) return ctx.editMessageText('<code>Tidak ada produk Akrab V3 tersedia.</code>', { parse_mode:'HTML', reply_markup:{inline_keyboard:[[{text:'🔙',callback_data:'admin_test_menu'}]]}});
+    if (!aktif.length) return ctx.editMessageText('<code>❌ Tidak ada produk Akrab V3 tersedia.</code>', { parse_mode:'HTML', reply_markup:{inline_keyboard:[[{text:'🔙',callback_data:'admin_test_menu'}]]}});
     const s = aktif[0]; const harga = Number(s.price||0);
     userState[userId] = { step:'test_akrab_v3_input_nomor', testProduct:s, testFinalPrice:harga };
     await ctx.editMessageText('🧪 <b>TEST AKRAB V3 — DRY RUN</b>\n<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n┃ 📦 <b>Produk</b> : <code>'+s.product_name.slice(0,30)+'</code>\n┃ 📊 <b>Stok</b>   : <code>'+(s.unlimited_stock?'unlimited':s.stock)+'</code> unit\n┃ 💰 <b>Harga</b>  : <code>Rp '+harga.toLocaleString('id-ID')+'</code>\n<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n┃ 📱 Masukkan nomor HP test:',
       { parse_mode:'HTML', reply_markup:{inline_keyboard:[[{text:'🔙 Batal',callback_data:'admin_test_menu'}]]}});
-  } catch(e) { await ctx.editMessageText('<code>'+e.message+'</code>', {parse_mode:'HTML', reply_markup:{inline_keyboard:[[{text:'🔙',callback_data:'admin_test_menu'}]]}}); }
+  } catch(e) { await ctx.editMessageText('<code>❌ '+e.message+'</code>', {parse_mode:'HTML', reply_markup:{inline_keyboard:[[{text:'🔙',callback_data:'admin_test_menu'}]]}}); }
 });
 
 bot.action('test_circle_start', async (ctx) => {
@@ -7822,12 +7822,12 @@ bot.action('test_circle_start', async (ctx) => {
   try {
     const produk = await ppob.getProdukList('Global');
     const aktif = produk.filter(p => (p.brand||'').toUpperCase().includes('CIRCLE') && p.seller_product_status && p.buyer_product_status && (p.unlimited_stock||(p.stock||0)>0));
-    if (!aktif.length) return ctx.editMessageText('<code>Tidak ada produk Circle tersedia.</code>', { parse_mode:'HTML', reply_markup:{inline_keyboard:[[{text:'🔙',callback_data:'admin_test_menu'}]]}});
+    if (!aktif.length) return ctx.editMessageText('<code>❌ Tidak ada produk Circle tersedia.</code>', { parse_mode:'HTML', reply_markup:{inline_keyboard:[[{text:'🔙',callback_data:'admin_test_menu'}]]}});
     const s = aktif[0]; const harga = Number(s.price||0);
     userState[userId] = { step:'test_circle_input_nomor', testProduct:s, testFinalPrice:harga };
     await ctx.editMessageText('🔴 <b>TEST CIRCLE — DRY RUN</b>\n<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n┃ 📦 <b>Produk</b> : <code>'+s.product_name.slice(0,30)+'</code>\n┃ 📊 <b>Stok</b>   : <code>'+(s.unlimited_stock?'unlimited':s.stock)+'</code> unit\n┃ 💰 <b>Harga</b>  : <code>Rp '+harga.toLocaleString('id-ID')+'</code>\n<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n┃ 📱 Masukkan nomor HP test:',
       { parse_mode:'HTML', reply_markup:{inline_keyboard:[[{text:'🔙 Batal',callback_data:'admin_test_menu'}]]}});
-  } catch(e) { await ctx.editMessageText('<code>'+e.message+'</code>', {parse_mode:'HTML', reply_markup:{inline_keyboard:[[{text:'🔙',callback_data:'admin_test_menu'}]]}}); }
+  } catch(e) { await ctx.editMessageText('<code>❌ '+e.message+'</code>', {parse_mode:'HTML', reply_markup:{inline_keyboard:[[{text:'🔙',callback_data:'admin_test_menu'}]]}}); }
 });
 
 bot.action('test_ppob_start', async (ctx) => {
@@ -7836,12 +7836,12 @@ bot.action('test_ppob_start', async (ctx) => {
   try {
     const produk = await ppob.getProdukList('data');
     const aktif = produk.filter(p => p.seller_product_status && p.buyer_product_status && (p.unlimited_stock||(p.stock||0)>0));
-    if (!aktif.length) return ctx.editMessageText('<code>Tidak ada produk PPOB tersedia.</code>', { parse_mode:'HTML', reply_markup:{inline_keyboard:[[{text:'🔙',callback_data:'admin_test_menu'}]]}});
+    if (!aktif.length) return ctx.editMessageText('<code>❌ Tidak ada produk PPOB tersedia.</code>', { parse_mode:'HTML', reply_markup:{inline_keyboard:[[{text:'🔙',callback_data:'admin_test_menu'}]]}});
     const s = aktif[0]; const harga = Number(s.price||0);
     userState[userId] = { step:'test_ppob_input_nomor', testProduct:s, testFinalPrice:harga };
     await ctx.editMessageText('📱 <b>TEST PPOB — DRY RUN</b>\n<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n┃ 📦 <b>Produk</b>   : <code>'+s.product_name.slice(0,30)+'</code>\n┃ 🏷 <b>Kategori</b> : <code>'+s.category+'</code>\n┃ 📊 <b>Stok</b>     : <code>'+(s.unlimited_stock?'unlimited':s.stock)+'</code> unit\n┃ 💰 <b>Harga</b>    : <code>Rp '+harga.toLocaleString('id-ID')+'</code>\n<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n┃ 📱 Masukkan nomor HP test:',
       { parse_mode:'HTML', reply_markup:{inline_keyboard:[[{text:'🔙 Batal',callback_data:'admin_test_menu'}]]}});
-  } catch(e) { await ctx.editMessageText('<code>'+e.message+'</code>', {parse_mode:'HTML', reply_markup:{inline_keyboard:[[{text:'🔙',callback_data:'admin_test_menu'}]]}}); }
+  } catch(e) { await ctx.editMessageText('<code>❌ '+e.message+'</code>', {parse_mode:'HTML', reply_markup:{inline_keyboard:[[{text:'🔙',callback_data:'admin_test_menu'}]]}}); }
 });
 
 // ── Test SMM ─────────────────────────────────────────────────────────────────
@@ -8041,7 +8041,7 @@ async function sendJoinChannelMenu(ctx) {
     '_Bot harus menjadi admin channel agar bisa cek status member._';
 
   const keyboard = [
-    [{ text: setting.enabled ? 'Nonaktifkan' : '✅ Aktifkan', callback_data: 'join_channel_toggle' }],
+    [{ text: setting.enabled ? '❌ Nonaktifkan' : '✅ Aktifkan', callback_data: 'join_channel_toggle' }],
     [{ text: '🔗 Set URL Channel', callback_data: 'join_channel_set_url' }],
     [{ text: '🆔 Set Channel ID', callback_data: 'join_channel_set_id' }],
     [{ text: '🔙 Kembali', callback_data: 'admin_menu_tools' }]
@@ -8745,7 +8745,7 @@ bot.action('restore_saldo_prompt', async (ctx) => {
     '<i>⚠️ Proses ini akan menimpa saldo yang ada sekarang.</i>',
     {
       parse_mode: 'HTML',
-      reply_markup: { inline_keyboard: [[{ text: 'Batal', callback_data: 'menu_backup_saldo' }]] },
+      reply_markup: { inline_keyboard: [[{ text: '❌ Batal', callback_data: 'menu_backup_saldo' }]] },
     }
   );
 });
@@ -10583,7 +10583,7 @@ bot.action(/^ppob_listed_(.+)$/, async (ctx) => {
     const mkReseller1 = await dbH.getMarkup(db, 'reseller', 'ppob', userId).catch(()=>null);
     const finalPrice1 = wallet.getEffectivePrice(Number(produk.price||0), mkGlobal1, mkReseller1);
     ppobBeliState[userId] = { sku, productName: produk.product_name, price: finalPrice1, customerNo: state.customerNo, step: 'confirm' };
-    const keyboard = { inline_keyboard: [[{ text: '✅ Konfirmasi Beli', callback_data: 'ppob_confirm_beli' }],[{ text: 'Batal', callback_data: 'ppob_batal' }]] };
+    const keyboard = { inline_keyboard: [[{ text: '✅ Konfirmasi Beli', callback_data: 'ppob_confirm_beli' }],[{ text: '❌ Batal', callback_data: 'ppob_batal' }]] };
     return ctx.reply('✅ <b>KONFIRMASI PEMBELIAN</b>\n<code>━━━━━━━━━━━━━━━━━━━━━━</code>\n┃ 📦 <b>Produk</b> : <code>'+produk.product_name+'</code>\n┃ 📱 <b>Nomor</b>  : <code>'+state.customerNo+'</code>\n┃ 💰 <b>Harga</b>  : <code>'+ppob.formatRupiah(finalPrice1)+'</code>\n<code>━━━━━━━━━━━━━━━━━━━━━━</code>\nLanjutkan pembelian?', { parse_mode: 'HTML', reply_markup: keyboard });
   } catch (err) { await ctx.reply('❌ Gagal: ' + err.message); }
 });
@@ -10649,15 +10649,17 @@ async function sendAkrabNotifToGroup(tipe, data) {
 }
 
 // ── Helper: tampilkan produk HidePulsa Global ─────────────────
-async function showHidepulsaGlobal(ctx, brandFilter, label, markupKey, page = 0) {
+async function showHidepulsaGlobal(ctx, brandFilter, label, markupKey) {
   try {
     const userId = ctx.from.id;
     const produk = await ppob.getProdukList('Global');
+
     // Filter by brand + status jual/beli — tampilkan semua termasuk stok kosong
     const filtered = produk.filter(p => {
       const brand = (p.brand||'').toUpperCase();
       return brandFilter.some(f => brand.includes(f)) && p.seller_product_status && p.buyer_product_status;
     });
+
     if (!filtered.length) {
       return ctx.editMessageText(label+'\n<code>━━━━━━━━━━━━━━━━━━━━━━━━━━</code>\n✦ Tidak ada produk tersedia.\n<code>━━━━━━━━━━━━━━━━━━━━━━━━━━</code>', {
         parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'menu_akrab' }]] }
@@ -10665,8 +10667,10 @@ async function showHidepulsaGlobal(ctx, brandFilter, label, markupKey, page = 0)
     }
     const mkGlobal = await dbH.getMarkup(db, 'global', markupKey, null).catch(()=>null);
     const mkReseller = await dbH.getMarkup(db, 'reseller', markupKey, userId).catch(()=>null);
+
     // Helper: cek apakah produk ada stok
     const isTersedia = (p) => p.unlimited_stock || (p.stock||0) > 0;
+
     // Sort: tersedia dulu, lalu kosong; dalam grup sort by GB
     const sorted = [...filtered].sort((a, b) => {
       const aOk = isTersedia(a) ? 0 : 1;
@@ -10676,6 +10680,7 @@ async function showHidepulsaGlobal(ctx, brandFilter, label, markupKey, page = 0)
       const gbNum = Number((b.product_name.match(/(\d+)\s*GB/i)||[0,0])[1]);
       return gaNum - gbNum;
     });
+
     // Helper: singkat nama produk
     const shortNameG = (nama) => {
       let c = String(nama||'-')
@@ -10698,90 +10703,61 @@ async function showHidepulsaGlobal(ctx, brandFilter, label, markupKey, page = 0)
       }
       return c.slice(0, 25);
     };
-    // ── Pagination: 8 items per page ──
-    const PER_PAGE = 8;
-    const totalPages = Math.ceil(sorted.length / PER_PAGE);
-    if (page < 0) page = 0;
-    if (page >= totalPages) page = totalPages - 1;
-    const pageItems = sorted.slice(page * PER_PAGE, (page + 1) * PER_PAGE);
-    // Build message text (only current page)
+
+    // Build message text dengan format kotak per produk
     const separator = '<code>──────────────────────────</code>';
     let msgLines = [label, '<code>━━━━━━━━━━━━━━━━━━━━━━━━━━</code>', ''];
-    pageItems.forEach((p, i) => {
+
+    sorted.forEach((p, i) => {
       const nama = shortNameG(p.product_name);
       const tersedia = isTersedia(p);
       const stok = p.unlimited_stock ? '∞' : (p.stock||0);
       const base = Number(p.price||0);
       const finalPrice = wallet.getEffectivePrice(base, mkGlobal, mkReseller);
       const hargaStr = finalPrice > 0 ? 'Rp ' + finalPrice.toLocaleString('id-ID') : '-';
-      const stokStr = tersedia ? '✅  ' + stok : '❌  0';
+      const stokStr = tersedia ? '✅ ' + stok : '❌ 0';
+
       if (i > 0) msgLines.push(separator);
-      msgLines.push('<code>' + nama + '</code>');
-      msgLines.push('<code>💰 ' + hargaStr + '   📦 ' + stokStr + '</code>');
+      msgLines.push(nama);
+      msgLines.push('💰 ' + hargaStr + '   📦 Stok: ' + stokStr);
     });
-    if (totalPages > 1) {
-      msgLines.push('');
-      msgLines.push('<code>Halaman ' + (page + 1) + ' / ' + totalPages + '</code>');
-    }
+
     msgLines.push('');
     msgLines.push('<code>━━━━━━━━━━━━━━━━━━━━━━━━━━</code>');
     msgLines.push('Pilih produk:');
-    // Buttons: 2 per row for current page
-    const flatBtns = pageItems.map(p => {
+
+    // Buttons: style success jika tersedia, tanpa style jika kosong
+    const rows = sorted.map(p => {
       const nama = shortNameG(p.product_name);
       const tersedia = isTersedia(p);
       const base = Number(p.price||0);
       const finalPrice = wallet.getEffectivePrice(base, mkGlobal, mkReseller);
-      const hrg = finalPrice > 0 ? ' ' + (finalPrice >= 1000 ? Math.round(finalPrice/1000) + 'rb' : finalPrice) : '';
+      const labelHarga = finalPrice > 0 ? ' · Rp ' + finalPrice.toLocaleString('id-ID') : '';
       const btn = {
-        text: nama.slice(0, 14) + hrg + (tersedia ? '' : ''),
+        text: nama + labelHarga + (tersedia ? '' : ' · KOSONG'),
         callback_data: 'ppob_beli_global_' + p.buyer_sku_code,
       };
       if (tersedia) btn.style = 'success';
-      return btn;
+      return [btn];
     });
-    const rows = [];
-    for (let i = 0; i < flatBtns.length; i += 2) {
-      rows.push(flatBtns.slice(i, i + 2));
-    }
-    // Navigation buttons
-    const navRow = [];
-    if (page > 0) navRow.push({ text: '◀ Prev', callback_data: 'ppob_page_' + markupKey + '_' + (page - 1) });
-    if (page < totalPages - 1) navRow.push({ text: 'Next ▶', callback_data: 'ppob_page_' + markupKey + '_' + (page + 1) });
-    if (navRow.length) rows.push(navRow);
-    rows.push([{ text: 'Kembali', callback_data: 'menu_akrab' }]);
+    rows.push([{ text: '🔙 Kembali', callback_data: 'menu_akrab' }]);
     await ctx.editMessageText(msgLines.join('\n'), {
       parse_mode: 'HTML', reply_markup: { inline_keyboard: rows },
     }).catch(()=>ctx.reply(label, { reply_markup: { inline_keyboard: rows } }));
-  } catch(err) { await ctx.reply('❌  Gagal: '+err.message); }
+  } catch(err) { await ctx.reply('❌ Gagal: '+err.message); }
 }
 
 // ── Akrab V3 dari HidePulsa Global ───────────────────────────
 bot.action('akrab_grup_v3_global', async (ctx) => {
   console.log('DEBUG: akrab_grup_v3_global dipanggil');
   await ctx.answerCbQuery('Memuat...');
-  await showHidepulsaGlobal(ctx, ['XL AKRAB'], '<b>Akrab V3</b>', 'akrab_v3_global', 0);
+  await showHidepulsaGlobal(ctx, ['XL AKRAB'], '🟣 <b>Akrab V3</b>', 'akrab_v3_global');
 });
 
 // ── Circle dari HidePulsa Global ─────────────────────────────
 bot.action('akrab_circle_global', async (ctx) => {
   await ctx.answerCbQuery('Memuat...');
-  await showHidepulsaGlobal(ctx, ['XL CIRCLE'], '<b>Circle</b>', 'circle_global', 0);
-});
-// ── Pagination handler untuk V3/Circle ──
-bot.action(/^ppob_page_(.+)_(\d+)$/, async (ctx) => {
-  await ctx.answerCbQuery('Memuat halaman...');
-  const markupKey = ctx.match[1];
-  const page = parseInt(ctx.match[2]);
-  let brandFilter, label;
-  if (markupKey === 'akrab_v3_global') {
-    brandFilter = ['XL AKRAB']; label = '<b>Akrab V3</b>';
-  } else if (markupKey === 'circle_global') {
-    brandFilter = ['XL CIRCLE']; label = '<b>Circle</b>';
-  } else {
-    return ctx.reply('Kategori tidak dikenali.');
-  }
-  await showHidepulsaGlobal(ctx, brandFilter, label, markupKey, page);
+  await showHidepulsaGlobal(ctx, ['XL CIRCLE'], '🔴 <b>Circle</b>', 'circle_global');
 });
 
 // ── Beli produk HidePulsa Global ─────────────────────────────
@@ -11135,7 +11111,7 @@ bot.action('admin_do_restore_info', async (ctx) => {
     '📥 <b>Restore Global</b>\n\n' +
     '⚠️ <b>PERINGATAN:</b> Restore akan menimpa data yang ada!\n\n' +
     'Kirim file backup JSON yang ingin di-restore:',
-    { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: 'Batal', callback_data: 'admin_global_backup_menu' }]] } }
+    { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '❌ Batal', callback_data: 'admin_global_backup_menu' }]] } }
   );
 });
 
@@ -11491,7 +11467,7 @@ bot.on('text', async (ctx, next) => {
           const fp = wallet.getEffectivePrice(Number(p.price||0), mkG, mkR);
           return [{ text: p.product_name + ' — ' + ppob.formatRupiah(fp), callback_data: 'ppob_listed_' + p.buyer_sku_code }];
         }))),
-        [{ text: 'Batal', callback_data: 'ppob_batal' }]
+        [{ text: '❌ Batal', callback_data: 'ppob_batal' }]
       ]
     };
     return ctx.reply(label, { parse_mode: 'Markdown', reply_markup: keyboard });
@@ -11503,7 +11479,7 @@ bot.on('text', async (ctx, next) => {
     const keyboard = {
       inline_keyboard: [
         [{ text: '✅ Konfirmasi Beli', callback_data: 'ppob_confirm_beli' }],
-        [{ text: 'Batal', callback_data: 'ppob_batal' }]
+        [{ text: '❌ Batal', callback_data: 'ppob_batal' }]
       ]
     };
     return ctx.reply(
@@ -11533,7 +11509,7 @@ bot.on('text', async (ctx, next) => {
       const keyboard = {
         inline_keyboard: [
           [{ text: `✅ Bayar ${ppob.formatRupiah(markedPrice)}`, callback_data: 'ppob_confirm_tagihan' }],
-          [{ text: 'Batal', callback_data: 'ppob_batal' }]
+          [{ text: '❌ Batal', callback_data: 'ppob_batal' }]
         ]
       };
       return ctx.reply(
@@ -14156,10 +14132,11 @@ bot.action('menu_akrab', async (ctx) => {
     ],
     [
       Object.assign({ text: 'Akrab V3', callback_data: 'akrab_grup_v3_global' }, stokV3Ada ? { style: 'success' } : {}),
-      Object.assign({ text: 'Circle', callback_data: 'akrab_circle_global' }, stokCircleAda ? { style: 'success' } : {}),
+      Object.assign({ text: 'Circle',   callback_data: 'akrab_circle_global'   }, stokCircleAda ? { style: 'success' } : {}),
     ],
     [
-      { text: '📋 Riwayat', callback_data: 'akrab_riwayat', style: 'primary' },
+      { text: 'Cek Stok', callback_data: 'akrab_cek_stock_all', style: 'primary' },
+      { text: 'Riwayat', callback_data: 'akrab_riwayat', style: 'primary' },
     ],
     [
       { text: 'PO V1', callback_data: 'preorder_xla', style: 'danger' },
@@ -14335,7 +14312,7 @@ bot.action(/^akrab_grup_(v1|v2|v3)$/, async (ctx) => {
     // Build message text dengan format kotak per produk
     const grupIcon = grup === 'v1' ? '🔵' : grup === 'v2' ? '🟢' : '🟣';
     const separator = '<code>──────────────────────────</code>';
-    let msgLines = ['<b>' + grupLabel + '</b>', '<code>━━━━━━━━━━━━━━━━━━━━━━━━━━</code>', ''];
+    let msgLines = [grupIcon + ' <b>' + grupLabel + '</b>', '<code>━━━━━━━━━━━━━━━━━━━━━━━━━━</code>', ''];
 
     sortedProducts.slice(0, 40).forEach((p, i) => {
       const kode = getKode(p);
@@ -14348,8 +14325,8 @@ bot.action(/^akrab_grup_(v1|v2|v3)$/, async (ctx) => {
       const stokStr = habis ? '❌ 0' : (sisa !== null ? '✅ ' + sisa : '✅');
 
       if (i > 0) msgLines.push(separator);
-      msgLines.push('<code>' + kode + ' · ' + nama + '</code>');
-      msgLines.push('<code>💰 ' + hargaStr + '   📦 ' + stokStr + '</code>');
+      msgLines.push('<code>' + kode + '</code> · ' + nama);
+      msgLines.push('💰 ' + hargaStr + '   📦 Stok: ' + stokStr);
     });
 
     msgLines.push('');
@@ -14357,25 +14334,20 @@ bot.action(/^akrab_grup_(v1|v2|v3)$/, async (ctx) => {
     msgLines.push('Pilih produk:');
 
     // Buttons: style success jika tersedia, tanpa style jika kosong
-    const flatBtns = sortedProducts.slice(0, 40).map((p) => {
+    const keyboard = sortedProducts.slice(0, 40).map((p) => {
       const code = p.kode_produk || p.code || p.produk;
       const kode = getKode(p);
       const base = getBasePrice(p);
       const habis = isProdukKosong(p);
       const finalPrice = wallet.getEffectivePrice(base, markupGlobal, markupReseller);
-      const short = shortNameV12(p).slice(0, 14);
-      const hrg = finalPrice > 0 ? ' ' + (finalPrice >= 1000 ? Math.round(finalPrice/1000) + 'rb' : finalPrice) : '';
+      const labelHarga = finalPrice > 0 ? ' · Rp ' + finalPrice.toLocaleString('id-ID') : '';
       const btn = {
-        text: short + hrg + (habis ? '' : ''),
+        text: kode + labelHarga + (habis ? ' · KOSONG' : ''),
         callback_data: 'akrab_beli_' + code,
       };
       if (!habis) btn.style = 'success';
-      return btn;
+      return [btn];
     });
-    const keyboard = [];
-    for (let i = 0; i < flatBtns.length; i += 2) {
-      keyboard.push(flatBtns.slice(i, i + 2));
-    }
     keyboard.push([{ text: '🔙 Kembali', callback_data: 'menu_akrab' }]);
 
     await ctx.editMessageText(msgLines.join('\n'), {
@@ -15033,7 +15005,7 @@ bot.action(/^preorder_set_produk_(xla|xda)_(.+)$/, async (ctx) => {
     `✦ Harga  : <code>Rp ${harga.toLocaleString('id-ID')}</code>\n` +
     `<code>──────────────────────</code>\n` +
     `✦ Masukkan nomor tujuan (nomor HP/ID):`,
-    { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: 'Batal', callback_data: `preorder_${tipe}` }]] } }
+    { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '❌ Batal', callback_data: `preorder_${tipe}` }]] } }
   );
 });
 
@@ -15642,7 +15614,7 @@ bot.on('text', async (ctx) => {
           '💰 Harga: <b>Rp '+finalPrice.toLocaleString('id-ID')+'</b>\n\nLanjutkan?',
           { parse_mode: 'HTML', reply_markup: { inline_keyboard: [
             [{ text: '✅ Konfirmasi', callback_data: 'ppob_konfirm_global_'+sku }],
-            [{ text: 'Batal', callback_data: backCb }],
+            [{ text: '❌ Batal', callback_data: backCb }],
           ]}}
         );
         return;
@@ -18319,7 +18291,7 @@ if (state.action === 'create' && normalizeCreatePriceMode(state.priceMode) === '
                 inline_keyboard: [
                   [
                     { text: '✅ Ya, Buat Akun', callback_data: 'confirm_create_yes' },
-                    { text: 'Batal', callback_data: 'confirm_create_no' }
+                    { text: '❌ Batal', callback_data: 'confirm_create_no' }
                   ]
                 ]
               }
