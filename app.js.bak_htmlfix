@@ -3627,7 +3627,7 @@ bot.command('allresellerstats', async (ctx) => {
           console.warn('⚠️ [ALLRESELLERSTATS] getUsernameById error for', stat.resellerId, ':', e.message);
         }
 
-        const displayId = `<b>${String(stat.resellerId)}</b>`;
+        const displayId = `<code>${stat.resellerId}</code>`;
         const safeHtml = (s) => {
           try {
             return typeof escapeHtml === 'function' ? escapeHtml(String(s)) : String(s);
@@ -3717,43 +3717,8 @@ bot.command('allresellerstats', async (ctx) => {
           // Cari newline terakhir sebelum MAX_LEN
           let splitAt = msg.lastIndexOf('\n', MAX_LEN);
           if (splitAt <= 0) splitAt = MAX_LEN;
-          
-          // Ambil chunk dan tutup semua tag HTML yang terbuka
-          let chunk = msg.substring(0, splitAt);
-          const openTags = (chunk.match(/<(b|i|code|pre|a|s|u)(\s[^>]*)?>/g) || []);
-          const closeTags = (chunk.match(/<\/(b|i|code|pre|a|s|u)>/g) || []);
-          
-          // Hitung tag yang belum ditutup
-          const tagMap = {};
-          for (const ot of openTags) {
-            const tagName = ot.match(/<(b|i|code|pre|a|s|u)/)[1];
-            tagMap[tagName] = (tagMap[tagName] || 0) + 1;
-          }
-          for (const ct of closeTags) {
-            const tagName = ct.match(/<\/(b|i|code|pre|a|s|u)>/)[1];
-            tagMap[tagName] = (tagMap[tagName] || 0) - 1;
-          }
-          
-          // Tambahkan tag penutup yang kurang
-          let closingStr = '';
-          for (const [tag, count] of Object.entries(tagMap)) {
-            for (let i = 0; i < count; i++) {
-              closingStr += '</' + tag + '>';
-            }
-          }
-          
-          // Cari tag pembuka di sisa message yang tidak ada pembukanya
-          let rest = msg.substring(splitAt);
-          let openingStr = '';
-          for (const [tag, count] of Object.entries(tagMap)) {
-            for (let i = 0; i < count; i++) {
-              openingStr += '<' + tag + '>';
-            }
-          }
-          rest = openingStr + rest;
-          
-          chunks.push(chunk + closingStr);
-          msg = rest;
+          chunks.push(msg.substring(0, splitAt));
+          msg = msg.substring(splitAt);
         }
         for (let ci = 0; ci < chunks.length; ci++) {
           const opts = { parse_mode: 'HTML' };

@@ -3505,180 +3505,127 @@ bot.command('resellerstats', async (ctx) => {
 
 //allreseller stat
 bot.command('allresellerstats', async (ctx) => {
-  console.log('🔍 [ALLRESELLERSTATS] Handler called by', ctx.from?.id);
   try {
-    const adminId = ctx.from?.id;
-    if (!adminId) {
-      console.log('❌ [ALLRESELLERSTATS] No admin ID');
-      return ctx.reply('❌ Tidak bisa mendapatkan ID user.');
-    }
-
-    // Cek admin
-    if (!adminIds.includes(adminId)) {
-      console.log('❌ [ALLRESELLERSTATS] Not admin:', adminId);
-      return ctx.reply('🚫 Hanya admin yang bisa menggunakan command ini!');
-    }
-
-    console.log('✅ [ALLRESELLERSTATS] Admin verified:', adminId);
-
-    // Ambil resellers
-    const resellers = listResellersSync();
-    console.log('📊 [ALLRESELLERSTATS] Resellers found:', resellers?.length || 0);
+    const adminId = ctx.from.id;
     
-    if (!resellers || resellers.length === 0) {
-      return ctx.reply('📭 Belum ada reseller terdaftar.');
+    // Hanya admin
+    if (!adminIds.includes(adminId)) {
+      return ctx.reply(' Hanya admin yang bisa menggunakan command ini!');
     }
-
+    
+    // Ambil semua user yang reseller
+    const resellers = listResellersSync();
+    
+    if (resellers.length === 0) {
+      return ctx.reply(' Belum ada reseller terdaftar.');
+    }
+    
     const now = new Date();
     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
     const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     const startTimestamp = firstDay.getTime();
     const endTimestamp = lastDay.getTime();
-
-    console.log('📅 [ALLRESELLERSTATS] Period:', startTimestamp, '-', endTimestamp);
-
+    
+    // Total semua
     let totalAllAccounts = 0;
     let totalAllRevenue = 0;
     let totalAllTopup = 0;
+    
     const resellerStats = [];
 
-    // Loop dengan try-catch per reseller
+    // Loop melalui setiap reseller
     for (const resellerId of resellers) {
-      try {
-        console.log('🔄 [ALLRESELLERSTATS] Processing reseller:', resellerId);
-
-        // Ambil saldo
-        const user = await new Promise((resolve) => {
-          db.get('SELECT saldo FROM users WHERE user_id = ?', [resellerId], (err, row) => {
-            if (err) {
-              console.error('❌ [ALLRESELLERSTATS] DB saldo error:', err.message);
-              return resolve({ saldo: 0 });
-            }
-            resolve(row || { saldo: 0 });
-          });
+      // Ambil saldo
+      const user = await new Promise((resolve) => {
+        db.get('SELECT saldo FROM users WHERE user_id = ?', [resellerId], (err, row) => {
+          resolve(row || { saldo: 0 });
         });
+      });
+      
+      // Ambil transaksi bulan ini
+      const transactions = await new Promise((resolve) => {
+        db.all(
+          `SELECT COUNT(*) as count, SUM(amount) as total FROM transactions 
+           WHERE user_id = ? AND timestamp >= ? AND timestamp <= ? 
+           AND type IN ('ssh', 'vmess', 'vless', 'trojan', 'shadowsocks', 'zivpn', 'udp_http')
+           AND reference_id NOT LIKE 'account-trial-%'`,
+          [resellerId, startTimestamp, endTimestamp],
+          (err, rows) => {
+            resolve(rows[0] || { count: 0, total: 0 });
+          }
+        );
+      });
 
-        // Ambil transactions
-        const transactions = await new Promise((resolve) => {
-          db.all(
-            `SELECT COUNT(*) as count, SUM(amount) as total FROM transactions
-             WHERE user_id = ? AND timestamp >= ? AND timestamp <= ?
-             AND type IN ('ssh', 'vmess', 'vless', 'trojan', 'shadowsocks', 'zivpn', 'udp_http')
-             AND reference_id NOT LIKE 'account-trial-%'`,
-            [resellerId, startTimestamp, endTimestamp],
-            (err, rows) => {
-              if (err) {
-                console.error('❌ [ALLRESELLERSTATS] DB transactions error:', err.message);
-                return resolve({ count: 0, total: 0 });
-              }
-              resolve((rows && rows[0]) || { count: 0, total: 0 });
-            }
-          );
-        });
+      const topupTotal = await new Promise((resolve) => {
+        db.get(
+          `SELECT SUM(amount) as total FROM transactions
+           WHERE user_id = ? AND timestamp >= ? AND timestamp <= ? AND type = 'deposit'`,
+          [resellerId, startTimestamp, endTimestamp],
+          (err, row) => resolve(!err && row && row.total ? row.total : 0)
+        );
+      });
+      
+      // Tambah ke total
+      totalAllAccounts += transactions.count;
+      totalAllRevenue += transactions.total || 0;
+      totalAllTopup += topupTotal;
 
-        // Ambil topup
-        const topupTotal = await new Promise((resolve) => {
-          db.get(
-            `SELECT SUM(amount) as total FROM transactions
-             WHERE user_id = ? AND timestamp >= ? AND timestamp <= ? AND type = 'deposit'`,
-            [resellerId, startTimestamp, endTimestamp],
-            (err, row) => {
-              if (err) {
-                console.error('❌ [ALLRESELLERSTATS] DB topup error:', err.message);
-                return resolve(0);
-              }
-              resolve((row && row.total) ? row.total : 0);
-            }
-          );
-        });
-
-        const saldo = Number(user?.saldo) || 0;
-        const count = Number(transactions?.count) || 0;
-        const total = Number(transactions?.total) || 0;
-        const topup = Number(topupTotal) || 0;
-
-        totalAllAccounts += count;
-        totalAllRevenue += total;
-        totalAllTopup += topup;
-
-        resellerStats.push({ resellerId, saldo, count, total, topup });
-        console.log('✅ [ALLRESELLERSTATS] Reseller processed:', resellerId, { saldo, count, total, topup });
-
-      } catch (loopErr) {
-        console.error('❌ [ALLRESELLERSTATS] Loop error for', resellerId, ':', loopErr.message);
-        continue;
-      }
+      resellerStats.push({
+        resellerId,
+        saldo: user.saldo || 0,
+        count: transactions.count || 0,
+        total: transactions.total || 0,
+        topup: topupTotal || 0
+      });
     }
 
-    console.log('📊 [ALLRESELLERSTATS] Total stats:', { totalAllAccounts, totalAllRevenue, totalAllTopup });
-
-    // Sort by revenue
     resellerStats.sort((a, b) => b.total - a.total);
 
-    // Format entries
     const entries = [];
     for (const stat of resellerStats) {
+      let usernameText = '-';
       try {
-        let usernameText = '-';
-        try {
-          const username = await getUsernameById(stat.resellerId);
-          usernameText = username ? `@${String(username).replace(/^@/, '')}` : '-';
-        } catch (e) {
-          console.warn('⚠️ [ALLRESELLERSTATS] getUsernameById error for', stat.resellerId, ':', e.message);
-        }
-
-        const displayId = `<b>${String(stat.resellerId)}</b>`;
-        const safeHtml = (s) => {
-          try {
-            return typeof escapeHtml === 'function' ? escapeHtml(String(s)) : String(s);
-          } catch (e) {
-            return String(s);
-          }
-        };
-
-        const entry =
-          `<b>${safeHtml(usernameText)}</b> [${displayId}]\n` +
-          `Saldo: Rp ${Number(stat.saldo || 0).toLocaleString('id-ID')} | Akun: ${Number(stat.count || 0)}\n` +
-          `Pendapatan: Rp ${Number(stat.total || 0).toLocaleString('id-ID')} | TopUp: Rp ${Number(stat.topup || 0).toLocaleString('id-ID')}\n` +
-          `─────────────────`;
-        
-        entries.push(entry);
-      } catch (entryErr) {
-        console.error('❌ [ALLRESELLERSTATS] Entry format error:', entryErr.message);
-        continue;
+        const username = await getUsernameById(stat.resellerId);
+        usernameText = username ? `@${username.replace(/^@/, '')}` : '-';
+      } catch (e) {
+        usernameText = '-';
       }
+      const displayId = `<code>${stat.resellerId}</code>`;
+      const entry =
+        `<b> Username:</b> ${escapeHtml(usernameText)}\n` +
+        `<b>🆔 ID:</b> ${displayId}\n` +
+        `<code> Saldo:</code> Rp ${stat.saldo.toLocaleString('id-ID')}\n` +
+        `<code> Akun Bulan Ini:</code> ${stat.count}\n` +
+        `<code> Pendapatan:</code> Rp ${stat.total.toLocaleString('id-ID')}\n` +
+        `<code> Top Up Bulan Ini:</code> Rp ${stat.topup.toLocaleString('id-ID')}\n` +
+        `────────────────────`;
+      entries.push(entry);
     }
 
-    console.log('📝 [ALLRESELLERSTATS] Entries formatted:', entries.length);
-
     const totalResellers = resellers.length;
-    const periodText = safeHtmlGlobal(now.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }));
-    
+    const periodText = escapeHtml(now.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }));
     const summaryText =
-      `\n<b>📈 RINGKASAN:</b>\n` +
+      `\n<b> RINGKASAN:</b>\n` +
       `• <b>Total Reseller:</b> ${totalResellers} orang\n` +
-      `• <b>Total Akun Bulan Ini:</b> ${Number(totalAllAccounts || 0)} akun\n` +
-      `• <b>Total Pendapatan:</b> Rp ${Number(totalAllRevenue || 0).toLocaleString('id-ID')}\n` +
-      `• <b>Total Top Up:</b> Rp ${Number(totalAllTopup || 0).toLocaleString('id-ID')}\n` +
+      `• <b>Total Akun Bulan Ini:</b> ${totalAllAccounts} akun\n` +
+      `• <b>Total Pendapatan:</b> Rp ${totalAllRevenue.toLocaleString('id-ID')}\n` +
+      `• <b>Total Top Up:</b> Rp ${totalAllTopup.toLocaleString('id-ID')}\n` +
       `• <b>Periode:</b> ${periodText}\n` +
-      `• <b>Update:</b> ${safeHtmlGlobal(now.toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta' }))}`;
+      `• <b>Update:</b> ${escapeHtml(now.toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta' }))}`;
 
-    const pageSize = 5;
+    const pageSize = 10;
     const totalPages = Math.max(1, Math.ceil(entries.length / pageSize));
     const pages = [];
-    
     for (let page = 0; page < totalPages; page += 1) {
       const start = page * pageSize;
       const body = entries.slice(start, start + pageSize).join('\n');
       const header =
-        `<b>📊 STATISTIK SEMUA RESELLER</b>\n` +
-        `<i>📅 Periode: ${periodText}</i>\n` +
-        `<i>📄 Halaman ${page + 1}/${totalPages}</i>\n\n`;
+        `<b> STATISTIK SEMUA RESELLER</b>\n` +
+        `<i> Periode: ${periodText}</i>\n` +
+        `<i> Halaman ${page + 1}/${totalPages}</i>\n\n`;
       const withSummary = page === totalPages - 1 ? `\n${summaryText}` : '';
       pages.push(`${header}${body}${withSummary}`);
     }
-
-    console.log('📄 [ALLRESELLERSTATS] Pages created:', pages.length);
 
     const sessionKey = `${ctx.chat.id}:${adminId}`;
     allResellerStatsSessions.set(sessionKey, {
@@ -3688,108 +3635,21 @@ bot.command('allresellerstats', async (ctx) => {
       updatedAt: Date.now()
     });
 
-    // Keyboard di-handle di auto-split loop
+    const firstKeyboard = totalPages > 1
+      ? { inline_keyboard: [[{ text: 'Next ', callback_data: 'allresellerstats_page_1' }]] }
+      : null;
+    const firstReplyOptions = { parse_mode: 'HTML' };
+    if (firstKeyboard) firstReplyOptions.reply_markup = firstKeyboard;
 
-    console.log('📤 [ALLRESELLERSTATS] Sending reply, page 0 length:', pages[0]?.length || 0);
-
-    // Auto-split jika message terlalu panjang (> 3900 chars untuk safety margin)
-    const MAX_LEN = 3900;
-    for (let pi = 0; pi < pages.length; pi++) {
-      let msg = pages[pi];
-      if (msg.length <= MAX_LEN) {
-        const opts = { parse_mode: 'HTML' };
-        // Tambah keyboard Next/Prev
-        const navButtons = [];
-        if (pi > 0) navButtons.push({ text: '◀️ Prev', callback_data: 'allresellerstats_page_' + (pi - 1) });
-        if (pi < totalPages - 1) navButtons.push({ text: 'Next ▶️', callback_data: 'allresellerstats_page_' + (pi + 1) });
-        if (navButtons.length > 0) opts.reply_markup = { inline_keyboard: [navButtons] };
-        await ctx.reply(msg, opts);
-        console.log('✅ [ALLRESELLERSTATS] Page', pi + 1, 'sent, length:', msg.length);
-      } else {
-        // Split message jadi beberapa bagian
-        console.log('⚠️ [ALLRESELLERSTATS] Page', pi + 1, 'too long:', msg.length, '- splitting');
-        const chunks = [];
-        while (msg.length > 0) {
-          if (msg.length <= MAX_LEN) {
-            chunks.push(msg);
-            break;
-          }
-          // Cari newline terakhir sebelum MAX_LEN
-          let splitAt = msg.lastIndexOf('\n', MAX_LEN);
-          if (splitAt <= 0) splitAt = MAX_LEN;
-          
-          // Ambil chunk dan tutup semua tag HTML yang terbuka
-          let chunk = msg.substring(0, splitAt);
-          const openTags = (chunk.match(/<(b|i|code|pre|a|s|u)(\s[^>]*)?>/g) || []);
-          const closeTags = (chunk.match(/<\/(b|i|code|pre|a|s|u)>/g) || []);
-          
-          // Hitung tag yang belum ditutup
-          const tagMap = {};
-          for (const ot of openTags) {
-            const tagName = ot.match(/<(b|i|code|pre|a|s|u)/)[1];
-            tagMap[tagName] = (tagMap[tagName] || 0) + 1;
-          }
-          for (const ct of closeTags) {
-            const tagName = ct.match(/<\/(b|i|code|pre|a|s|u)>/)[1];
-            tagMap[tagName] = (tagMap[tagName] || 0) - 1;
-          }
-          
-          // Tambahkan tag penutup yang kurang
-          let closingStr = '';
-          for (const [tag, count] of Object.entries(tagMap)) {
-            for (let i = 0; i < count; i++) {
-              closingStr += '</' + tag + '>';
-            }
-          }
-          
-          // Cari tag pembuka di sisa message yang tidak ada pembukanya
-          let rest = msg.substring(splitAt);
-          let openingStr = '';
-          for (const [tag, count] of Object.entries(tagMap)) {
-            for (let i = 0; i < count; i++) {
-              openingStr += '<' + tag + '>';
-            }
-          }
-          rest = openingStr + rest;
-          
-          chunks.push(chunk + closingStr);
-          msg = rest;
-        }
-        for (let ci = 0; ci < chunks.length; ci++) {
-          const opts = { parse_mode: 'HTML' };
-          // Hanya tambah keyboard di chunk terakhir dari page terakhir
-          if (pi === pages.length - 1 && ci === chunks.length - 1) {
-            const navButtons = [];
-            if (pi > 0) navButtons.push({ text: '◀️ Prev', callback_data: 'allresellerstats_page_' + (pi - 1) });
-            if (pi < totalPages - 1) navButtons.push({ text: 'Next ▶️', callback_data: 'allresellerstats_page_' + (pi + 1) });
-            if (navButtons.length > 0) opts.reply_markup = { inline_keyboard: [navButtons] };
-          }
-          await ctx.reply(chunks[ci], opts);
-          console.log('✅ [ALLRESELLERSTATS] Chunk', ci + 1, 'of page', pi + 1, 'sent, length:', chunks[ci].length);
-        }
-      }
-    }
-
-    console.log('✅ [ALLRESELLERSTATS] All pages sent successfully');
-    logger.info(`✅ Admin ${adminId} melihat statistik semua reseller`);
-
+    await ctx.reply(pages[0], firstReplyOptions);
+    
+    logger.info(` Admin ${adminId} melihat statistik semua reseller`);
+    
   } catch (error) {
-    console.error('❌ [ALLRESELLERSTATS] FATAL ERROR:', error.message);
-    console.error('❌ [ALLRESELLERSTATS] Stack:', error.stack);
-    logger.error('❌ Error di /allresellerstats:', error.message);
-    logger.error('Stack:', error.stack);
-    await ctx.reply('❌ Terjadi kesalahan saat memproses permintaan. Error: ' + error.message);
+    logger.error(' Error di /allresellerstats:', error);
+    await ctx.reply(' Terjadi kesalahan saat memproses permintaan.');
   }
 });
-
-// Helper function
-function safeHtmlGlobal(s) {
-  try {
-    return typeof escapeHtml === 'function' ? escapeHtml(String(s)) : String(s);
-  } catch (e) {
-    return String(s);
-  }
-}
 
 bot.action(/allresellerstats_page_(\d+)/, async (ctx) => {
   try {
@@ -4281,10 +4141,10 @@ async function sendMainMenu(ctx) {
       { text: 'PPOB', callback_data: 'menu_ppob', style: 'primary' },
       { text: 'Tools', callback_data: 'menu_tools', style: 'primary' }
     ],
-    ...(isReseller
-      ? [[{ text: 'Admin', callback_data: 'hubungi_admin', style: 'danger' }]]
-      : [[{ text: 'Admin', callback_data: 'hubungi_admin', style: 'danger' },
-          { text: 'Jadi Reseller', callback_data: 'jadi_reseller', style: 'danger' }]]),
+    [
+      { text: 'Admin', callback_data: 'hubungi_admin', style: 'danger' },
+      { text: 'Jadi Reseller', callback_data: 'jadi_reseller', style: 'danger' }
+    ],
     ...(testMenuEnabled ? [[
       { text: 'Test', callback_data: 'admin_test_menu' },
       { text: 'Refresh', callback_data: 'send_main_menu', style: 'danger' }
@@ -12653,10 +12513,6 @@ bot.action('jadi_reseller', async (ctx) => {
   await ctx.answerCbQuery().catch(() => {});
 
   const userId = ctx.from.id;
-  const alreadyReseller = await isUserReseller(userId).catch(() => false);
-  if (alreadyReseller) {
-    return ctx.reply('✅ Kamu sudah menjadi Reseller. Gunakan menu *Statistik Saya* untuk cek performa.', { parse_mode: 'Markdown' });
-  }
   const terms = loadResellerTerms();
   const waUrl = getAdminWhatsappUrl();
   const username = ctx.from.username ? '@' + ctx.from.username : '-';
@@ -17559,15 +17415,7 @@ bot.on('text', async (ctx) => {
 
     fs.appendFileSync(resselFilePath, `${targetId}\n`);
     delete userState[ctx.chat.id];
-    await ctx.reply(`✅ User dengan ID ${targetId} berhasil dijadikan reseller.`);
-    try {
-      await bot.telegram.sendMessage(targetId,
-        '🎉 Selamat! Status kamu telah diaktifkan sebagai *Reseller*.\n\nKetik /start untuk melihat menu reseller.',
-        { parse_mode: 'Markdown' }
-      );
-    } catch (e) {
-      logger.warn(`Gagal kirim notif reseller ke ${targetId}:`, e.message);
-    }
+    await ctx.reply(` User dengan ID ${targetId} berhasil dijadikan reseller.`);
     return sendAdminResellerMenu(ctx);
   }
 
@@ -20374,8 +20222,8 @@ bot.on('document', async (ctx, next) => {
     // Restore users & saldo (termasuk reseller)
     if (backup.users && backup.users.length) {
       for (const u of backup.users) {
-        await dbRun('INSERT OR REPLACE INTO users (user_id, saldo) VALUES (?,?)',
-          [u.user_id, u.saldo||0]);
+        await dbRun('INSERT OR REPLACE INTO users (user_id, saldo, saldo_akrab, username, first_name, last_name, is_reseller, reseller_tier, joined_at) VALUES (?,?,?,?,?,?,?,?,?)',
+          [u.user_id, u.saldo||0, u.saldo_akrab||0, u.username||'', u.first_name||'', u.last_name||'', u.is_reseller||0, u.reseller_tier||0, u.joined_at||Date.now()]);
       }
       stats.users = backup.users.length;
     }

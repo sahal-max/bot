@@ -3627,7 +3627,7 @@ bot.command('allresellerstats', async (ctx) => {
           console.warn('⚠️ [ALLRESELLERSTATS] getUsernameById error for', stat.resellerId, ':', e.message);
         }
 
-        const displayId = `<b>${String(stat.resellerId)}</b>`;
+        const displayId = `<code>${stat.resellerId}</code>`;
         const safeHtml = (s) => {
           try {
             return typeof escapeHtml === 'function' ? escapeHtml(String(s)) : String(s);
@@ -3637,10 +3637,13 @@ bot.command('allresellerstats', async (ctx) => {
         };
 
         const entry =
-          `<b>${safeHtml(usernameText)}</b> [${displayId}]\n` +
-          `Saldo: Rp ${Number(stat.saldo || 0).toLocaleString('id-ID')} | Akun: ${Number(stat.count || 0)}\n` +
-          `Pendapatan: Rp ${Number(stat.total || 0).toLocaleString('id-ID')} | TopUp: Rp ${Number(stat.topup || 0).toLocaleString('id-ID')}\n` +
-          `─────────────────`;
+          `<b>👤 Username:</b> ${safeHtml(usernameText)}\n` +
+          `<b>🆔 ID:</b> ${displayId}\n` +
+          `<code>💰 Saldo:</code> Rp ${Number(stat.saldo || 0).toLocaleString('id-ID')}\n` +
+          `<code>📊 Akun Bulan Ini:</code> ${Number(stat.count || 0)}\n` +
+          `<code>💵 Pendapatan:</code> Rp ${Number(stat.total || 0).toLocaleString('id-ID')}\n` +
+          `<code>💳 Top Up Bulan Ini:</code> Rp ${Number(stat.topup || 0).toLocaleString('id-ID')}\n` +
+          `────────────────────`;
         
         entries.push(entry);
       } catch (entryErr) {
@@ -3663,7 +3666,7 @@ bot.command('allresellerstats', async (ctx) => {
       `• <b>Periode:</b> ${periodText}\n` +
       `• <b>Update:</b> ${safeHtmlGlobal(now.toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta' }))}`;
 
-    const pageSize = 5;
+    const pageSize = 10;
     const totalPages = Math.max(1, Math.ceil(entries.length / pageSize));
     const pages = [];
     
@@ -3688,89 +3691,18 @@ bot.command('allresellerstats', async (ctx) => {
       updatedAt: Date.now()
     });
 
-    // Keyboard di-handle di auto-split loop
+    const firstKeyboard = totalPages > 1
+      ? { inline_keyboard: [[{ text: 'Next ▶️', callback_data: 'allresellerstats_page_1' }]] }
+      : null;
+
+    const firstReplyOptions = { parse_mode: 'HTML' };
+    if (firstKeyboard) firstReplyOptions.reply_markup = firstKeyboard;
 
     console.log('📤 [ALLRESELLERSTATS] Sending reply, page 0 length:', pages[0]?.length || 0);
-
-    // Auto-split jika message terlalu panjang (> 3900 chars untuk safety margin)
-    const MAX_LEN = 3900;
-    for (let pi = 0; pi < pages.length; pi++) {
-      let msg = pages[pi];
-      if (msg.length <= MAX_LEN) {
-        const opts = { parse_mode: 'HTML' };
-        // Tambah keyboard Next/Prev
-        const navButtons = [];
-        if (pi > 0) navButtons.push({ text: '◀️ Prev', callback_data: 'allresellerstats_page_' + (pi - 1) });
-        if (pi < totalPages - 1) navButtons.push({ text: 'Next ▶️', callback_data: 'allresellerstats_page_' + (pi + 1) });
-        if (navButtons.length > 0) opts.reply_markup = { inline_keyboard: [navButtons] };
-        await ctx.reply(msg, opts);
-        console.log('✅ [ALLRESELLERSTATS] Page', pi + 1, 'sent, length:', msg.length);
-      } else {
-        // Split message jadi beberapa bagian
-        console.log('⚠️ [ALLRESELLERSTATS] Page', pi + 1, 'too long:', msg.length, '- splitting');
-        const chunks = [];
-        while (msg.length > 0) {
-          if (msg.length <= MAX_LEN) {
-            chunks.push(msg);
-            break;
-          }
-          // Cari newline terakhir sebelum MAX_LEN
-          let splitAt = msg.lastIndexOf('\n', MAX_LEN);
-          if (splitAt <= 0) splitAt = MAX_LEN;
-          
-          // Ambil chunk dan tutup semua tag HTML yang terbuka
-          let chunk = msg.substring(0, splitAt);
-          const openTags = (chunk.match(/<(b|i|code|pre|a|s|u)(\s[^>]*)?>/g) || []);
-          const closeTags = (chunk.match(/<\/(b|i|code|pre|a|s|u)>/g) || []);
-          
-          // Hitung tag yang belum ditutup
-          const tagMap = {};
-          for (const ot of openTags) {
-            const tagName = ot.match(/<(b|i|code|pre|a|s|u)/)[1];
-            tagMap[tagName] = (tagMap[tagName] || 0) + 1;
-          }
-          for (const ct of closeTags) {
-            const tagName = ct.match(/<\/(b|i|code|pre|a|s|u)>/)[1];
-            tagMap[tagName] = (tagMap[tagName] || 0) - 1;
-          }
-          
-          // Tambahkan tag penutup yang kurang
-          let closingStr = '';
-          for (const [tag, count] of Object.entries(tagMap)) {
-            for (let i = 0; i < count; i++) {
-              closingStr += '</' + tag + '>';
-            }
-          }
-          
-          // Cari tag pembuka di sisa message yang tidak ada pembukanya
-          let rest = msg.substring(splitAt);
-          let openingStr = '';
-          for (const [tag, count] of Object.entries(tagMap)) {
-            for (let i = 0; i < count; i++) {
-              openingStr += '<' + tag + '>';
-            }
-          }
-          rest = openingStr + rest;
-          
-          chunks.push(chunk + closingStr);
-          msg = rest;
-        }
-        for (let ci = 0; ci < chunks.length; ci++) {
-          const opts = { parse_mode: 'HTML' };
-          // Hanya tambah keyboard di chunk terakhir dari page terakhir
-          if (pi === pages.length - 1 && ci === chunks.length - 1) {
-            const navButtons = [];
-            if (pi > 0) navButtons.push({ text: '◀️ Prev', callback_data: 'allresellerstats_page_' + (pi - 1) });
-            if (pi < totalPages - 1) navButtons.push({ text: 'Next ▶️', callback_data: 'allresellerstats_page_' + (pi + 1) });
-            if (navButtons.length > 0) opts.reply_markup = { inline_keyboard: [navButtons] };
-          }
-          await ctx.reply(chunks[ci], opts);
-          console.log('✅ [ALLRESELLERSTATS] Chunk', ci + 1, 'of page', pi + 1, 'sent, length:', chunks[ci].length);
-        }
-      }
-    }
-
-    console.log('✅ [ALLRESELLERSTATS] All pages sent successfully');
+    
+    await ctx.reply(pages[0], firstReplyOptions);
+    
+    console.log('✅ [ALLRESELLERSTATS] Reply sent successfully');
     logger.info(`✅ Admin ${adminId} melihat statistik semua reseller`);
 
   } catch (error) {
