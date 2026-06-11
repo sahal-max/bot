@@ -42,3 +42,5 @@ _insert_*.js
 me-cli-sunset-main/.venv/
 me-cli-sunset-main/user_sessions/
 me-cli-sunset-main/__pycache__/
+sellvpn.db-shm
+sellvpn.db-wal
