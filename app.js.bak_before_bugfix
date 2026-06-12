@@ -1095,12 +1095,8 @@ function buildCreateNotifRemarks(type, username) {
 }
 
 async function sendGlobalCreateAccountNotification(payload) {
-  const targets = [];
-  const g1 = Number(String(GLOBAL_CREATE_NOTIF_GROUP_ID || '').trim());
-  if (Number.isFinite(g1) && g1 !== 0) targets.push(g1);
-  if (GROUP_ID_NUM && !targets.includes(GROUP_ID_NUM)) targets.push(GROUP_ID_NUM);
-  if (targets.length === 0) return;
-  const groupId = targets[0];
+  const groupId = Number(String(GLOBAL_CREATE_NOTIF_GROUP_ID || '').trim());
+  if (!Number.isFinite(groupId) || groupId === 0) return;
 
   const now1 = new Date().toLocaleString('id-ID',{timeZone:'Asia/Jakarta',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
   const text =
@@ -1119,12 +1115,10 @@ async function sendGlobalCreateAccountNotification(payload) {
     `<code>│</code> 💰 <b>Bayar</b>    : <code>${payload.payment || '-'}</code>\n` +
     `<code>│</code> 🕐 <b>Waktu</b>    : <code>${now1}</code>\n` +
     `<code>└──────────────────────────┘</code></blockquote>`;
-  for (const tid of targets) {
-    try {
-      await bot.telegram.sendMessage(tid, text, { parse_mode: 'HTML' });
-    } catch (err) {
-      logger.error('Gagal kirim notif create akun ke grup ' + tid + ': ' + err.message);
-    }
+  try {
+    await bot.telegram.sendMessage(groupId, text, { parse_mode: 'HTML' });
+  } catch (err) {
+    logger.error('Gagal kirim notif create akun ke grup global:', err.message);
   }
 }
 
@@ -9252,9 +9246,11 @@ bot.action('view_accounts', async (ctx) => {
       }
       const total = row ? row.count : 0;
       const keyboard = [
-        [{ text: ' Lihat Akun Aktif Saya', callback_data: 'view_accounts_active' }],
-        [{ text: ' Lihat Semua Akun Saya', callback_data: 'view_accounts_active_all' }]
+        [{ text: ' Lihat Akun Aktif Saya', callback_data: 'view_accounts_active' }]
       ];
+      if (total > 0) {
+        keyboard.push([{ text: ' Lihat Semua Akun Saya', callback_data: 'view_accounts_active_all' }]);
+      }
       keyboard.push([{ text: ' Lihat Akun Expired', callback_data: 'view_accounts_expired' }]);
       keyboard.push([{ text: ' Kembali', callback_data: 'send_main_menu' }]);
 
@@ -15165,10 +15161,6 @@ async function broadcastRestok(tipe, stokItems) {
 
 bot.action(/^akrab_konfirmasi_(.+)$/, async (ctx) => {
   await ctx.answerCbQuery('⏳ Memproses...');
-  const userId = ctx.from.id;
-  const produkCode = ctx.match[1];
-  const confirm = (userState[ctx.chat.id] && userState[ctx.chat.id].akrabConfirm) ? userState[ctx.chat.id].akrabConfirm : {};
-  const tujuan = confirm.tujuan;
   const amount = Number(confirm.amount || 0);
 
   if (!produkCode || !tujuan || !amount) {
@@ -23262,16 +23254,15 @@ process.on('uncaughtException', (error) => {
       } catch (_) {}
       
       // Jika belum mencapai maksimal retry, coba lagi
-      const is409 = (error?.code === 409) || String(error?.message || '').includes('409');
-      if (is409) {
-        logger.warn(' 409 Conflict — exit, PM2 akan restart setelah 35 detik...');
-        process.exit(1);
-      } else if (retryCount < 5) {
-        const delay = Math.min(10000, 2000 * Math.pow(2, retryCount));
+      if (retryCount < 3) {
+        const delay = Math.min(10000, 2000 * Math.pow(2, retryCount)); // Exponential backoff
         logger.info(` Akan mencoba lagi dalam ${delay/1000} detik...`);
-        setTimeout(() => { startBot(retryCount + 1); }, delay);
+        
+        setTimeout(() => {
+          startBot(retryCount + 1);
+        }, delay);
       } else {
-        logger.error(' Gagal memulai bot setelah 5 kali percobaan. Bot dimatikan.');
+        logger.error(' Gagal memulai bot setelah 3 kali percobaan. Bot dimatikan.');
         process.exit(1);
       }
     } finally {
