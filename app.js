@@ -5604,61 +5604,67 @@ async function handleServiceAction(ctx, action) {
   let keyboard;
   if (action === 'create') {
     keyboard = [
-      [{ text: 'Buat UDP ZIVPN', callback_data: 'create_zivpn' }],
+      [{ text: 'Buat UDP ZIVPN', callback_data: 'create_zivpn', style: 'success' }],
       [
-        { text: 'Buat Ssh/Ovpn', callback_data: 'create_ssh' },
-        { text: 'Buat UDP HC', callback_data: 'create_udp_http' }
+        { text: 'Buat Ssh/Ovpn', callback_data: 'create_ssh', style: 'success' },
+        { text: 'Buat UDP HC', callback_data: 'create_udp_http', style: 'success' }
       ],
-      [{ text: 'Buat Vmess', callback_data: 'create_vmess' }, { text: 'Buat Vless', callback_data: 'create_vless' }],
-      [{ text: 'Buat Trojan', callback_data: 'create_trojan' }, { text: 'Kembali', callback_data: 'send_main_menu' }]
+      [{ text: 'Buat Vmess', callback_data: 'create_vmess', style: 'success' }, { text: 'Buat Vless', callback_data: 'create_vless', style: 'success' }],
+      [{ text: 'Buat Trojan', callback_data: 'create_trojan', style: 'success' }],
+      [{ text: 'Kembali', callback_data: 'send_main_menu' }]
     ];
   } else if (action === 'trial') {
     keyboard = [
-      [{ text: 'Trial UDP ZIVPN', callback_data: 'trial_zivpn' }],
+      [{ text: 'Trial UDP ZIVPN', callback_data: 'trial_zivpn', style: 'success' }],
       [
-        { text: 'Trial Ssh/Ovpn', callback_data: 'trial_ssh' },
-        { text: 'Trial UDP HTTP', callback_data: 'trial_udp_http' }
+        { text: 'Trial Ssh/Ovpn', callback_data: 'trial_ssh', style: 'success' },
+        { text: 'Trial UDP HTTP', callback_data: 'trial_udp_http', style: 'success' }
       ],
-      [{ text: 'Trial Vmess', callback_data: 'trial_vmess' }, { text: 'Trial Vless', callback_data: 'trial_vless' }],
-      [{ text: 'Trial Trojan', callback_data: 'trial_trojan' }, { text: 'Kembali', callback_data: 'send_main_menu' }]
+      [{ text: 'Trial Vmess', callback_data: 'trial_vmess', style: 'success' }, { text: 'Trial Vless', callback_data: 'trial_vless', style: 'success' }],
+      [{ text: 'Trial Trojan', callback_data: 'trial_trojan', style: 'success' }],
+      [{ text: 'Kembali', callback_data: 'send_main_menu' }]
     ];
   } else if (action === 'renew') {
     keyboard = [
-      [{ text: 'Perpanjang UDP ZIVPN', callback_data: 'renew_zivpn' }],
+      [{ text: 'Perpanjang UDP ZIVPN', callback_data: 'renew_zivpn', style: 'success' }],
       [
-        { text: 'Perpanjang Ssh/Ovpn', callback_data: 'renew_ssh' },
-        { text: 'Perpanjang UDP HTTP', callback_data: 'renew_udp_http' }
+        { text: 'Perpanjang Ssh/Ovpn', callback_data: 'renew_ssh', style: 'success' },
+        { text: 'Perpanjang UDP HTTP', callback_data: 'renew_udp_http', style: 'success' }
       ],
-      [{ text: 'Perpanjang Vmess', callback_data: 'renew_vmess' }, { text: 'Perpanjang Vless', callback_data: 'renew_vless' }],
-      [{ text: 'Perpanjang Trojan', callback_data: 'renew_trojan' }, { text: 'Kembali', callback_data: 'send_main_menu' }]
+      [{ text: 'Perpanjang Vmess', callback_data: 'renew_vmess', style: 'success' }, { text: 'Perpanjang Vless', callback_data: 'renew_vless', style: 'success' }],
+      [{ text: 'Perpanjang Trojan', callback_data: 'renew_trojan', style: 'success' }],
+      [{ text: 'Kembali', callback_data: 'send_main_menu' }]
     ];
   } else if (action === 'del') {
     keyboard = [
       [
-        { text: 'Hapus Ssh/Ovpn', callback_data: 'del_ssh' },
-        { text: 'Hapus UDP HTTP', callback_data: 'del_udp_http' }
+        { text: 'Hapus Ssh/Ovpn', callback_data: 'del_ssh', style: 'danger' },
+        { text: 'Hapus UDP HTTP', callback_data: 'del_udp_http', style: 'danger' }
       ],
-      [{ text: 'Hapus UDP ZIVPN', callback_data: 'del_zivpn' }],
-      [{ text: 'Hapus Vmess', callback_data: 'del_vmess' }, { text: 'Hapus Vless', callback_data: 'del_vless' }],
-      [{ text: 'Hapus Trojan', callback_data: 'del_trojan' }, { text: 'Kembali', callback_data: 'send_main_menu' }]
+      [{ text: 'Hapus UDP ZIVPN', callback_data: 'del_zivpn', style: 'danger' }],
+      [{ text: 'Hapus Vmess', callback_data: 'del_vmess', style: 'danger' }, { text: 'Hapus Vless', callback_data: 'del_vless', style: 'danger' }],
+      [{ text: 'Hapus Trojan', callback_data: 'del_trojan', style: 'danger' }],
+      [{ text: 'Kembali', callback_data: 'send_main_menu' }]
     ];
   } else if (action === 'lock') {
     keyboard = [
       [
-        { text: 'Lock Ssh/Ovpn', callback_data: 'lock_ssh' },
-        { text: 'Lock UDP HTTP', callback_data: 'lock_udp_http' }
+        { text: 'Lock Ssh/Ovpn', callback_data: 'lock_ssh', style: 'danger' },
+        { text: 'Lock UDP HTTP', callback_data: 'lock_udp_http', style: 'danger' }
       ],
-      [{ text: 'Lock Vmess', callback_data: 'lock_vmess' }, { text: 'Lock Vless', callback_data: 'lock_vless' }],
-      [{ text: 'Lock Trojan', callback_data: 'lock_trojan' }, { text: 'Kembali', callback_data: 'send_main_menu' }]
+      [{ text: 'Lock Vmess', callback_data: 'lock_vmess', style: 'danger' }, { text: 'Lock Vless', callback_data: 'lock_vless', style: 'danger' }],
+      [{ text: 'Lock Trojan', callback_data: 'lock_trojan', style: 'danger' }],
+      [{ text: 'Kembali', callback_data: 'send_main_menu' }]
     ];
   } else if (action === 'unlock') {
     keyboard = [
       [
-        { text: 'Unlock Ssh/Ovpn', callback_data: 'unlock_ssh' },
-        { text: 'Unlock UDP HTTP', callback_data: 'unlock_udp_http' }
+        { text: 'Unlock Ssh/Ovpn', callback_data: 'unlock_ssh', style: 'success' },
+        { text: 'Unlock UDP HTTP', callback_data: 'unlock_udp_http', style: 'success' }
       ],
-      [{ text: 'Unlock Vmess', callback_data: 'unlock_vmess' }, { text: 'Unlock Vless', callback_data: 'unlock_vless' }],
-      [{ text: 'Unlock Trojan', callback_data: 'unlock_trojan' }, { text: 'Kembali', callback_data: 'send_main_menu' }]
+      [{ text: 'Unlock Vmess', callback_data: 'unlock_vmess', style: 'success' }, { text: 'Unlock Vless', callback_data: 'unlock_vless', style: 'success' }],
+      [{ text: 'Unlock Trojan', callback_data: 'unlock_trojan', style: 'success' }],
+      [{ text: 'Kembali', callback_data: 'send_main_menu' }]
     ];
   }
   try {
@@ -9242,7 +9248,7 @@ bot.action('view_accounts', async (ctx) => {
       const keyboard = [
         [{ text: ' Lihat Akun Aktif Saya', callback_data: 'view_accounts_active' }]
       ];
-      if (total > 10) {
+      if (total > 0) {
         keyboard.push([{ text: ' Lihat Semua Akun Saya', callback_data: 'view_accounts_active_all' }]);
       }
       keyboard.push([{ text: ' Lihat Akun Expired', callback_data: 'view_accounts_expired' }]);
@@ -9985,7 +9991,7 @@ async function renderRemoteOwnedAccountsPage(ctx, page = 0) {
   );
 }
 
-async function renderLocalOwnedAccountsPage(ctx, listType = 'active', page = 0) {
+async function renderLocalOwnedAccountsPage(ctx, listType = 'active', page = 0, edit = false) {
   const state = userState[ctx.chat.id]?.local_owned_accounts;
   if (!state || !Array.isArray(state.rows) || state.rows.length === 0) {
     return ctx.reply(listType === 'expired' ? ' Tidak ada akun expired.' : ' Tidak ada akun aktif.');
@@ -10076,10 +10082,11 @@ async function renderLocalOwnedAccountsPage(ctx, listType = 'active', page = 0) 
   if (nav.length) keyboard.push(nav);
   keyboard.push([{ text: '🔙 Kembali', callback_data: 'view_accounts' }]);
 
-  return ctx.reply(text, {
-    parse_mode: 'HTML',
-    reply_markup: { inline_keyboard: keyboard }
-  });
+  const replyOpts = { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } };
+  if (edit) {
+    return ctx.editMessageText(text, replyOpts).catch(() => ctx.reply(text, replyOpts));
+  }
+  return ctx.reply(text, replyOpts);
 }
 
 function normalizeRenewAccountType(rawType) {
@@ -10389,7 +10396,7 @@ bot.action(/view_accounts_local_page_(active|expired)_(\d+)/, async (ctx) => {
   await ctx.answerCbQuery().catch(() => {});
   const listType = String(ctx.match[1] || 'active');
   const page = Number(ctx.match[2] || 0);
-  await renderLocalOwnedAccountsPage(ctx, listType, Number.isFinite(page) ? page : 0);
+  await renderLocalOwnedAccountsPage(ctx, listType, Number.isFinite(page) ? page : 0, true);
 });
 
 bot.action(/renew_lookup_page_(\d+)/, async (ctx) => {
@@ -14345,19 +14352,25 @@ bot.action(/^akrab_grup_(v1|v2|v3)$/, async (ctx) => {
       const base = getBasePrice(p);
       const habis = isProdukKosong(p);
       const finalPrice = wallet.getEffectivePrice(base, markupGlobal, markupReseller);
-      const labelHarga = finalPrice > 0 ? ' - Rp ' + finalPrice.toLocaleString('id-ID') : '';
-      const labelStok = habis ? ' [KOSONG]' : '';
-      return [{
+      const labelHarga = finalPrice > 0 ? ' · Rp ' + finalPrice.toLocaleString('id-ID') : '';
+      const labelStok = habis ? ' ❌' : ' ✅';
+      const btn = {
         text: name + labelHarga + labelStok,
         callback_data: 'akrab_beli_' + code,
-      }];
+      };
+      if (!habis) btn.style = 'success';
+      return [btn];
     });
     keyboard.push([{ text: 'Kembali', callback_data: 'menu_akrab' }]);
 
     await ctx.editMessageText(
-      '📦 <b>' + grupLabel + '</b>\n' +
-      '<code>──────────────────────</code>\n' +
-      '✦ Pilih produk. Tanda <b>[KOSONG]</b> berarti stok habis.',
+      '<blockquote>' +
+      '<code>┌──────────────────────┐</code>\n' +
+      '<code>│</code> 📦 <b>' + grupLabel + '</b>\n' +
+      '<code>├──────────────────────┤</code>\n' +
+      '<code>│</code> ✅ Stok tersedia  ❌ Stok kosong\n' +
+      '<code>└──────────────────────┘</code>' +
+      '</blockquote>',
       { parse_mode: 'HTML', reply_markup: { inline_keyboard: keyboard } }
     );
   } catch (err) {
