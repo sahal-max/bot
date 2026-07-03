@@ -1,0 +1,5 @@
+{
+  "min_accounts": 5,
+  "min_topup": 15000,
+  "join_topup_min": 25000
+}
